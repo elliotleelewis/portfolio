@@ -1,0 +1,31 @@
+<nav class="navbar is-lowercase" role="navigation">
+	<div class="navbar-brand has-text-weight-bold">
+		<a
+			class="navbar-item is-family-secondary has-addon-period has-text-weight-black"
+			[routerLink]="''"
+			>Elliot Lewis</a
+		>
+		<a
+			role="button"
+			class="navbar-burger burger"
+			[ngClass]="{ 'is-active': menuOpen }"
+			aria-label="menu"
+			[attr.aria-expanded]="menuOpen"
+			(click)="menuOpen = !menuOpen"
+		>
+			<span aria-hidden="true"></span>
+			<span aria-hidden="true"></span>
+			<span aria-hidden="true"></span>
+		</a>
+	</div>
+	<div
+		class="navbar-menu has-text-weight-light"
+		[ngClass]="{ 'is-active': menuOpen }"
+	>
+		<div class="navbar-end">
+			<a class="navbar-item" [ngx-scroll-to]="'projects'">Projects</a>
+			<a class="navbar-item" [ngx-scroll-to]="'work'">Work</a>
+			<a class="navbar-item" [ngx-scroll-to]="'education'">Education</a>
+		</div>
+	</div>
+</nav>

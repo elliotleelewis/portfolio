@@ -1,0 +1,51 @@
+// ---- Utilities ----
+@import './functions';
+
+// ---- Variables - Custom ----
+// Colors
+$salmon-pink: hsl(19, 100%, 85%);
+$salmon-pink-invert: color-luminance($salmon-pink);
+$light-blue: hsl(162, 57%, 76%);
+$light-blue-invert: color-luminance($light-blue);
+$dark-green: hsl(147, 11%, 20%);
+$dark-green-invert: color-luminance($dark-green);
+$deep-red: hsl(1, 91%, 38%);
+$deep-red-invert: color-luminance($deep-red);
+$dusty-yellow: hsl(40, 78%, 68%);
+$dusty-yellow-invert: color-luminance($dusty-yellow);
+// Fonts
+$family-serif: 'Playfair Display', Georgia, 'Times New Roman', Times, serif;
+$weight-black: 900;
+
+// ---- Overrides - Bulma ----
+// Colors
+$custom-colors: (
+	'salmon-pink': (
+		$salmon-pink,
+		$salmon-pink-invert,
+	),
+	'light-blue': (
+		$light-blue,
+		$light-blue-invert,
+	),
+	'dark-green': (
+		$dark-green,
+		$dark-green-invert,
+	),
+	'deep-red': (
+		$deep-red,
+		$deep-red-invert,
+	),
+	'dusty-yellow': (
+		$dusty-yellow,
+		$dusty-yellow-invert,
+	),
+);
+// Fonts
+$family-secondary: $family-serif;
+
+// ---- Overrides - Font Awesome ----
+$fa-font-path: '~@fortawesome/fontawesome-free/webfonts';
+
+// ---- Variables - External ----
+@import '~bulma/sass/utilities/all';

@@ -1,0 +1,9 @@
+// Imports
+@import '../../../../../vars';
+
+// Styles
+svg {
+	max-height: 50vh;
+	transform: rotate(-9deg);
+	filter: drop-shadow(-0.5rem -0.5rem 1rem transparentize($black, 0.5));
+}

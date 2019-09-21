@@ -41,7 +41,7 @@ import { ProjectService } from '../../services/project/project.service';
 	],
 })
 export class IndexComponent implements OnInit, OnDestroy {
-	themeIndex: number;
+	themeIndex = Math.floor(Math.random() * 5);
 	titles = [
 		'full-stack developer',
 		'web developer',
@@ -75,7 +75,6 @@ export class IndexComponent implements OnInit, OnDestroy {
 	}
 
 	ngOnInit(): void {
-		this.themeIndex = Math.floor(Math.random() * 5);
 		this.loop = setInterval(() => {
 			this.titleIndex =
 				this.titleIndex + 2 > this.titles.length

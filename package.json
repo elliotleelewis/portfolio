@@ -3,7 +3,7 @@
   "scripts": {
     "start": "ng serve --host 0.0.0.0",
     "build": "ng build --prod",
-    "test": "ng test",
+    "test": "ng test --watch false",
     "lint": "ng lint",
     "lint:fix": "ng lint --fix",
     "stylelint": "stylelint src/**/*.scss",
@@ -79,7 +79,7 @@
   "prettier": {
     "arrowParens": "always",
     "bracketSpacing": true,
-    "endOfLine": "crlf",
+    "endOfLine": "lf",
     "semi": true,
     "singleQuote": true,
     "tabWidth": 4,

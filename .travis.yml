@@ -1,0 +1,25 @@
+language: node_js
+node_js:
+  - "node"
+
+cache: yarn
+branches:
+  only:
+    - master
+
+script:
+  - yarn lint
+  - yarn stylelint
+  - yarn prettier
+  - yarn build
+  - yarn test
+
+before_deploy: yarn build
+deploy:
+  provider: pages
+  github-token: $GITHUB_TOKEN
+  skip-cleanup: true
+  local-dir: public
+#  fqdn: elliotleelewis.com
+  on:
+    branch: master

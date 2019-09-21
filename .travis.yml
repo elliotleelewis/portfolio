@@ -19,7 +19,7 @@ deploy:
   provider: pages
   github-token: $GITHUB_TOKEN
   skip-cleanup: true
-  local-dir: public
+  local-dir: dist
 #  fqdn: elliotleelewis.com
   on:
     branch: master

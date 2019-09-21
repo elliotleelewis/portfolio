@@ -27,7 +27,9 @@ describe('IfChangesDirective', () => {
 		fixture.detectChanges();
 	});
 
-	it('should create', () => {});
+	it('should create', () => {
+		expect(component).toBeTruthy();
+	});
 
 	it('should still exist after variable change', () => {
 		component.s = 'test';

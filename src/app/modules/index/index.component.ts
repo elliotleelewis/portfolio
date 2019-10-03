@@ -71,7 +71,7 @@ export class IndexComponent implements OnInit, OnDestroy {
 	}
 
 	get themeIsLight(): boolean {
-		return [3].indexOf(this.themeIndex) !== -1;
+		return [2, 3].indexOf(this.themeIndex) !== -1;
 	}
 
 	ngOnInit(): void {

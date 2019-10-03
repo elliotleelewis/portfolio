@@ -8,6 +8,9 @@ import { IfChangesDirective } from './if-changes.directive';
 	template: '<div *portfolioIfChanges="s"></div>',
 })
 class MockComponent {
+	/**
+	 * Mock class property
+	 */
 	s: string;
 }
 

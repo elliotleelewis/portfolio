@@ -9,6 +9,9 @@ import { ProjectTileComponent } from './components/project-tile/project-tile.com
 import { IfChangesDirective } from './directives/if-changes/if-changes.directive';
 import { IndexComponent } from './index.component';
 
+/**
+ * Index module
+ */
 @NgModule({
 	declarations: [
 		IndexComponent,

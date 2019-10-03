@@ -3,6 +3,7 @@
   "scripts": {
     "start": "ng serve --host 0.0.0.0",
     "build": "ng build --prod",
+    "postbuild": "node ./purify-css.js",
     "test": "ng test --watch false",
     "lint": "ng lint",
     "lint:fix": "ng lint --fix",
@@ -54,6 +55,7 @@
     "karma-jasmine-html-reporter": "~1.4.0",
     "prettier": "^1.0.0",
     "pretty-quick": "^1.0.0",
+    "purify-css": "^1.0.0",
     "stylelint": "^11.0.0",
     "stylelint-config-prettier": "^6.0.0",
     "stylelint-config-rational-order": "^0.1.0",

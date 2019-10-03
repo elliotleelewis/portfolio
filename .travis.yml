@@ -20,7 +20,7 @@ deploy:
   github-token: $GITHUB_TOKEN
   skip-cleanup: true
   local-dir: dist
-#  fqdn: elliotleelewis.com
+  fqdn: elliotleelewis.com
   on:
     branch: master
 

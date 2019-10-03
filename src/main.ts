@@ -15,6 +15,6 @@ platformBrowserDynamic()
 
 WebFont.load({
 	google: {
-		families: ['Playfair Display:700,900&display=swap'],
+		families: ['Playfair Display:700,900', '&display=swap'],
 	},
 });

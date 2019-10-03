@@ -7,6 +7,10 @@ import { IndexComponent } from './index.component';
 	selector: '[portfolioIfChanges]',
 })
 class MockPortfolioIfChangesDirective {
+	/**
+	 * Mock class method
+	 * @param v - Value
+	 */
 	@Input()
 	set portfolioIfChanges(v: any) {
 		//

@@ -58,9 +58,9 @@ export class IndexComponent implements OnInit, OnDestroy {
 	get theme(): string {
 		switch (this.themeIndex) {
 			case 1:
-				return 'light-blue';
+				return 'pale-blue';
 			case 2:
-				return 'dark-green';
+				return 'forest-green';
 			case 3:
 				return 'deep-red';
 			case 4:

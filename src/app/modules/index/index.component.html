@@ -1,11 +1,11 @@
 <div
 	class="hero is-bold is-fullheight-with-navbar has-background-fixed"
-	[ngClass]="'is-' + theme"
+	[ngClass]="theme ? 'is-' + theme : null"
 >
 	<div class="hero-body">
 		<div class="container">
 			<div class="columns is-mobile is-vcentered">
-				<div class="column is-one-third">
+				<div class="column is-one-third has-text-centered">
 					<portfolio-face></portfolio-face>
 				</div>
 				<div class="column">

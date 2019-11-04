@@ -7,6 +7,7 @@ import {
 } from '@angular/animations';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 
+import { shuffle } from '../../helpers';
 import { Project } from '../../models/project';
 import { ProjectService } from '../../services/project/project.service';
 
@@ -41,13 +42,21 @@ import { ProjectService } from '../../services/project/project.service';
 	],
 })
 export class IndexComponent implements OnInit, OnDestroy {
-	themeIndex = Math.floor(Math.random() * 5);
-	titles = [
+	themes = [
+		'pastel-orange',
+		'pastel-green',
+		'pastel-teal',
+		'pastel-lilac',
+		'pastel-yellow',
+	];
+	themeIndex = Math.floor(Math.random() * this.themes.length);
+	titles = shuffle<string>([
 		'full-stack developer',
-		'web developer',
+		'technology enthusiast',
+		'web designer',
 		'football fanatic',
 		'cook-at-home chef',
-	];
+	]);
 	titleIndex = 0;
 	projects: Project[] = null;
 
@@ -56,22 +65,7 @@ export class IndexComponent implements OnInit, OnDestroy {
 	constructor(private project: ProjectService) {}
 
 	get theme(): string {
-		switch (this.themeIndex) {
-			case 1:
-				return 'pale-blue';
-			case 2:
-				return 'forest-green';
-			case 3:
-				return 'deep-red';
-			case 4:
-				return 'dusty-yellow';
-			default:
-				return 'salmon-pink';
-		}
-	}
-
-	get themeIsLight(): boolean {
-		return [2, 3].indexOf(this.themeIndex) !== -1;
+		return this.themes[this.themeIndex] || null;
 	}
 
 	ngOnInit(): void {

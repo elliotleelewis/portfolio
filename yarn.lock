@@ -2872,6 +2872,13 @@ css-selector-tokenizer@^0.7.1:
     fastparse "^1.1.1"
     regexpu-core "^1.0.0"
 
+css-spring@^4.0.0:
+  version "4.1.0"
+  resolved "https://registry.yarnpkg.com/css-spring/-/css-spring-4.1.0.tgz#457de80c7df5b867ac0693332b54b2acb57c4583"
+  integrity sha1-RX3oDH31uGesBpMzK1SyrLV8RYM=
+  dependencies:
+    lodash "^4.17.4"
+
 css@^2.0.0:
   version "2.2.4"
   resolved "https://registry.yarnpkg.com/css/-/css-2.2.4.tgz#c646755c73971f2bba6a601e2cf2fd71b1298929"

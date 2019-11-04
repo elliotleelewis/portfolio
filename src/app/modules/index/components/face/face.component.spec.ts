@@ -1,4 +1,5 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
 import { FaceComponent } from './face.component';
 
@@ -9,6 +10,7 @@ describe('FaceComponent', () => {
 	beforeEach(async(() => {
 		TestBed.configureTestingModule({
 			declarations: [FaceComponent],
+			imports: [NoopAnimationsModule],
 		}).compileComponents();
 	}));
 

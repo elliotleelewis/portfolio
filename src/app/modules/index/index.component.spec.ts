@@ -1,5 +1,6 @@
 import { CUSTOM_ELEMENTS_SCHEMA, Directive, Input } from '@angular/core';
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
 import { IndexComponent } from './index.component';
 
@@ -24,6 +25,7 @@ describe('IndexComponent', () => {
 	beforeEach(async(() => {
 		TestBed.configureTestingModule({
 			declarations: [IndexComponent, MockPortfolioIfChangesDirective],
+			imports: [NoopAnimationsModule],
 			schemas: [CUSTOM_ELEMENTS_SCHEMA],
 		}).compileComponents();
 	}));

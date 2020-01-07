@@ -46,7 +46,7 @@
     "@types/webfontloader": "^1.0.0",
     "classlist.js": "1.1.20150312",
     "codelyzer": "^5.0.0",
-    "husky": "^3.0.0",
+    "husky": "^4.0.0",
     "jasmine-core": "~3.5.0",
     "jasmine-spec-reporter": "~4.2.0",
     "karma": "~4.4.0",

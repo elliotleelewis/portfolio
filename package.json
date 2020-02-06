@@ -20,7 +20,7 @@
     "@angular/forms": "^8.0.0",
     "@angular/platform-browser": "^8.0.0",
     "@angular/platform-browser-dynamic": "^8.0.0",
-    "@angular/pwa": "~0.803.0",
+    "@angular/pwa": "~0.900.0",
     "@angular/router": "^8.0.0",
     "@angular/service-worker": "^8.0.0",
     "@fortawesome/fontawesome-free": "^5.0.0",
@@ -34,7 +34,7 @@
     "zone.js": "~0.10.0"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "~0.803.0",
+    "@angular-devkit/build-angular": "~0.900.0",
     "@angular/cli": "^8.0.0",
     "@angular/compiler-cli": "^8.0.0",
     "@angular/language-service": "^8.0.0",

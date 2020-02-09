@@ -19,7 +19,6 @@
     "@angular/core": "^9.0.0",
     "@angular/forms": "^9.0.0",
     "@angular/platform-browser": "^9.0.0",
-    "@angular/platform-browser-dynamic": "^9.0.0",
     "@angular/router": "^9.0.0",
     "@angular/service-worker": "^9.0.0",
     "@fortawesome/fontawesome-free": "^5.0.0",

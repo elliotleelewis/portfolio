@@ -9,10 +9,9 @@
         "files": [
           "/favicon.ico",
           "/index.html",
-          "/manifest.json",
+          "/manifest.webmanifest",
           "/*.css",
-          "/*.js",
-          "/manifest.webmanifest"
+          "/*.js"
         ]
       }
     }, {

@@ -21,7 +21,7 @@ function fromDir(startPath, filter, callback) {
 	}
 }
 
-fromDir('./dist', /\.css/, function(filename) {
+fromDir('./dist', /\.css/, function (filename) {
 	const content = ['./dist/*.js', './dist/*.html'];
 	const css = [filename];
 

@@ -9491,6 +9491,11 @@ stylus@0.54.7:
     semver "^6.0.0"
     source-map "^0.7.3"
 
+subsink@^1.0.0:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/subsink/-/subsink-1.0.1.tgz#1cab43932f62769bf9cc1f9580246244d2813018"
+  integrity sha512-WtsWee/fOtrJat2aKGRF4X36kvjsv8wdcSKWcAxYUPgww5TYHPU+Jro9hu2YJKynl607V97Nc+plGXyWrLqhNQ==
+
 sugarss@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/sugarss/-/sugarss-2.0.0.tgz#ddd76e0124b297d40bf3cca31c8b22ecb43bc61d"

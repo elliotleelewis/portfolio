@@ -1,9 +1,5 @@
 {
-  "extends": [
-    "tslint:recommended",
-    "codelyzer",
-    "tslint-config-prettier"
-  ],
+  "extends": ["tslint:recommended", "codelyzer", "tslint-config-prettier"],
   "rules": {
     "deprecation": {
       "severity": "warn"
@@ -11,60 +7,32 @@
     "component-class-suffix": true,
     "contextual-lifecycle": true,
     "directive-class-suffix": true,
-    "directive-selector": [
-      true,
-      "attribute",
-      "portfolio",
-      "camelCase"
-    ],
-    "component-selector": [
-      true,
-      "element",
-      "portfolio",
-      "kebab-case"
-    ],
+    "directive-selector": [true, "attribute", "portfolio", "camelCase"],
+    "component-selector": [true, "element", "portfolio", "kebab-case"],
     "completed-docs": [
       false,
       {
         "classes": {
-          "visibilities": [
-            "exported"
-          ]
+          "visibilities": ["exported"]
         },
         "enums": true,
         "functions": {
-          "visibilities": [
-            "exported"
-          ]
+          "visibilities": ["exported"]
         },
         "interfaces": {
-          "visibilities": [
-            "exported"
-          ]
+          "visibilities": ["exported"]
         },
         "methods": {
-          "privacies": [
-            "public",
-            "protected"
-          ]
+          "privacies": ["public", "protected"]
         },
         "properties": {
-          "privacies": [
-            "public",
-            "protected"
-          ]
+          "privacies": ["public", "protected"]
         }
       }
     ],
-    "import-blacklist": [
-      true,
-      "rxjs/Rx"
-    ],
+    "import-blacklist": [true, "rxjs/Rx"],
     "interface-name": false,
-    "member-access": [
-      true,
-      "no-public"
-    ],
+    "member-access": [true, "no-public"],
     "member-ordering": [
       true,
       {
@@ -76,18 +44,8 @@
         ]
       }
     ],
-    "no-console": [
-      true,
-      "debug",
-      "info",
-      "time",
-      "timeEnd",
-      "trace"
-    ],
-    "no-inferrable-types": [
-      true,
-      "ignore-params"
-    ],
+    "no-console": [true, "debug", "info", "time", "timeEnd", "trace"],
+    "no-inferrable-types": [true, "ignore-params"],
     "no-non-null-assertion": true,
     "no-redundant-jsdoc": true,
     "no-switch-case-fall-through": true,
@@ -111,7 +69,5 @@
     "use-lifecycle-interface": true,
     "use-pipe-transform-interface": true
   },
-  "rulesDirectory": [
-    "codelyzer"
-  ]
+  "rulesDirectory": ["codelyzer"]
 }

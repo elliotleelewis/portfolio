@@ -3,7 +3,7 @@ import { RouterTestingModule } from '@angular/router/testing';
 
 import { ProjectTileComponent } from './project-tile.component';
 
-describe('ProjectComponent', () => {
+describe('ProjectTileComponent', () => {
 	let component: ProjectTileComponent;
 	let fixture: ComponentFixture<ProjectTileComponent>;
 

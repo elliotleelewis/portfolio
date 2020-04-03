@@ -9,8 +9,8 @@
     "lint:fix": "ng lint --fix",
     "stylelint": "stylelint \"**/*.{scss,html}\"",
     "stylelint:fix": "stylelint \"**/*.{scss,html}\" --fix",
-    "prettier": "prettier --check \"**/*.{md,ts,js,scss,html}\" --ignore-path .gitignore",
-    "prettier:fix": "prettier --write \"**/*.{md,ts,js,scss,html}\" --ignore-path .gitignore"
+    "prettier": "prettier --check \"**/*.{md,ts,js,scss,html,json,yml}\" --ignore-path .gitignore",
+    "prettier:fix": "prettier --write \"**/*.{md,ts,js,scss,html,json,yml}\" --ignore-path .gitignore"
   },
   "dependencies": {
     "@angular/animations": "^9.0.0",
@@ -27,6 +27,7 @@
     "bulma": "~0.8.0",
     "css-spring": "^4.0.0",
     "rxjs": "~6.5.0",
+    "subsink": "^1.0.0",
     "tslib": "~1.11.0",
     "web-animations-js": "^2.0.0",
     "webfontloader": "^1.0.0",
@@ -81,6 +82,19 @@
     "arrowParens": "always",
     "bracketSpacing": true,
     "endOfLine": "lf",
+    "overrides": [
+      {
+        "files": [
+          "*.json",
+          "*.md",
+          "*.yml"
+        ],
+        "options": {
+          "tabWidth": 2,
+          "useTabs": false
+        }
+      }
+    ],
     "semi": true,
     "singleQuote": true,
     "tabWidth": 4,

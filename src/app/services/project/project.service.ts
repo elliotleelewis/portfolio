@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { from, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
-import projects from '../../../assets/data/projects.json';
 import { Project } from '../../models/project';
 
 /**
@@ -11,14 +11,14 @@ import { Project } from '../../models/project';
 	providedIn: 'root',
 })
 export class ProjectService {
-	private readonly projects: Project[] = projects;
-
 	/**
 	 * Gets all projects
 	 * @returns Array of all projects
 	 */
 	getProjects(): Observable<Project[]> {
-		return of(this.projects);
+		return from(import('../../../assets/data/projects.json')).pipe(
+			map((module) => module.default),
+		);
 	}
 
 	/**
@@ -27,6 +27,8 @@ export class ProjectService {
 	 * @returns Project with given ID
 	 */
 	getProject(id: string): Observable<Project> {
-		return of(this.projects.find((value) => value.id === id));
+		return this.getProjects().pipe(
+			map((p) => p.find((project) => project.id === id)),
+		);
 	}
 }

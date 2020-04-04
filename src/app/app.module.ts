@@ -58,8 +58,13 @@ import { SharedModule } from './modules/shared/shared.module';
 		ScrollToModule.forRoot(),
 		// Application Modules
 		SharedModule,
+		// Environment Modules
+		...(environment.imports || []),
 	],
-	providers: [],
+	providers: [
+		// Environment Providers
+		...(environment.providers || []),
+	],
 	bootstrap: [AppComponent],
 })
 export class AppModule {}

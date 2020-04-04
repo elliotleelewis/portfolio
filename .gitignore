@@ -9,6 +9,9 @@
 # Only exists if Bazel was run
 /bazel-out
 
+# environment variables
+.env
+
 # dependencies
 /node_modules
 

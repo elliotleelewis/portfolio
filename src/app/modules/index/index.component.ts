@@ -55,7 +55,6 @@ export class IndexComponent implements OnInit, OnDestroy {
 		'technology enthusiast',
 		'web designer',
 		'football fanatic',
-		'cook-at-home chef',
 	]);
 	titleIndex = 0;
 	projects: Project[] = null;

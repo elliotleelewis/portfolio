@@ -17,6 +17,7 @@
     "@angular/common": "^9.0.0",
     "@angular/compiler": "^9.0.0",
     "@angular/core": "^9.0.0",
+    "@angular/fire": "^6.0.0",
     "@angular/forms": "^9.0.0",
     "@angular/platform-browser": "^9.0.0",
     "@angular/platform-browser-dynamic": "^9.0.0",
@@ -24,8 +25,9 @@
     "@angular/service-worker": "^9.0.0",
     "@fortawesome/fontawesome-free": "^5.0.0",
     "@nicky-lenaers/ngx-scroll-to": "^3.0.0",
-    "bulma": "~0.8.0",
+    "bulma": "^0.8.0",
     "css-spring": "^4.0.0",
+    "firebase": "^7.0.0",
     "rxjs": "~6.5.0",
     "subsink": "^1.0.0",
     "tslib": "~1.11.0",
@@ -34,6 +36,7 @@
     "zone.js": "~0.10.0"
   },
   "devDependencies": {
+    "@angular-builders/custom-webpack": "9.1.0-beta.1",
     "@angular-devkit/build-angular": "^0.901.0",
     "@angular/cli": "^9.0.0",
     "@angular/compiler-cli": "^9.0.0",
@@ -46,6 +49,7 @@
     "@types/webfontloader": "^1.0.0",
     "classlist.js": "1.1.20150312",
     "codelyzer": "^5.0.0",
+    "dotenv-webpack": "^1.0.0",
     "husky": "^4.0.0",
     "jasmine-core": "~3.5.0",
     "jasmine-spec-reporter": "~5.0.0",
@@ -71,11 +75,10 @@
   "husky": {
     "hooks": {
       "commit-msg": "commitlint -e",
-      "pre-commit": "pretty-quick --staged --pattern \"**/*.{md,ts,js,scss,html}\""
+      "pre-commit": "pretty-quick --staged --pattern \"**/*.{md,ts,js,scss,html,json,yml}\""
     }
   },
   "browserslist": [
-    "IE 11",
     "defaults"
   ],
   "prettier": {

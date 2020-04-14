@@ -9,10 +9,10 @@ import { Project } from '../../../../models/project';
 })
 export class ProjectTileComponent {
 	@Input()
-	project: Project;
+	project!: Project;
 	@Input()
 	theme = '';
 
 	@HostBinding('class.notification')
-	classNotification = true;
+	private classNotification = true;
 }

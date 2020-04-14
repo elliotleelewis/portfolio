@@ -1,15 +1,20 @@
 import { Component } from '@angular/core';
 
+/**
+ * Standard page footer component
+ */
 @Component({
 	selector: 'portfolio-footer',
 	templateUrl: './footer.component.html',
 	styleUrls: ['./footer.component.scss'],
 })
 export class FooterComponent {
-	address = 'elliotleelewis';
-	domain = 'gmail.com';
-
+	/**
+	 * Contact email address
+	 */
 	get email(): string {
-		return `${this.address}@${this.domain}`;
+		const address = 'elliotleelewis';
+		const domain = 'gmail.com';
+		return `${address}@${domain}`;
 	}
 }

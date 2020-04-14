@@ -8,6 +8,9 @@ import {
 import { Component } from '@angular/core';
 import spring from 'css-spring';
 
+/**
+ * Animated SVG face component
+ */
 @Component({
 	selector: 'portfolio-face',
 	templateUrl: './face.component.html',
@@ -24,15 +27,11 @@ import spring from 'css-spring';
 								{ rotate: '360deg' },
 								{ preset: 'gentle' },
 							),
-						).map(
-							([key, value]: [
-								string,
-								{ [key: string]: string },
-							]) =>
-								style({
-									transform: `rotate(${value.rotate})`,
-									offset: parseFloat(key) / 100,
-								}),
+						).map(([key, value]) =>
+							style({
+								transform: `rotate(${value.rotate})`,
+								offset: parseFloat(key) / 100,
+							}),
 						),
 					),
 				),
@@ -41,5 +40,8 @@ import spring from 'css-spring';
 	],
 })
 export class FaceComponent {
+	/**
+	 * Animation count
+	 */
 	count = 0;
 }

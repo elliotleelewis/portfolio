@@ -6,6 +6,8 @@ import {
 	trigger,
 } from '@angular/animations';
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { interval, Observable } from 'rxjs';
+import { SubSink } from 'subsink';
 
 import { shuffle } from '../../helpers';
 import { Project } from '../../models/project';
@@ -50,35 +52,34 @@ export class IndexComponent implements OnInit, OnDestroy {
 		'pastel-yellow',
 	];
 	themeIndex = Math.floor(Math.random() * this.themes.length);
-	titles = shuffle<string>([
+	titles = shuffle([
 		'full-stack developer',
 		'technology enthusiast',
 		'web designer',
 		'football fanatic',
 	]);
 	titleIndex = 0;
-	projects: Project[] = null;
+	projects$?: Observable<Project[]>;
 
-	private loop = null;
+	private subs = new SubSink();
 
 	constructor(private project: ProjectService) {}
 
 	get theme(): string {
-		return this.themes[this.themeIndex] || null;
+		return this.themes[this.themeIndex] || '';
 	}
 
 	ngOnInit(): void {
-		this.loop = setInterval(() => {
+		this.subs.sink = interval(2048).subscribe(() => {
 			this.titleIndex =
 				this.titleIndex + 2 > this.titles.length
 					? 0
 					: this.titleIndex + 1;
-		}, 2048);
-		this.project.getProjects().subscribe((p) => (this.projects = p));
+		});
+		this.projects$ = this.project.getProjects();
 	}
 
 	ngOnDestroy(): void {
-		clearInterval(this.loop);
-		this.loop = null;
+		this.subs.unsubscribe();
 	}
 }

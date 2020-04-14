@@ -26,9 +26,9 @@ export class ProjectService {
 	 * @param id - Project ID
 	 * @returns Project with given ID
 	 */
-	getProject(id: string): Observable<Project> {
+	getProject(id: string): Observable<Project | null> {
 		return this.getProjects().pipe(
-			map((p) => p.find((project) => project.id === id)),
+			map((p) => p.find((project) => project.id === id) ?? null),
 		);
 	}
 }

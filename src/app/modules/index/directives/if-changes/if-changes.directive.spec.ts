@@ -11,7 +11,7 @@ class MockComponent {
 	/**
 	 * Mock class property
 	 */
-	s: string;
+	s!: string;
 }
 
 describe('IfChangesDirective', () => {

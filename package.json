@@ -24,7 +24,7 @@
     "@angular/router": "^9.0.0",
     "@angular/service-worker": "^9.0.0",
     "@fortawesome/fontawesome-free": "^5.0.0",
-    "@nicky-lenaers/ngx-scroll-to": "^3.0.0",
+    "@nicky-lenaers/ngx-scroll-to": "^9.0.0",
     "bulma": "^0.8.0",
     "css-spring": "^4.0.0",
     "firebase": "^7.0.0",

@@ -3,7 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { switchMap } from 'rxjs/operators';
 import { SubSink } from 'subsink';
 
-import { ProjectService } from '../../services/project/project.service';
+import { ProjectService } from '@app-services/project/project.service';
 
 @Component({
 	selector: 'portfolio-project',

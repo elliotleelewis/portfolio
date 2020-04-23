@@ -9,9 +9,14 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { interval, Observable } from 'rxjs';
 import { SubSink } from 'subsink';
 
+import { Education } from '@app-models/education';
+import { Experience } from '@app-models/experience';
+import { Project } from '@app-models/project';
+import { EducationService } from '@app-services/education/education.service';
+import { ExperienceService } from '@app-services/experience/experience.service';
+import { ProjectService } from '@app-services/project/project.service';
+
 import { shuffle } from '../../helpers';
-import { Project } from '../../models/project';
-import { ProjectService } from '../../services/project/project.service';
 
 @Component({
 	selector: 'portfolio-index',
@@ -59,11 +64,17 @@ export class IndexComponent implements OnInit, OnDestroy {
 		'football fanatic',
 	]);
 	titleIndex = 0;
+	educations$?: Observable<Education[]>;
+	experiences$?: Observable<Experience[]>;
 	projects$?: Observable<Project[]>;
 
 	private subs = new SubSink();
 
-	constructor(private project: ProjectService) {}
+	constructor(
+		private educationService: EducationService,
+		private experienceService: ExperienceService,
+		private projectService: ProjectService,
+	) {}
 
 	get theme(): string {
 		return this.themes[this.themeIndex] || '';
@@ -76,7 +87,9 @@ export class IndexComponent implements OnInit, OnDestroy {
 					? 0
 					: this.titleIndex + 1;
 		});
-		this.projects$ = this.project.getProjects();
+		this.educations$ = this.educationService.getEducations();
+		this.experiences$ = this.experienceService.getExperiences();
+		this.projects$ = this.projectService.getProjects();
 	}
 
 	ngOnDestroy(): void {

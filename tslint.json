@@ -48,7 +48,29 @@
     "ordered-imports": [
       true,
       {
-        "grouped-imports": true
+        "grouped-imports": true,
+        "groups": [
+          {
+            "name": "aliased internals",
+            "match": "^@app-[a-z]+.*",
+            "order": 2
+          },
+          {
+            "name": "parent dir",
+            "match": "^[.][.].*",
+            "order": 3
+          },
+          {
+            "name": "same dir",
+            "match": "^[.].*",
+            "order": 4
+          },
+          {
+            "name": "node_modules",
+            "match": ".*",
+            "order": 1
+          }
+        ]
       }
     ],
     "no-conflicting-lifecycle": true,

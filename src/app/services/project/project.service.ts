@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { from, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { Project } from '../../models/project';
+import { Project } from '@app-models/project';
 
 /**
  * Personal project service
@@ -16,7 +16,7 @@ export class ProjectService {
 	 * @returns Array of all projects
 	 */
 	getProjects(): Observable<Project[]> {
-		return from(import('../../../assets/data/projects.json')).pipe(
+		return from(import('@app-data/projects.json')).pipe(
 			map((module) => module.default),
 		);
 	}

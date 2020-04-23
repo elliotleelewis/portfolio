@@ -1,6 +1,6 @@
 import { Component, HostBinding, Input } from '@angular/core';
 
-import { Project } from '../../../../models/project';
+import { Project } from '@app-models/project';
 
 @Component({
 	selector: 'portfolio-project-tile',

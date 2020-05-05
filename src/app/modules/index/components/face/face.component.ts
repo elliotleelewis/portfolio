@@ -44,4 +44,11 @@ export class FaceComponent {
 	 * Animation count
 	 */
 	count = 0;
+
+	/**
+	 * Triggers glasses animation
+	 */
+	animate(): void {
+		this.count++;
+	}
 }

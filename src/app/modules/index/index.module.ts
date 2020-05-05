@@ -6,7 +6,6 @@ import { SharedModule } from '../shared/shared.module';
 
 import { FaceComponent } from './components/face/face.component';
 import { ProjectTileComponent } from './components/project-tile/project-tile.component';
-import { IfChangesDirective } from './directives/if-changes/if-changes.directive';
 import { IndexComponent } from './index.component';
 
 /**
@@ -18,8 +17,6 @@ import { IndexComponent } from './index.component';
 		// Components
 		FaceComponent,
 		ProjectTileComponent,
-		// Directives
-		IfChangesDirective,
 	],
 	imports: [
 		// Angular Modules

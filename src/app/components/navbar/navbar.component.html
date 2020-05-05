@@ -9,9 +9,11 @@
 			role="button"
 			class="navbar-burger burger"
 			[ngClass]="{ 'is-active': menuOpen }"
+			tabindex="0"
 			aria-label="menu"
 			[attr.aria-expanded]="menuOpen"
 			(click)="menuOpen = !menuOpen"
+			(keydown.enter)="menuOpen = !menuOpen"
 		>
 			<span aria-hidden="true"></span>
 			<span aria-hidden="true"></span>
@@ -23,9 +25,13 @@
 		[ngClass]="{ 'is-active': menuOpen }"
 	>
 		<div class="navbar-end">
-			<a class="navbar-item" [ngxScrollTo]="'projects'">Projects</a>
-			<a class="navbar-item" [ngxScrollTo]="'work'">Work</a>
-			<a class="navbar-item" [ngxScrollTo]="'education'">Education</a>
+			<a class="navbar-item" tabindex="0" [ngxScrollTo]="'projects'"
+				>Projects</a
+			>
+			<a class="navbar-item" tabindex="0" [ngxScrollTo]="'work'">Work</a>
+			<a class="navbar-item" tabindex="0" [ngxScrollTo]="'education'"
+				>Education</a
+			>
 		</div>
 	</div>
 </nav>

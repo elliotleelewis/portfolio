@@ -4,11 +4,14 @@
 // Styles
 svg {
 	max-height: 50vh;
+	outline: none;
 	transform: rotate(-9deg);
 	cursor: pointer;
 	filter: drop-shadow(0.5rem 0.5rem 1rem transparentize($black, 0.5));
 	transition: all $speed ease-in-out;
-	&:hover {
+	&:hover,
+	&:active,
+	&:focus {
 		transform: rotate(-9deg) translateX(-0.25rem) translateY(-0.25rem);
 		filter: drop-shadow(1.5rem 1.5rem 1.25rem transparentize($black, 0.75));
 	}

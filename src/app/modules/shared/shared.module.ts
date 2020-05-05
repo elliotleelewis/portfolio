@@ -1,15 +1,23 @@
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 
+import { IfChangesDirective } from './directives/if-changes/if-changes.directive';
+
 /**
  * Shared module
  */
 @NgModule({
-	declarations: [],
+	declarations: [
+		// Directives
+		IfChangesDirective,
+	],
 	imports: [
 		// Angular Modules
 		CommonModule,
 	],
-	exports: [],
+	exports: [
+		// Directives
+		IfChangesDirective,
+	],
 })
 export class SharedModule {}

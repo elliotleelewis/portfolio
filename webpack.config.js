@@ -1,10 +1,10 @@
 const path = require('path');
 const glob = require('glob');
 const dotenvWebpack = require('dotenv-webpack');
-const purgecssWebpackPlugin = require('purgecss-webpack-plugin')
+const purgecssWebpackPlugin = require('purgecss-webpack-plugin');
 
 const PATHS = {
-	src: path.join(__dirname, 'src')
+	src: path.join(__dirname, 'src'),
 };
 
 module.exports = {
@@ -13,7 +13,7 @@ module.exports = {
 			systemvars: true,
 		}),
 		new purgecssWebpackPlugin({
-			paths: () => glob.sync(`${PATHS.src}/**/*`,  { nodir: true }),
+			paths: () => glob.sync(`${PATHS.src}/**/*`, { nodir: true }),
 		}),
 	],
 };

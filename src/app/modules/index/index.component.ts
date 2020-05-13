@@ -50,11 +50,11 @@ import { shuffle } from '../../helpers';
 })
 export class IndexComponent implements OnInit, OnDestroy {
 	themes = [
-		'pastel-orange',
-		'pastel-green',
-		'pastel-teal',
-		'pastel-lilac',
-		'pastel-yellow',
+		'is-pastel-orange',
+		'is-pastel-green',
+		'is-pastel-teal',
+		'is-pastel-lilac',
+		'is-pastel-yellow',
 	];
 	themeIndex = Math.floor(Math.random() * this.themes.length);
 	titles = shuffle([

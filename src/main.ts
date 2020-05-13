@@ -1,6 +1,6 @@
 import { enableProdMode } from '@angular/core';
 import { platformBrowser } from '@angular/platform-browser';
-import WebFont from 'webfontloader';
+import * as WebFont from 'webfontloader';
 
 import { AppModule } from './app/app.module';
 import { environment } from './environments/environment';

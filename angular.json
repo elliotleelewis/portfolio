@@ -50,8 +50,8 @@
               "outputHashing": "all",
               "sourceMap": false,
               "extractCss": true,
-              "namedChunks": false,
               "extractLicenses": true,
+              "namedChunks": false,
               "vendorChunk": true,
               "buildOptimizer": true,
               "budgets": [

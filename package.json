@@ -29,7 +29,7 @@
     "firebase": "^7.0.0",
     "rxjs": "~6.5.0",
     "subsink": "^1.0.0",
-    "tslib": "~1.12.0",
+    "tslib": "~1.13.0",
     "web-animations-js": "^2.0.0",
     "webfontloader": "^1.0.0",
     "zone.js": "~0.10.0"

@@ -1,6 +1,5 @@
 import { HttpClientModule } from '@angular/common/http';
 import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { PreloadAllModules, RouterModule } from '@angular/router';
 import { ServiceWorkerModule } from '@angular/service-worker';
@@ -25,7 +24,6 @@ import { SharedModule } from './modules/shared/shared.module';
 	],
 	imports: [
 		// Angular Modules
-		BrowserModule,
 		BrowserAnimationsModule,
 		HttpClientModule,
 		RouterModule.forRoot(

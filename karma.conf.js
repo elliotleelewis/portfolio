@@ -15,13 +15,7 @@ module.exports = function (config) {
 		client: {
 			clearContext: false, // leave Jasmine Spec Runner output visible in browser
 		},
-		junitReporter: {
-			outputDir: './reports',
-			outputFile: 'karma.xml',
-			useBrowserName: false,
-		},
 		coverageIstanbulReporter: {
-			dir: './reports/coverage',
 			reports: ['html', 'lcovonly', 'text-summary'],
 			fixWebpackSourcePaths: true,
 		},

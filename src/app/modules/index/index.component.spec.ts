@@ -19,7 +19,7 @@ class MockPortfolioIfChangesDirective {
 	 */
 	@Input()
 	set portfolioIfChanges(v: any) {
-		//
+		console.log(v);
 	}
 }
 

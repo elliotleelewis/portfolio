@@ -23,4 +23,14 @@ describe('FaceComponent', () => {
 	it('should create', () => {
 		expect(component).toBeTruthy();
 	});
+
+	describe('animate', () => {
+		it('should increment count when called', () => {
+			const prev = component.count;
+
+			component.animate();
+
+			expect(component.count).toBe(prev + 1);
+		});
+	});
 });

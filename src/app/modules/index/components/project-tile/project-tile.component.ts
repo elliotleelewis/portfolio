@@ -8,11 +8,11 @@ import { Project } from '@app-models/project';
 	styleUrls: ['./project-tile.component.scss'],
 })
 export class ProjectTileComponent {
+	@HostBinding('class.notification')
+	static readonly classNotification = true;
+
 	@Input()
 	project!: Project;
 	@Input()
 	theme = '';
-
-	@HostBinding('class.notification')
-	private classNotification = true;
 }

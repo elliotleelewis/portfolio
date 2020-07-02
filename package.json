@@ -27,7 +27,7 @@
     "bulma": "^0.9.0",
     "css-spring": "^4.0.0",
     "firebase": "^7.0.0",
-    "rxjs": "~6.5.0",
+    "rxjs": "~6.6.0",
     "subsink": "^1.0.0",
     "tslib": "~1.13.0",
     "webfontloader": "^1.0.0",

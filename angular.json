@@ -7,11 +7,7 @@
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
-          "prefix": "portfolio",
           "style": "scss"
-        },
-        "@schematics/angular:directive": {
-          "prefix": "portfolio"
         }
       },
       "root": "",

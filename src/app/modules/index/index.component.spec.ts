@@ -1,5 +1,5 @@
 import { CUSTOM_ELEMENTS_SCHEMA, Directive, Input } from '@angular/core';
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
 
@@ -30,7 +30,7 @@ describe('IndexComponent', () => {
 	let mockExperienceService: jasmine.SpyObj<ExperienceService>;
 	let mockProjectService: jasmine.SpyObj<ProjectService>;
 
-	beforeEach(async(() => {
+	beforeEach(waitForAsync(() => {
 		mockEducationService = jasmine.createSpyObj<EducationService>([
 			'getEducations',
 		]);

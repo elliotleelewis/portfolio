@@ -7,13 +7,17 @@ const PATHS = {
 	src: path.join(__dirname, 'src'),
 };
 
-module.exports = {
-	plugins: [
+module.exports = (cfg) => {
+	cfg.plugins.push(
 		new dotenvWebpack({
 			systemvars: true,
 		}),
+	);
+	cfg.plugins.push(
 		new purgecssWebpackPlugin({
 			paths: () => glob.sync(`${PATHS.src}/**/*`, { nodir: true }),
 		}),
-	],
+	);
+
+	return cfg;
 };

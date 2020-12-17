@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { ScrollToModule } from '@nicky-lenaers/ngx-scroll-to';
 
@@ -8,7 +8,7 @@ describe('NavbarComponent', () => {
 	let component: NavbarComponent;
 	let fixture: ComponentFixture<NavbarComponent>;
 
-	beforeEach(async(() => {
+	beforeEach(waitForAsync(() => {
 		TestBed.configureTestingModule({
 			declarations: [NavbarComponent],
 			imports: [RouterTestingModule, ScrollToModule.forRoot()],

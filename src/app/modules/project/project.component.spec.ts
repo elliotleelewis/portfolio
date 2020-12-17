@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { of } from 'rxjs';
 
@@ -11,7 +11,7 @@ describe('ProjectComponent', () => {
 	let fixture: ComponentFixture<ProjectComponent>;
 	let mockProjectService: jasmine.SpyObj<ProjectService>;
 
-	beforeEach(async(() => {
+	beforeEach(waitForAsync(() => {
 		mockProjectService = jasmine.createSpyObj<ProjectService>([
 			'getProjects',
 		]);

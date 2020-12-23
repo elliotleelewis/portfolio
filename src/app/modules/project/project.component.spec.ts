@@ -11,17 +11,19 @@ describe('ProjectComponent', () => {
 	let fixture: ComponentFixture<ProjectComponent>;
 	let mockProjectService: jasmine.SpyObj<ProjectService>;
 
-	beforeEach(waitForAsync(() => {
-		mockProjectService = jasmine.createSpyObj<ProjectService>([
-			'getProjects',
-		]);
-		mockProjectService.getProjects.and.returnValue(of([]));
+	beforeEach(
+		waitForAsync(() => {
+			mockProjectService = jasmine.createSpyObj<ProjectService>([
+				'getProjects',
+			]);
+			mockProjectService.getProjects.and.returnValue(of([]));
 
-		TestBed.configureTestingModule({
-			declarations: [ProjectComponent],
-			imports: [RouterTestingModule],
-		}).compileComponents();
-	}));
+			TestBed.configureTestingModule({
+				declarations: [ProjectComponent],
+				imports: [RouterTestingModule],
+			}).compileComponents();
+		}),
+	);
 
 	beforeEach(() => {
 		fixture = TestBed.createComponent(ProjectComponent);

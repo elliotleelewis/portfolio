@@ -7,12 +7,14 @@ describe('ProjectTileComponent', () => {
 	let component: ProjectTileComponent;
 	let fixture: ComponentFixture<ProjectTileComponent>;
 
-	beforeEach(waitForAsync(() => {
-		TestBed.configureTestingModule({
-			declarations: [ProjectTileComponent],
-			imports: [RouterTestingModule],
-		}).compileComponents();
-	}));
+	beforeEach(
+		waitForAsync(() => {
+			TestBed.configureTestingModule({
+				declarations: [ProjectTileComponent],
+				imports: [RouterTestingModule],
+			}).compileComponents();
+		}),
+	);
 
 	beforeEach(() => {
 		fixture = TestBed.createComponent(ProjectTileComponent);

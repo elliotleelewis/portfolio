@@ -7,12 +7,14 @@ describe('FaceComponent', () => {
 	let component: FaceComponent;
 	let fixture: ComponentFixture<FaceComponent>;
 
-	beforeEach(waitForAsync(() => {
-		TestBed.configureTestingModule({
-			declarations: [FaceComponent],
-			imports: [NoopAnimationsModule],
-		}).compileComponents();
-	}));
+	beforeEach(
+		waitForAsync(() => {
+			TestBed.configureTestingModule({
+				declarations: [FaceComponent],
+				imports: [NoopAnimationsModule],
+			}).compileComponents();
+		}),
+	);
 
 	beforeEach(() => {
 		fixture = TestBed.createComponent(FaceComponent);

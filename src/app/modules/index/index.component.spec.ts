@@ -30,31 +30,39 @@ describe('IndexComponent', () => {
 	let mockExperienceService: jasmine.SpyObj<ExperienceService>;
 	let mockProjectService: jasmine.SpyObj<ProjectService>;
 
-	beforeEach(waitForAsync(() => {
-		mockEducationService = jasmine.createSpyObj<EducationService>([
-			'getEducations',
-		]);
-		mockEducationService.getEducations.and.returnValue(of([]));
-		mockExperienceService = jasmine.createSpyObj<ExperienceService>([
-			'getExperiences',
-		]);
-		mockExperienceService.getExperiences.and.returnValue(of([]));
-		mockProjectService = jasmine.createSpyObj<ProjectService>([
-			'getProjects',
-		]);
-		mockProjectService.getProjects.and.returnValue(of([]));
+	beforeEach(
+		waitForAsync(() => {
+			mockEducationService = jasmine.createSpyObj<EducationService>([
+				'getEducations',
+			]);
+			mockEducationService.getEducations.and.returnValue(of([]));
+			mockExperienceService = jasmine.createSpyObj<ExperienceService>([
+				'getExperiences',
+			]);
+			mockExperienceService.getExperiences.and.returnValue(of([]));
+			mockProjectService = jasmine.createSpyObj<ProjectService>([
+				'getProjects',
+			]);
+			mockProjectService.getProjects.and.returnValue(of([]));
 
-		TestBed.configureTestingModule({
-			declarations: [IndexComponent, MockPortfolioIfChangesDirective],
-			imports: [NoopAnimationsModule],
-			providers: [
-				{ provide: EducationService, useValue: mockEducationService },
-				{ provide: ExperienceService, useValue: mockExperienceService },
-				{ provide: ProjectService, useValue: mockProjectService },
-			],
-			schemas: [CUSTOM_ELEMENTS_SCHEMA],
-		}).compileComponents();
-	}));
+			TestBed.configureTestingModule({
+				declarations: [IndexComponent, MockPortfolioIfChangesDirective],
+				imports: [NoopAnimationsModule],
+				providers: [
+					{
+						provide: EducationService,
+						useValue: mockEducationService,
+					},
+					{
+						provide: ExperienceService,
+						useValue: mockExperienceService,
+					},
+					{ provide: ProjectService, useValue: mockProjectService },
+				],
+				schemas: [CUSTOM_ELEMENTS_SCHEMA],
+			}).compileComponents();
+		}),
+	);
 
 	beforeEach(() => {
 		fixture = TestBed.createComponent(IndexComponent);

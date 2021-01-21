@@ -1,3 +1,3 @@
 # elliotleelewis.com
 
-[![Build Status](https://travis-ci.com/elliotleelewis/portfolio.svg?branch=master)](https://travis-ci.com/elliotleelewis/portfolio)
+![.github/workflows/main.yml](https://github.com/elliotleelewis/portfolio/workflows/.github/workflows/main.yml/badge.svg)

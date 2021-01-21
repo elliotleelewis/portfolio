@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { of } from 'rxjs';
 
@@ -11,17 +11,19 @@ describe('ProjectComponent', () => {
 	let fixture: ComponentFixture<ProjectComponent>;
 	let mockProjectService: jasmine.SpyObj<ProjectService>;
 
-	beforeEach(async(() => {
-		mockProjectService = jasmine.createSpyObj<ProjectService>([
-			'getProjects',
-		]);
-		mockProjectService.getProjects.and.returnValue(of([]));
+	beforeEach(
+		waitForAsync(() => {
+			mockProjectService = jasmine.createSpyObj<ProjectService>([
+				'getProjects',
+			]);
+			mockProjectService.getProjects.and.returnValue(of([]));
 
-		TestBed.configureTestingModule({
-			declarations: [ProjectComponent],
-			imports: [RouterTestingModule],
-		}).compileComponents();
-	}));
+			TestBed.configureTestingModule({
+				declarations: [ProjectComponent],
+				imports: [RouterTestingModule],
+			}).compileComponents();
+		}),
+	);
 
 	beforeEach(() => {
 		fixture = TestBed.createComponent(ProjectComponent);

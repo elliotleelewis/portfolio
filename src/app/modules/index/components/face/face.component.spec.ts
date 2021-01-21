@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
 import { FaceComponent } from './face.component';
@@ -7,12 +7,14 @@ describe('FaceComponent', () => {
 	let component: FaceComponent;
 	let fixture: ComponentFixture<FaceComponent>;
 
-	beforeEach(async(() => {
-		TestBed.configureTestingModule({
-			declarations: [FaceComponent],
-			imports: [NoopAnimationsModule],
-		}).compileComponents();
-	}));
+	beforeEach(
+		waitForAsync(() => {
+			TestBed.configureTestingModule({
+				declarations: [FaceComponent],
+				imports: [NoopAnimationsModule],
+			}).compileComponents();
+		}),
+	);
 
 	beforeEach(() => {
 		fixture = TestBed.createComponent(FaceComponent);

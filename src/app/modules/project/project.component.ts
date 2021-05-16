@@ -19,10 +19,10 @@ export class ProjectComponent implements OnInit, OnDestroy {
 	) {}
 
 	ngOnInit(): void {
-		this.subs.sink = this.activatedRoute.params
+		this.subs.sink = this.activatedRoute.paramMap
 			.pipe(
-				switchMap((params) =>
-					this.projectService.getProject(params.id),
+				switchMap((paramMap) =>
+					this.projectService.getProject(paramMap.get('id')),
 				),
 			)
 			.subscribe((p) => console.log(p));

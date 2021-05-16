@@ -13,6 +13,7 @@ import { Education } from '@app-models/education';
 export class EducationService {
 	/**
 	 * Gets all educations
+	 *
 	 * @returns Array of all educations
 	 */
 	getEducations(): Observable<Education[]> {
@@ -23,6 +24,7 @@ export class EducationService {
 
 	/**
 	 * Gets a specific education
+	 *
 	 * @param id - Education ID
 	 * @returns Education with given ID
 	 */

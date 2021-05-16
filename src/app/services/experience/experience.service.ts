@@ -13,6 +13,7 @@ import { Experience } from '@app-models/experience';
 export class ExperienceService {
 	/**
 	 * Gets all experiences
+	 *
 	 * @returns Array of all experiences
 	 */
 	getExperiences(): Observable<Experience[]> {
@@ -23,6 +24,7 @@ export class ExperienceService {
 
 	/**
 	 * Gets a specific experience
+	 *
 	 * @param id - Experience ID
 	 * @returns Experience with given ID
 	 */

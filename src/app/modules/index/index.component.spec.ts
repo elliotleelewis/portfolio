@@ -1,27 +1,16 @@
-import { CUSTOM_ELEMENTS_SCHEMA, Directive, Input } from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { MockDirective } from 'ng-mocks';
 import { of } from 'rxjs';
 
 import { EducationService } from '@app-services/education/education.service';
 import { ExperienceService } from '@app-services/experience/experience.service';
 import { ProjectService } from '@app-services/project/project.service';
 
-import { IndexComponent } from './index.component';
+import { IfChangesDirective } from '../shared/directives/if-changes/if-changes.directive';
 
-@Directive({
-	selector: '[portfolioIfChanges]',
-})
-class MockPortfolioIfChangesDirective {
-	/**
-	 * Mock class method
-	 * @param v - Value
-	 */
-	@Input()
-	set portfolioIfChanges(v: any) {
-		console.log(v);
-	}
-}
+import { IndexComponent } from './index.component';
 
 describe('IndexComponent', () => {
 	let component: IndexComponent;
@@ -46,7 +35,10 @@ describe('IndexComponent', () => {
 			mockProjectService.getProjects.and.returnValue(of([]));
 
 			TestBed.configureTestingModule({
-				declarations: [IndexComponent, MockPortfolioIfChangesDirective],
+				declarations: [
+					IndexComponent,
+					MockDirective(IfChangesDirective),
+				],
 				imports: [NoopAnimationsModule],
 				providers: [
 					{

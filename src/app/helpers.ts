@@ -1,9 +1,10 @@
 /**
  * Randomly shuffles given array
+ *
  * @param array - Array to shuffle
  * @returns Shuffled array
  */
-export function shuffle<T>(array: T[]): T[] {
+export const shuffle = <T>(array: T[]): T[] => {
 	for (let i = array.length - 1; i > 0; i--) {
 		const j = Math.floor(Math.random() * (i + 1));
 		const [swapI, swapJ] = [array[i], array[j]];
@@ -12,4 +13,4 @@ export function shuffle<T>(array: T[]): T[] {
 		}
 	}
 	return array;
-}
+};

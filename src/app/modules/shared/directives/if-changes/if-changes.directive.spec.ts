@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { IfChangesDirective } from './if-changes.directive';
@@ -6,6 +6,7 @@ import { IfChangesDirective } from './if-changes.directive';
 @Component({
 	selector: 'portfolio-mock',
 	template: '<div *portfolioIfChanges="s"></div>',
+	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class MockComponent {
 	/**

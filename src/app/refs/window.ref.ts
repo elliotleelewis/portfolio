@@ -9,6 +9,7 @@ import { Injectable } from '@angular/core';
 export class WindowRef {
 	/**
 	 * Gets a reference to the `window`
+	 *
 	 * @returns `window` instance
 	 */
 	getWindow(): Window {

@@ -13,6 +13,7 @@ import { Project } from '@app-models/project';
 export class ProjectService {
 	/**
 	 * Gets all projects
+	 *
 	 * @returns Array of all projects
 	 */
 	getProjects(): Observable<Project[]> {
@@ -23,6 +24,7 @@ export class ProjectService {
 
 	/**
 	 * Gets a specific project
+	 *
 	 * @param id - Project ID
 	 * @returns Project with given ID
 	 */

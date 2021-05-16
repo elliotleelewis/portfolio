@@ -9,6 +9,7 @@ import { Injectable } from '@angular/core';
 export class DocumentRef {
 	/**
 	 * Gets a reference to the `document`
+	 *
 	 * @returns `document` instance
 	 */
 	getDocument(): Document {

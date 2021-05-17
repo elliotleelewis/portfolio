@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { from, Observable } from 'rxjs';
+import { from, Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { Experience } from '@app-models/experience';
@@ -28,7 +28,10 @@ export class ExperienceService {
 	 * @param id - Experience ID
 	 * @returns Experience with given ID
 	 */
-	getExperience(id: string): Observable<Experience | null> {
+	getExperience(id: string | null): Observable<Experience | null> {
+		if (id !== null) {
+			return of(null);
+		}
 		return this.getExperiences().pipe(
 			map((e) => e.find((experience) => experience.id === id) ?? null),
 		);

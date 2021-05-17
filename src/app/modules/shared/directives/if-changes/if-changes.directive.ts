@@ -28,7 +28,7 @@ export class IfChangesDirective<T> {
 		} else if (value !== this.currentValue) {
 			this.viewContainerRef.clear();
 			this.viewContainerRef.createEmbeddedView(this.templateRef);
-			this.currentValue = value;
 		}
+		this.currentValue = value;
 	}
 }

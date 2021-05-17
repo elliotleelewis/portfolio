@@ -1,6 +1,6 @@
 <div
 	class="hero is-bold is-fullheight-with-navbar has-background-fixed"
-	[ngClass]="theme"
+	[ngClass]="theme || ''"
 >
 	<div class="hero-body">
 		<div class="container">
@@ -14,12 +14,14 @@
 					>
 						<span class="is-block-touch">I am a...&nbsp;</span>
 						<span class="is-block-touch is-relative is-flex-grow">
-							<span
-								class="is-overlay"
-								*portfolioIfChanges="titleIndex"
-								[@flash]
-								>{{ titles[titleIndex] }}</span
-							>
+							<ng-container *ngIf="title$ | async as title">
+								<span
+									class="is-overlay"
+									*portfolioIfChanges="title"
+									[@flash]
+									>{{ title }}</span
+								>
+							</ng-container>
 						</span>
 					</h1>
 					<blockquote class="blockquote">

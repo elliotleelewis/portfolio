@@ -1,13 +1,13 @@
 import { ProjectModule } from './project.module';
 
 describe('ProjectModule', () => {
-	let projectModule: ProjectModule;
+	let module: ProjectModule;
 
 	beforeEach(() => {
-		projectModule = new ProjectModule();
+		module = new ProjectModule();
 	});
 
 	it('should create an instance', () => {
-		expect(projectModule).toBeTruthy();
+		expect(module).toBeTruthy();
 	});
 });

@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import { from, Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { Education } from '@app-models/education';
+import { DataRef } from '@app-refs/data.ref';
 
 /**
  * Personal education service
@@ -11,22 +12,27 @@ import { Education } from '@app-models/education';
 	providedIn: 'root',
 })
 export class EducationService {
+	constructor(private dataRef: DataRef) {}
+
 	/**
 	 * Gets all educations
+	 *
 	 * @returns Array of all educations
 	 */
 	getEducations(): Observable<Education[]> {
-		return from(import('@app-data/educations.json')).pipe(
-			map((module) => module.default),
-		);
+		return this.dataRef.getEducations();
 	}
 
 	/**
 	 * Gets a specific education
+	 *
 	 * @param id - Education ID
 	 * @returns Education with given ID
 	 */
-	getEducation(id: string): Observable<Education | null> {
+	getEducation(id: string | null): Observable<Education | null> {
+		if (id === null) {
+			return of(null);
+		}
 		return this.getEducations().pipe(
 			map((e) => e.find((education) => education.id === id) ?? null),
 		);

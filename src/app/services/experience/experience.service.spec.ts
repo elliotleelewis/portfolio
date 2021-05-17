@@ -24,17 +24,23 @@ describe('ExperienceService', () => {
 		expect(service).toBeTruthy();
 	});
 
-	it('should #getExperiences', waitForAsync(() => {
-		service.getExperiences().subscribe((experiences) => {
-			expect(experiences).toBeTruthy();
-		});
-	}));
+	it(
+		'should #getExperiences',
+		waitForAsync(() => {
+			service.getExperiences().subscribe((experiences) => {
+				expect(experiences).toBeTruthy();
+			});
+		}),
+	);
 
-	it('should return null when #getExperience is called with a null id', waitForAsync(() => {
-		service.getExperience(null).subscribe((experience) => {
-			expect(experience).toBeNull();
-		});
-	}));
+	it(
+		'should return null when #getExperience is called with a null id',
+		waitForAsync(() => {
+			service.getExperience(null).subscribe((experience) => {
+				expect(experience).toBeNull();
+			});
+		}),
+	);
 
 	it(
 		'should find and return a value when #getExperiences is called',

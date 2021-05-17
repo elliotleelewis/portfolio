@@ -24,17 +24,23 @@ describe('ProjectService', () => {
 		expect(service).toBeTruthy();
 	});
 
-	it('should #getProjects', waitForAsync(() => {
-		service.getProjects().subscribe((projects) => {
-			expect(projects).toBeTruthy();
-		});
-	}));
+	it(
+		'should #getProjects',
+		waitForAsync(() => {
+			service.getProjects().subscribe((projects) => {
+				expect(projects).toBeTruthy();
+			});
+		}),
+	);
 
-	it('should return null when #getProject is called with a null id', waitForAsync(() => {
-		service.getProject(null).subscribe((project) => {
-			expect(project).toBeNull();
-		});
-	}));
+	it(
+		'should return null when #getProject is called with a null id',
+		waitForAsync(() => {
+			service.getProject(null).subscribe((project) => {
+				expect(project).toBeNull();
+			});
+		}),
+	);
 
 	it(
 		'should find and return a value when #getProjects is called',

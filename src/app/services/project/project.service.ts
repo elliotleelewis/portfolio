@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import { from, Observable, of } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { Project } from '@app-models/project';
+import { DataRef } from '@app-refs/data.ref';
 
 /**
  * Personal project service
@@ -11,15 +12,15 @@ import { Project } from '@app-models/project';
 	providedIn: 'root',
 })
 export class ProjectService {
+	constructor(private dataRef: DataRef) {}
+
 	/**
 	 * Gets all projects
 	 *
 	 * @returns Array of all projects
 	 */
 	getProjects(): Observable<Project[]> {
-		return from(import('@app-data/projects.json')).pipe(
-			map((module) => module.default),
-		);
+		return this.dataRef.getProjects();
 	}
 
 	/**

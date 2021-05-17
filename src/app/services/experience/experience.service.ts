@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import { from, Observable, of } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { Experience } from '@app-models/experience';
+import { DataRef } from '@app-refs/data.ref';
 
 /**
  * Personal experience service
@@ -11,15 +12,15 @@ import { Experience } from '@app-models/experience';
 	providedIn: 'root',
 })
 export class ExperienceService {
+	constructor(private dataRef: DataRef) {}
+
 	/**
 	 * Gets all experiences
 	 *
 	 * @returns Array of all experiences
 	 */
 	getExperiences(): Observable<Experience[]> {
-		return from(import('@app-data/experiences.json')).pipe(
-			map((module) => module.default),
-		);
+		return this.dataRef.getExperiences();
 	}
 
 	/**
@@ -29,7 +30,7 @@ export class ExperienceService {
 	 * @returns Experience with given ID
 	 */
 	getExperience(id: string | null): Observable<Experience | null> {
-		if (id !== null) {
+		if (id === null) {
 			return of(null);
 		}
 		return this.getExperiences().pipe(

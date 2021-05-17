@@ -1,13 +1,13 @@
 import { IndexModule } from './index.module';
 
 describe('IndexModule', () => {
-	let indexModule: IndexModule;
+	let module: IndexModule;
 
 	beforeEach(() => {
-		indexModule = new IndexModule();
+		module = new IndexModule();
 	});
 
 	it('should create an instance', () => {
-		expect(indexModule).toBeTruthy();
+		expect(module).toBeTruthy();
 	});
 });

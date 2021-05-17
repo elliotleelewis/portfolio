@@ -14,13 +14,16 @@ describe('ProjectComponent', () => {
 	beforeEach(
 		waitForAsync(() => {
 			mockProjectService = jasmine.createSpyObj<ProjectService>([
-				'getProjects',
+				'getProject',
 			]);
-			mockProjectService.getProjects.and.returnValue(of([]));
+			mockProjectService.getProject.and.returnValue(of(null));
 
 			TestBed.configureTestingModule({
 				declarations: [ProjectComponent],
 				imports: [RouterTestingModule],
+				providers: [
+					{ provide: ProjectService, useValue: mockProjectService },
+				],
 			}).compileComponents();
 		}),
 	);

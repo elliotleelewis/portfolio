@@ -11,7 +11,8 @@ export interface Environment {
 	/**
 	 * Environment-specific imports for Application's NgModule
 	 */
-	imports?: (Type<any> | ModuleWithProviders<{}> | any[])[];
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	imports?: (Type<any> | ModuleWithProviders<any> | any[])[];
 	/**
 	 * Environment-specific providers for Application's NgModule
 	 */

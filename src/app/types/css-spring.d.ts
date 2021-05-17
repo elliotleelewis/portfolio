@@ -9,12 +9,7 @@ declare module 'css-spring' {
 		damping?: number;
 	}
 
-	export function toString(
-		keyframes: { [key: string]: object },
-		formatter?: (property: string, value: any) => string,
-	): string;
-
-	export default function spring<T extends object>(
+	export default function spring<T>(
 		start: T,
 		target: T,
 		options?: Options,

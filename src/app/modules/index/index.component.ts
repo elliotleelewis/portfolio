@@ -6,7 +6,8 @@ import {
 	trigger,
 } from '@angular/animations';
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { interval, Observable } from 'rxjs';
+import { Observable, timer } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { SubSink } from 'subsink';
 
 import { Education } from '@app-models/education';
@@ -49,6 +50,8 @@ import { shuffle } from '../../helpers';
 	],
 })
 export class IndexComponent implements OnInit, OnDestroy {
+	static readonly titleInterval = 2048;
+
 	themes = [
 		'is-pastel-orange',
 		'is-pastel-green',
@@ -63,7 +66,7 @@ export class IndexComponent implements OnInit, OnDestroy {
 		'web designer',
 		'football fanatic',
 	]);
-	titleIndex = 0;
+	title$?: Observable<string | undefined>;
 	educations$?: Observable<Education[]>;
 	experiences$?: Observable<Experience[]>;
 	projects$?: Observable<Project[]>;
@@ -76,17 +79,15 @@ export class IndexComponent implements OnInit, OnDestroy {
 		private projectService: ProjectService,
 	) {}
 
-	get theme(): string {
-		return this.themes[this.themeIndex] || '';
+	get theme(): string | undefined {
+		return this.themes[this.themeIndex];
 	}
 
 	ngOnInit(): void {
-		this.subs.sink = interval(2048).subscribe(() => {
-			this.titleIndex =
-				this.titleIndex + 2 > this.titles.length
-					? 0
-					: this.titleIndex + 1;
-		});
+		this.title$ = timer(0, IndexComponent.titleInterval).pipe(
+			map((i) => i % this.titles.length),
+			map((i) => this.titles[i]),
+		);
 		this.educations$ = this.educationService.getEducations();
 		this.experiences$ = this.experienceService.getExperiences();
 		this.projects$ = this.projectService.getProjects();

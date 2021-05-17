@@ -1,42 +1,58 @@
-import { Component } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TemplateRef, ViewContainerRef } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 
 import { IfChangesDirective } from './if-changes.directive';
 
-@Component({
-	selector: 'portfolio-mock',
-	template: '<div *portfolioIfChanges="s"></div>',
-})
-class MockComponent {
-	/**
-	 * Mock class property
-	 */
-	s!: string;
-}
-
 describe('IfChangesDirective', () => {
-	let component: MockComponent;
-	let fixture: ComponentFixture<MockComponent>;
+	let directive: IfChangesDirective<string>;
+
+	let mockViewContainerRef: jasmine.SpyObj<ViewContainerRef>;
 
 	beforeEach(() => {
+		mockViewContainerRef = jasmine.createSpyObj([
+			'clear',
+			'createEmbeddedView',
+		]);
+
 		TestBed.configureTestingModule({
-			declarations: [MockComponent, IfChangesDirective],
+			declarations: [IfChangesDirective],
 		}).compileComponents();
 	});
 
 	beforeEach(() => {
-		fixture = TestBed.createComponent(MockComponent);
-		component = fixture.componentInstance;
-		fixture.detectChanges();
+		directive = new IfChangesDirective<string>(
+			mockViewContainerRef,
+			{} as TemplateRef<unknown>,
+		);
 	});
 
 	it('should create', () => {
-		expect(component).toBeTruthy();
+		expect(directive).toBeTruthy();
 	});
 
-	it('should still exist after variable change', () => {
-		component.s = 'test';
-		fixture.detectChanges();
-		expect(component).toBeTruthy();
+	it('should create embedded view on initial load', () => {
+		directive.portfolioIfChanges = 'test1';
+		expect(mockViewContainerRef.createEmbeddedView).toHaveBeenCalledTimes(
+			1,
+		);
+		expect(mockViewContainerRef.clear).not.toHaveBeenCalled();
+	});
+
+	it('should re-create embedded view on subsequent changes', () => {
+		directive.portfolioIfChanges = 'test1';
+		directive.portfolioIfChanges = 'test2';
+		expect(mockViewContainerRef.createEmbeddedView).toHaveBeenCalledTimes(
+			2,
+		);
+		expect(mockViewContainerRef.clear).toHaveBeenCalledTimes(1);
+	});
+
+	it("shouldn't re-create embedded view if value doesn't change", () => {
+		directive.portfolioIfChanges = 'test1';
+		directive.portfolioIfChanges = 'test1';
+		expect(mockViewContainerRef.createEmbeddedView).toHaveBeenCalledTimes(
+			1,
+		);
+		expect(mockViewContainerRef.clear).not.toHaveBeenCalled();
 	});
 });

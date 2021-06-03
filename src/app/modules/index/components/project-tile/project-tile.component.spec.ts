@@ -9,7 +9,7 @@ describe('ProjectTileComponent', () => {
 
 	beforeEach(
 		waitForAsync(() => {
-			TestBed.configureTestingModule({
+			void TestBed.configureTestingModule({
 				declarations: [ProjectTileComponent],
 				imports: [RouterTestingModule],
 			}).compileComponents();

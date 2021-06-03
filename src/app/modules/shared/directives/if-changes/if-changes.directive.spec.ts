@@ -9,12 +9,12 @@ describe('IfChangesDirective', () => {
 	let mockViewContainerRef: jasmine.SpyObj<ViewContainerRef>;
 
 	beforeEach(() => {
-		mockViewContainerRef = jasmine.createSpyObj([
+		mockViewContainerRef = jasmine.createSpyObj<ViewContainerRef>([
 			'clear',
 			'createEmbeddedView',
 		]);
 
-		TestBed.configureTestingModule({
+		void TestBed.configureTestingModule({
 			declarations: [IfChangesDirective],
 		}).compileComponents();
 	});
@@ -32,27 +32,33 @@ describe('IfChangesDirective', () => {
 
 	it('should create embedded view on initial load', () => {
 		directive.portfolioIfChanges = 'test1';
+
 		expect(mockViewContainerRef.createEmbeddedView).toHaveBeenCalledTimes(
 			1,
 		);
+
 		expect(mockViewContainerRef.clear).not.toHaveBeenCalled();
 	});
 
 	it('should re-create embedded view on subsequent changes', () => {
 		directive.portfolioIfChanges = 'test1';
 		directive.portfolioIfChanges = 'test2';
+
 		expect(mockViewContainerRef.createEmbeddedView).toHaveBeenCalledTimes(
 			2,
 		);
+
 		expect(mockViewContainerRef.clear).toHaveBeenCalledTimes(1);
 	});
 
 	it("shouldn't re-create embedded view if value doesn't change", () => {
 		directive.portfolioIfChanges = 'test1';
 		directive.portfolioIfChanges = 'test1';
+
 		expect(mockViewContainerRef.createEmbeddedView).toHaveBeenCalledTimes(
 			1,
 		);
+
 		expect(mockViewContainerRef.clear).not.toHaveBeenCalled();
 	});
 });

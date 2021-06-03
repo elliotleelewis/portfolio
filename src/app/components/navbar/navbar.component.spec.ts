@@ -10,7 +10,7 @@ describe('NavbarComponent', () => {
 
 	beforeEach(
 		waitForAsync(() => {
-			TestBed.configureTestingModule({
+			void TestBed.configureTestingModule({
 				declarations: [NavbarComponent],
 				imports: [RouterTestingModule, ScrollToModule.forRoot()],
 			}).compileComponents();

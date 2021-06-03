@@ -9,7 +9,7 @@ describe('FaceComponent', () => {
 
 	beforeEach(
 		waitForAsync(() => {
-			TestBed.configureTestingModule({
+			void TestBed.configureTestingModule({
 				declarations: [FaceComponent],
 				imports: [NoopAnimationsModule],
 			}).compileComponents();

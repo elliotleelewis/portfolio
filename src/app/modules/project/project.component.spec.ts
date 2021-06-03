@@ -18,7 +18,7 @@ describe('ProjectComponent', () => {
 			]);
 			mockProjectService.getProject.and.returnValue(of(null));
 
-			TestBed.configureTestingModule({
+			void TestBed.configureTestingModule({
 				declarations: [ProjectComponent],
 				imports: [RouterTestingModule],
 				providers: [

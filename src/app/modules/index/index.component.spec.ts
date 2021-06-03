@@ -41,7 +41,7 @@ describe('IndexComponent', () => {
 			]);
 			mockProjectService.getProjects.and.returnValue(of([]));
 
-			TestBed.configureTestingModule({
+			void TestBed.configureTestingModule({
 				declarations: [
 					IndexComponent,
 					MockDirective(IfChangesDirective),
@@ -81,6 +81,7 @@ describe('IndexComponent', () => {
 
 		for (let i = 0; i < component.titles.length - 1; i++) {
 			tick(i === 0 ? 1 : IndexComponent.titleInterval);
+
 			expect(title).toBe(component.titles[i] ?? '');
 		}
 

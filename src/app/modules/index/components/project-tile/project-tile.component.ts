@@ -9,10 +9,11 @@ import { Project } from '@app-models/project';
 })
 export class ProjectTileComponent {
 	@HostBinding('class.notification')
-	static readonly classNotification = true;
+	static readonly CLASS_NOTIFICATION = true;
 
 	@Input()
 	project!: Project;
+
 	@Input()
 	theme = '';
 }

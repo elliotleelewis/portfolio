@@ -80,7 +80,7 @@ describe('IndexComponent', () => {
 			.subscribe((t) => (title = t));
 
 		for (let i = 0; i < component.titles.length - 1; i++) {
-			tick(i === 0 ? 1 : IndexComponent.titleInterval);
+			tick(i === 0 ? 1 : IndexComponent.TITLE_INTERVAL);
 
 			expect(title).toBe(component.titles[i] ?? '');
 		}

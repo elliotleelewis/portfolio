@@ -5,7 +5,7 @@ import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
 import { ServiceWorkerModule } from '@angular/service-worker';
 import { ScrollToModule } from '@nicky-lenaers/ngx-scroll-to';
 
-import { environment } from '../environments/environment';
+import { ENVIRONMENT } from '../environments/environment';
 
 import { AppComponent } from './app.component';
 import { FooterComponent } from './components/footer/footer.component';
@@ -47,18 +47,18 @@ export const ROUTES: Routes = [
 			preloadingStrategy: PreloadAllModules,
 		}),
 		ServiceWorkerModule.register('ngsw-worker.js', {
-			enabled: environment.production,
+			enabled: ENVIRONMENT.production,
 		}),
 		// External Modules
 		ScrollToModule.forRoot(),
 		// Application Modules
 		SharedModule,
 		// Environment Modules
-		...(environment.imports || []),
+		...(ENVIRONMENT.imports ?? []),
 	],
 	providers: [
 		// Environment Providers
-		...(environment.providers || []),
+		...(ENVIRONMENT.providers ?? []),
 	],
 	bootstrap: [AppComponent],
 })

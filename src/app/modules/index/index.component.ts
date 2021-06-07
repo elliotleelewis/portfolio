@@ -50,7 +50,7 @@ import { shuffle } from '../../helpers';
 	],
 })
 export class IndexComponent implements OnInit, OnDestroy {
-	static readonly titleInterval = 2048;
+	static readonly TITLE_INTERVAL = 2048;
 
 	themes = [
 		'is-pastel-orange',
@@ -59,19 +59,22 @@ export class IndexComponent implements OnInit, OnDestroy {
 		'is-pastel-lilac',
 		'is-pastel-yellow',
 	];
+
 	themeIndex = Math.floor(Math.random() * this.themes.length);
+
 	titles = shuffle([
 		'full-stack developer',
 		'technology enthusiast',
 		'web designer',
 		'football fanatic',
 	]);
+
 	title$?: Observable<string | undefined>;
 	educations$?: Observable<Education[]>;
 	experiences$?: Observable<Experience[]>;
 	projects$?: Observable<Project[]>;
 
-	private subs = new SubSink();
+	private _subs = new SubSink();
 
 	constructor(
 		private educationService: EducationService,
@@ -84,7 +87,7 @@ export class IndexComponent implements OnInit, OnDestroy {
 	}
 
 	ngOnInit(): void {
-		this.title$ = timer(0, IndexComponent.titleInterval).pipe(
+		this.title$ = timer(0, IndexComponent.TITLE_INTERVAL).pipe(
 			map((i) => i % this.titles.length),
 			map((i) => this.titles[i]),
 		);
@@ -94,6 +97,6 @@ export class IndexComponent implements OnInit, OnDestroy {
 	}
 
 	ngOnDestroy(): void {
-		this.subs.unsubscribe();
+		this._subs.unsubscribe();
 	}
 }

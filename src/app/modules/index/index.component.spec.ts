@@ -10,6 +10,7 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MockDirective } from 'ng-mocks';
 import { of } from 'rxjs';
 import { take } from 'rxjs/operators';
+import { SubSink } from 'subsink';
 
 import { EducationService } from '@app-services/education/education.service';
 import { ExperienceService } from '@app-services/experience/experience.service';
@@ -22,9 +23,12 @@ import { IndexComponent } from './index.component';
 describe('IndexComponent', () => {
 	let component: IndexComponent;
 	let fixture: ComponentFixture<IndexComponent>;
+
 	let mockEducationService: jasmine.SpyObj<EducationService>;
 	let mockExperienceService: jasmine.SpyObj<ExperienceService>;
 	let mockProjectService: jasmine.SpyObj<ProjectService>;
+
+	const subs = new SubSink();
 
 	beforeEach(
 		waitForAsync(() => {
@@ -69,13 +73,17 @@ describe('IndexComponent', () => {
 		fixture.detectChanges();
 	});
 
+	afterEach(() => {
+		subs.unsubscribe();
+	});
+
 	it('should create', () => {
 		expect(component).toBeTruthy();
 	});
 
 	it('should cycle through each title', fakeAsync(() => {
 		let title: string | undefined = '';
-		const sub = component.title$
+		subs.sink = component.title$
 			?.pipe(take(3))
 			.subscribe((t) => (title = t));
 
@@ -84,7 +92,5 @@ describe('IndexComponent', () => {
 
 			expect(title).toBe(component.titles[i] ?? '');
 		}
-
-		sub?.unsubscribe();
 	}));
 });

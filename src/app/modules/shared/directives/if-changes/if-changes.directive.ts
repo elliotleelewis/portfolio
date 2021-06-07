@@ -7,8 +7,8 @@ import { Directive, Input, TemplateRef, ViewContainerRef } from '@angular/core';
 	selector: '[portfolioIfChanges]',
 })
 export class IfChangesDirective<T> {
-	private currentValue: T | null = null;
-	private hasView = false;
+	private _currentValue: T | null = null;
+	private _hasView = false;
 
 	constructor(
 		private viewContainerRef: ViewContainerRef,
@@ -22,13 +22,13 @@ export class IfChangesDirective<T> {
 	 */
 	@Input()
 	set portfolioIfChanges(value: T) {
-		if (!this.hasView) {
+		if (!this._hasView) {
 			this.viewContainerRef.createEmbeddedView(this.templateRef);
-			this.hasView = true;
-		} else if (value !== this.currentValue) {
+			this._hasView = true;
+		} else if (value !== this._currentValue) {
 			this.viewContainerRef.clear();
 			this.viewContainerRef.createEmbeddedView(this.templateRef);
 		}
-		this.currentValue = value;
+		this._currentValue = value;
 	}
 }

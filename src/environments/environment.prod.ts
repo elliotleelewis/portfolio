@@ -10,7 +10,7 @@ import {
 
 import { Environment } from '@app-models/environment';
 
-export const environment: Environment = {
+export const ENVIRONMENT: Environment = {
 	production: true,
 	imports: [
 		AngularFireModule.initializeApp({

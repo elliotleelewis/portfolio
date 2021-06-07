@@ -204,17 +204,99 @@
           "@typescript-eslint/array-type": "error",
           "@typescript-eslint/ban-ts-comment": "error",
           "@typescript-eslint/ban-tslint-comment": "error",
-          "@typescript-eslint/dot-notation": "off",
+          "@typescript-eslint/ban-types": "error",
+          "@typescript-eslint/dot-notation": "error",
           "@typescript-eslint/explicit-member-accessibility": [
             "error",
             {
               "accessibility": "no-public"
             }
           ],
+          "@typescript-eslint/explicit-module-boundary-types": "error",
+          "@typescript-eslint/naming-convention": [
+            "error",
+            {
+              "selector": "default",
+              "format": [
+                "camelCase"
+              ],
+              "leadingUnderscore": "forbid",
+              "trailingUnderscore": "forbid"
+            },
+            {
+              "selector": "typeLike",
+              "format": [
+                "PascalCase"
+              ],
+              "leadingUnderscore": "forbid",
+              "trailingUnderscore": "forbid"
+            },
+            {
+              "selector": "enumMember",
+              "format": [
+                "PascalCase"
+              ]
+            },
+            {
+              "selector": "parameter",
+              "modifiers": [
+                "unused"
+              ],
+              "format": [
+                "camelCase"
+              ],
+              "leadingUnderscore": "require"
+            },
+            {
+              "selector": "property",
+              "modifiers": [
+                "readonly",
+                "static"
+              ],
+              "format": [
+                "UPPER_CASE"
+              ]
+            },
+            {
+              "selector": "property",
+              "modifiers": [
+                "private"
+              ],
+              "format": [
+                "camelCase"
+              ],
+              "leadingUnderscore": "require"
+            },
+            {
+              "selector": "variable",
+              "modifiers": [
+                "const",
+                "exported"
+              ],
+              "format": [
+                "UPPER_CASE"
+              ]
+            },
+            {
+              "selector": "variable",
+              "modifiers": [
+                "const",
+                "exported"
+              ],
+              "types": [
+                "function"
+              ],
+              "format": [
+                "camelCase"
+              ]
+            }
+          ],
           "@typescript-eslint/member-ordering": "error",
           "@typescript-eslint/no-empty-function": "error",
           "@typescript-eslint/no-explicit-any": "error",
+          "@typescript-eslint/no-non-null-asserted-optional-chain": "error",
           "@typescript-eslint/no-non-null-assertion": "error",
+          "@typescript-eslint/no-unused-vars": "error",
           "@typescript-eslint/no-var-requires": "error",
           "@typescript-eslint/unbound-method": "off",
           "deprecation/deprecation": "error",
@@ -240,7 +322,20 @@
               ]
             }
           ],
+          "jsdoc/newline-after-description": "error",
           "jsdoc/no-types": "error",
+          "curly": "error",
+          "eqeqeq": [
+            "error",
+            "always"
+          ],
+          "lines-between-class-members": [
+            "error",
+            "always",
+            {
+              "exceptAfterSingleLine": true
+            }
+          ],
           "max-classes-per-file": [
             "error",
             1
@@ -258,7 +353,8 @@
                 "rxjs/internal/*"
               ]
             }
-          ]
+          ],
+          "no-underscore-dangle": "off"
         }
       },
       {
@@ -278,7 +374,6 @@
           "@angular-eslint/template/click-events-have-key-events": "error",
           "@angular-eslint/template/conditional-complexity": "error",
           "@angular-eslint/template/cyclomatic-complexity": "error",
-          "@angular-eslint/template/i18n": "off",
           "@angular-eslint/template/mouse-events-have-key-events": "error",
           "@angular-eslint/template/no-any": "error",
           "@angular-eslint/template/no-autofocus": "error",

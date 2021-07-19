@@ -1,0 +1,135 @@
+{
+  "configVersion": 1,
+  "timestamp": 1626710330107,
+  "index": "/index.html",
+  "assetGroups": [
+    {
+      "name": "app",
+      "installMode": "prefetch",
+      "updateMode": "prefetch",
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "urls": [
+        "/295-es2015.ead89f756367f5f2b759.js",
+        "/295-es5.ead89f756367f5f2b759.js",
+        "/336-es2015.5e299b3f63c9a42080c8.js",
+        "/336-es5.5e299b3f63c9a42080c8.js",
+        "/384-es2015.a948895115d77b53383d.js",
+        "/384-es5.a948895115d77b53383d.js",
+        "/398-es2015.37b54738dd704690a4ae.js",
+        "/398-es5.37b54738dd704690a4ae.js",
+        "/432-es2015.5b3a801b1a78be6c687e.js",
+        "/432-es5.5b3a801b1a78be6c687e.js",
+        "/464-es2015.d652cc0b44efc45e812d.js",
+        "/464-es5.d652cc0b44efc45e812d.js",
+        "/539-es2015.27ccf4a7ef7e6909b85c.js",
+        "/539-es5.27ccf4a7ef7e6909b85c.js",
+        "/723-es2015.25bd4e26ec579ef0dbb7.js",
+        "/723-es5.25bd4e26ec579ef0dbb7.js",
+        "/942-es2015.6e54ddd2ec7356e8eb76.js",
+        "/942-es5.6e54ddd2ec7356e8eb76.js",
+        "/common-es2015.46fa584e08eebabfd1b2.js",
+        "/common-es5.46fa584e08eebabfd1b2.js",
+        "/favicon.ico",
+        "/index.html",
+        "/main-es2015.62a0daa67c4cf2216380.js",
+        "/main-es5.62a0daa67c4cf2216380.js",
+        "/manifest.webmanifest",
+        "/polyfills-es2015.cf6fb46270ecac7dc3d8.js",
+        "/polyfills-es5.b65fef924e0240eec1c3.js",
+        "/runtime-es2015.381eb67e71d81a221596.js",
+        "/runtime-es5.381eb67e71d81a221596.js",
+        "/styles.43a1f2bd8aa01a6800a3.css"
+      ],
+      "patterns": []
+    },
+    {
+      "name": "assets",
+      "installMode": "lazy",
+      "updateMode": "prefetch",
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "urls": [
+        "/assets/angular-certification.pdf",
+        "/assets/resume.pdf",
+        "/fa-brands-400.216edb96b562c79adc09.svg",
+        "/fa-brands-400.329a95a9172fdb2cccb4.woff",
+        "/fa-brands-400.89a52ae1d02b86d61439.eot",
+        "/fa-brands-400.9e138496e8f1719c6ebf.ttf",
+        "/fa-brands-400.c1210e5ebe4344da5083.woff2",
+        "/fa-solid-900.07c3313b24f7b1ca85ee.ttf",
+        "/fa-solid-900.13de59f1a36b6cb4bca0.svg",
+        "/fa-solid-900.ada6e6df937f7e5e8b79.woff2",
+        "/fa-solid-900.c6ec080084769a6d8a34.woff",
+        "/fa-solid-900.efbd5d20e407bbf85f2b.eot"
+      ],
+      "patterns": []
+    }
+  ],
+  "dataGroups": [],
+  "hashTable": {
+    "/295-es2015.ead89f756367f5f2b759.js": "b840810f8f4ea6ee4da8195253deea9cefca8446",
+    "/295-es5.ead89f756367f5f2b759.js": "e116e17498c7589fd03548e0f8e81c0e26b10e82",
+    "/336-es2015.5e299b3f63c9a42080c8.js": "07065c527fa8b91129c5ea42cabcbda8111565ee",
+    "/336-es5.5e299b3f63c9a42080c8.js": "c9651306434bf305ef28dfbb535e0e0a0c203d0a",
+    "/384-es2015.a948895115d77b53383d.js": "782996b8017a17e136aca010a42995522d240278",
+    "/384-es5.a948895115d77b53383d.js": "782996b8017a17e136aca010a42995522d240278",
+    "/398-es2015.37b54738dd704690a4ae.js": "badda6b951e2469d8561c2433e344b0c11ab8186",
+    "/398-es5.37b54738dd704690a4ae.js": "bb546a83fee91ed0d7b36a3cc912cbc850ee5052",
+    "/432-es2015.5b3a801b1a78be6c687e.js": "4cf9d05efde65da623aad54dd7ef889ff5ac81c8",
+    "/432-es5.5b3a801b1a78be6c687e.js": "7883a9de501ba8214c260093d945c8347ecde7a6",
+    "/464-es2015.d652cc0b44efc45e812d.js": "112a9bd5cc9696e02ebdd18c1ee1b6ada23fddfa",
+    "/464-es5.d652cc0b44efc45e812d.js": "112a9bd5cc9696e02ebdd18c1ee1b6ada23fddfa",
+    "/539-es2015.27ccf4a7ef7e6909b85c.js": "84821c441bc5463dc9eaf3ad60ca6bf178bd1655",
+    "/539-es5.27ccf4a7ef7e6909b85c.js": "36bb60b0c40821c11a7eced0d6ca1e0eacfeba4d",
+    "/723-es2015.25bd4e26ec579ef0dbb7.js": "37adf3be3f3afb49f59890fe448350c0ed81f99c",
+    "/723-es5.25bd4e26ec579ef0dbb7.js": "37adf3be3f3afb49f59890fe448350c0ed81f99c",
+    "/942-es2015.6e54ddd2ec7356e8eb76.js": "dba9d694a73fe54b9f64da5d2dd6542c25599f66",
+    "/942-es5.6e54ddd2ec7356e8eb76.js": "dba9d694a73fe54b9f64da5d2dd6542c25599f66",
+    "/assets/angular-certification.pdf": "579513c4176f90175cb05a52d3edb5fcd73d77b6",
+    "/assets/resume.pdf": "2b3b4fd74736886a40a9218dc4ebed9a14c73beb",
+    "/common-es2015.46fa584e08eebabfd1b2.js": "79ee3d06303dc7c64e5fb965869c61987c6ad00f",
+    "/common-es5.46fa584e08eebabfd1b2.js": "c3abc9b502bd25668f031ddad3f75169e0d1afbc",
+    "/fa-brands-400.216edb96b562c79adc09.svg": "24aff44d36f6c4a6a08230474b546b29641c75d6",
+    "/fa-brands-400.329a95a9172fdb2cccb4.woff": "5f8cab91347c553c1eb87f9b527f6bee8a28e40d",
+    "/fa-brands-400.89a52ae1d02b86d61439.eot": "a400bc89d3cb4d45a3b90791800587a1e4ebafa6",
+    "/fa-brands-400.9e138496e8f1719c6ebf.ttf": "3fa2d67cef22da5c3f3eb5730c6afbd6fecf0372",
+    "/fa-brands-400.c1210e5ebe4344da5083.woff2": "fce0da592a3e536d6d5df5b50cb513398d8c5161",
+    "/fa-solid-900.07c3313b24f7b1ca85ee.ttf": "c1b9fae262f42868c075ac865a8ab34920e20a2c",
+    "/fa-solid-900.13de59f1a36b6cb4bca0.svg": "33fe5758f3992d8da2635c4fa230b54376dd18d1",
+    "/fa-solid-900.ada6e6df937f7e5e8b79.woff2": "a9922842a120a7f1eaced667480c5e185a106d69",
+    "/fa-solid-900.c6ec080084769a6d8a34.woff": "52751432ded489dfdf27fb1cf64c570c4c27a1d7",
+    "/fa-solid-900.efbd5d20e407bbf85f2b.eot": "b18bdd10beee0a20231aa4c9ea11e84a9307a4fd",
+    "/favicon.ico": "89568bbcde773d085130f5b45a3b328802b34b00",
+    "/index.html": "19d4f49f5b7f5b697165d0d4d471b4189e6992c2",
+    "/main-es2015.62a0daa67c4cf2216380.js": "0b4449ba0f21fb002bce2c98618922ce185fbfda",
+    "/main-es5.62a0daa67c4cf2216380.js": "6d7769d84cdf13816ca050f67bc55f64a01adbd9",
+    "/manifest.webmanifest": "7a3a3fbaf4c9d80f1707c9da95853d8a61cc433d",
+    "/polyfills-es2015.cf6fb46270ecac7dc3d8.js": "820214976eb2989e121237a9ab0d4862e5986d01",
+    "/polyfills-es5.b65fef924e0240eec1c3.js": "1531acc59f83f11e96c1a5a4a76fa65005521da3",
+    "/runtime-es2015.381eb67e71d81a221596.js": "463edd078d74061e82b63c49bc428e56824a935b",
+    "/runtime-es5.381eb67e71d81a221596.js": "c17ddd81fe7afdb3ab287ef3efebac04bd3247ff",
+    "/styles.43a1f2bd8aa01a6800a3.css": "e450d456c2225e89764ab8b60b65fddc849f7c0c"
+  },
+  "navigationUrls": [
+    {
+      "positive": true,
+      "regex": "^\\/.*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*\\.[^/]*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*__[^/]*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*__[^/]*\\/.*$"
+    }
+  ],
+  "navigationRequestStrategy": "performance"
+}

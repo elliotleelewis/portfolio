@@ -57,7 +57,7 @@
     "eslint-plugin-file-progress": "^1.0.0",
     "eslint-plugin-import": "^2.0.0",
     "eslint-plugin-jasmine": "^4.0.0",
-    "eslint-plugin-jsdoc": "^35.0.0",
+    "eslint-plugin-jsdoc": "^36.0.0",
     "eslint-plugin-prefer-arrow": "^1.0.0",
     "glob": "^7.0.0",
     "husky": "^4.0.0",

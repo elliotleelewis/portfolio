@@ -9,12 +9,13 @@ $weight-black: 900;
 // ---- Overrides - Bulma ----
 // Colors
 $custom-colors: (
-	'pastel-orange': hsl(20, 100%, 85%),
-	'pastel-green': hsl(120, 100%, 85%),
-	'pastel-teal': hsl(160, 100%, 85%),
-	'pastel-lilac': hsl(240, 100%, 85%),
-	'pastel-yellow': hsl(45, 100%, 85%),
+	'pastel-orange': hsl(20deg 100% 85%),
+	'pastel-green': hsl(120deg 100% 85%),
+	'pastel-teal': hsl(160deg 100% 85%),
+	'pastel-lilac': hsl(240deg 100% 85%),
+	'pastel-yellow': hsl(45deg 100% 85%),
 );
+
 // Fonts
 $family-secondary: $family-serif;
 

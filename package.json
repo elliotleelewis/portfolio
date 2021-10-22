@@ -69,15 +69,15 @@
     "karma-jasmine-html-reporter": "^1.0.0",
     "karma-junit-reporter": "^2.0.0",
     "ng-mocks": "^12.0.0",
+    "postcss-html": "^1.0.0",
     "prettier": "^2.0.0",
     "pretty-quick": "^3.0.0",
     "purgecss-webpack-plugin": "^4.0.0",
-    "stylelint": "^13.0.0",
-    "stylelint-config-prettier": "^8.0.0",
+    "stylelint": "^14.0.0",
+    "stylelint-config-prettier": "^9.0.0",
     "stylelint-config-rational-order": "^0.1.0",
-    "stylelint-config-standard": "^22.0.0",
+    "stylelint-config-standard-scss": "^2.0.0",
     "stylelint-order": "^5.0.0",
-    "stylelint-scss": "^4.0.0",
     "tslint-config-prettier": "^1.0.0",
     "typescript": "~4.3.0"
   },
@@ -388,12 +388,9 @@
   },
   "stylelint": {
     "extends": [
-      "stylelint-config-standard",
+      "stylelint-config-standard-scss",
       "stylelint-config-rational-order",
       "stylelint-config-prettier"
-    ],
-    "plugins": [
-      "stylelint-scss"
     ],
     "rules": {
       "at-rule-no-unknown": null,
@@ -413,7 +410,16 @@
       ],
       "selector-type-no-unknown": null,
       "value-no-vendor-prefix": true,
+      "scss/at-extend-no-missing-placeholder": null,
       "scss/at-rule-no-unknown": true
-    }
+    },
+    "overrides": [
+      {
+        "files": [
+          "**/*.html"
+        ],
+        "customSyntax": "postcss-html"
+      }
+    ]
   }
 }

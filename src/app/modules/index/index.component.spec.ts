@@ -7,7 +7,7 @@ import {
 	waitForAsync,
 } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { MockDirective } from 'ng-mocks';
+import { MockDirective, MockProvider } from 'ng-mocks';
 import { of } from 'rxjs';
 import { take } from 'rxjs/operators';
 import { SubSink } from 'subsink';
@@ -24,27 +24,10 @@ describe('IndexComponent', () => {
 	let component: IndexComponent;
 	let fixture: ComponentFixture<IndexComponent>;
 
-	let mockEducationService: jasmine.SpyObj<EducationService>;
-	let mockExperienceService: jasmine.SpyObj<ExperienceService>;
-	let mockProjectService: jasmine.SpyObj<ProjectService>;
-
 	const subs = new SubSink();
 
 	beforeEach(
 		waitForAsync(() => {
-			mockEducationService = jasmine.createSpyObj<EducationService>([
-				'getEducations',
-			]);
-			mockEducationService.getEducations.and.returnValue(of([]));
-			mockExperienceService = jasmine.createSpyObj<ExperienceService>([
-				'getExperiences',
-			]);
-			mockExperienceService.getExperiences.and.returnValue(of([]));
-			mockProjectService = jasmine.createSpyObj<ProjectService>([
-				'getProjects',
-			]);
-			mockProjectService.getProjects.and.returnValue(of([]));
-
 			void TestBed.configureTestingModule({
 				declarations: [
 					IndexComponent,
@@ -52,15 +35,15 @@ describe('IndexComponent', () => {
 				],
 				imports: [NoopAnimationsModule],
 				providers: [
-					{
-						provide: EducationService,
-						useValue: mockEducationService,
-					},
-					{
-						provide: ExperienceService,
-						useValue: mockExperienceService,
-					},
-					{ provide: ProjectService, useValue: mockProjectService },
+					MockProvider(EducationService, {
+						getEducations: () => of([]),
+					}),
+					MockProvider(ExperienceService, {
+						getExperiences: () => of([]),
+					}),
+					MockProvider(ProjectService, {
+						getProjects: () => of([]),
+					}),
 				],
 				schemas: [CUSTOM_ELEMENTS_SCHEMA],
 			}).compileComponents();

@@ -1,55 +1,47 @@
-import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
-import { ActivatedRoute, ParamMap } from '@angular/router';
-import { RouterTestingModule } from '@angular/router/testing';
-import { of } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
+import { ActivatedRoute, convertToParamMap, ParamMap } from '@angular/router';
+import { MockBuilder, MockedComponentFixture, MockRender } from 'ng-mocks';
+import { BehaviorSubject } from 'rxjs';
 import { SubSink } from 'subsink';
 
+import { Project } from '@app-models/project';
 import { ProjectService } from '@app-services/project/project.service';
 
 import { ProjectComponent } from './project.component';
+import { ProjectModule } from './project.module';
 
 describe('ProjectComponent', () => {
 	let component: ProjectComponent;
-	let fixture: ComponentFixture<ProjectComponent>;
+	let fixture: MockedComponentFixture<ProjectComponent>;
 
-	let mockParamMap: jasmine.SpyObj<ParamMap>;
-	let mockProjectService: jasmine.SpyObj<ProjectService>;
+	const mockGetProject = new BehaviorSubject<Project | null>(null);
+	const mockParamMap = new BehaviorSubject<ParamMap>(convertToParamMap({}));
 
 	const subs = new SubSink();
 
-	beforeEach(
-		waitForAsync(() => {
-			mockParamMap = jasmine.createSpyObj<ParamMap>(['get']);
-			mockParamMap.get.and.returnValue(null);
-			mockProjectService = jasmine.createSpyObj<ProjectService>([
-				'getProject',
-			]);
-			mockProjectService.getProject.and.returnValue(of(null));
-
-			void TestBed.configureTestingModule({
-				declarations: [ProjectComponent],
-				imports: [RouterTestingModule],
-				providers: [
-					{
-						provide: ActivatedRoute,
-						useValue: jasmine.createSpyObj<ActivatedRoute>([], {
-							paramMap: of(mockParamMap),
-						}),
-					},
-					{ provide: ProjectService, useValue: mockProjectService },
-				],
-			}).compileComponents();
-		}),
+	beforeEach(() =>
+		MockBuilder(ProjectComponent, ProjectModule)
+			.mock(ActivatedRoute, {
+				paramMap: mockParamMap.asObservable(),
+			})
+			.mock(ProjectService, {
+				getProject: jest.fn(() => mockGetProject.asObservable()),
+			}),
 	);
 
 	beforeEach(() => {
-		fixture = TestBed.createComponent(ProjectComponent);
-		component = fixture.componentInstance;
+		fixture = MockRender(ProjectComponent);
+		component = fixture.point.componentInstance;
 		fixture.detectChanges();
 	});
 
 	afterEach(() => {
 		subs.unsubscribe();
+	});
+
+	afterAll(() => {
+		mockGetProject.complete();
+		mockParamMap.complete();
 	});
 
 	it('should create', () => {
@@ -62,7 +54,7 @@ describe('ProjectComponent', () => {
 			title: 'Test',
 			description: 'Test test test.',
 		};
-		mockProjectService.getProject.and.returnValue(of(expectedProject));
+		mockGetProject.next(expectedProject);
 
 		subs.sink = component.project$.subscribe((project) => {
 			expect(project).toEqual(expectedProject);
@@ -71,12 +63,16 @@ describe('ProjectComponent', () => {
 	});
 
 	it('should get project with id from url params', (done) => {
-		mockParamMap.get.and.returnValue('123');
+		const projectService = TestBed.inject(ProjectService);
+
+		mockParamMap.next(
+			convertToParamMap({
+				id: '123',
+			}),
+		);
 
 		subs.sink = component.project$.subscribe(() => {
-			expect(mockProjectService.getProject).toHaveBeenCalledOnceWith(
-				'123',
-			);
+			expect(projectService.getProject).toHaveBeenCalledWith('123');
 			done();
 		});
 	});

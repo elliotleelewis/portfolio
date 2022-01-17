@@ -34,7 +34,10 @@ export class ProjectService {
 			return of(null);
 		}
 		return this.getProjects().pipe(
-			map((p) => p.find((project) => project.id === id) ?? null),
+			map(
+				(projects) =>
+					projects.find((project) => project.id === id) ?? null,
+			),
 		);
 	}
 }

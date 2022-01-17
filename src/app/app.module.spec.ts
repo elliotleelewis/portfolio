@@ -16,16 +16,16 @@ describe('AppModule', () => {
 	it('should load IndexModule', async () => {
 		const route = ROUTES.find((r) => r.path === '');
 
-		if (typeof route?.loadChildren === 'function') {
-			expect(await route.loadChildren()).toEqual(IndexModule);
-		}
+		expect(await (route?.loadChildren as () => Promise<unknown>)()).toEqual(
+			IndexModule,
+		);
 	});
 
 	it('should load ProjectModule', async () => {
 		const route = ROUTES.find((r) => r.path === 'project');
 
-		if (typeof route?.loadChildren === 'function') {
-			expect(await route.loadChildren()).toEqual(ProjectModule);
-		}
+		expect(await (route?.loadChildren as () => Promise<unknown>)()).toEqual(
+			ProjectModule,
+		);
 	});
 });

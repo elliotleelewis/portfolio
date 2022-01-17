@@ -34,7 +34,10 @@ export class EducationService {
 			return of(null);
 		}
 		return this.getEducations().pipe(
-			map((e) => e.find((education) => education.id === id) ?? null),
+			map(
+				(educations) =>
+					educations.find((education) => education.id === id) ?? null,
+			),
 		);
 	}
 }

@@ -1,7 +1,9 @@
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { MockProvider } from 'ng-mocks';
+import { BehaviorSubject } from 'rxjs';
 import { SubSink } from 'subsink';
 
+import { Experience } from '@app-models/experience';
 import { DataRef } from '@app-refs/data.ref';
 
 import { ExperienceService } from './experience.service';
@@ -9,16 +11,17 @@ import { ExperienceService } from './experience.service';
 describe('ExperienceService', () => {
 	let service: ExperienceService;
 
-	let mockDataRef: jasmine.SpyObj<DataRef>;
-
 	const subs = new SubSink();
 
-	beforeEach(() => {
-		mockDataRef = jasmine.createSpyObj<DataRef>(['getExperiences']);
-		mockDataRef.getExperiences.and.returnValue(of([]));
+	const mockGetExperiences = new BehaviorSubject<Experience[]>([]);
 
+	beforeEach(() => {
 		TestBed.configureTestingModule({
-			providers: [{ provide: DataRef, useValue: mockDataRef }],
+			providers: [
+				MockProvider(DataRef, {
+					getExperiences: () => mockGetExperiences.asObservable(),
+				}),
+			],
 		});
 		service = TestBed.inject(ExperienceService);
 	});
@@ -46,15 +49,14 @@ describe('ExperienceService', () => {
 	});
 
 	it('should find and return a value when #getExperiences is called', (done) => {
-		mockDataRef.getExperiences.and.returnValue(
-			of([
-				{
-					id: 'test1',
-					title: 'Test',
-					description: 'Test test test.',
-				},
-			]),
-		);
+		mockGetExperiences.next([
+			{
+				id: 'test1',
+				title: 'Test',
+				description: 'Test test test.',
+			},
+		]);
+
 		subs.sink = service.getExperience('test1').subscribe((experience) => {
 			expect(experience).toBeTruthy();
 			done();
@@ -62,15 +64,14 @@ describe('ExperienceService', () => {
 	});
 
 	it('should return null when #getExperiences is called with a non-existent id', (done) => {
-		mockDataRef.getExperiences.and.returnValue(
-			of([
-				{
-					id: 'test1',
-					title: 'Test',
-					description: 'Test test test.',
-				},
-			]),
-		);
+		mockGetExperiences.next([
+			{
+				id: 'test1',
+				title: 'Test',
+				description: 'Test test test.',
+			},
+		]);
+
 		subs.sink = service.getExperience('test2').subscribe((experience) => {
 			expect(experience).toBeNull();
 			done();

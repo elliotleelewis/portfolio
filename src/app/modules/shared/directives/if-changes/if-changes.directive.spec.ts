@@ -1,25 +1,26 @@
-import { TemplateRef, ViewContainerRef } from '@angular/core';
+import { EmbeddedViewRef, TemplateRef, ViewContainerRef } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { MockService } from 'ng-mocks';
 
 import { IfChangesDirective } from './if-changes.directive';
 
 describe('IfChangesDirective', () => {
 	let directive: IfChangesDirective<string>;
 
-	let mockViewContainerRef: jasmine.SpyObj<ViewContainerRef>;
+	let mockViewContainerRef: ViewContainerRef;
 
 	beforeEach(() => {
-		mockViewContainerRef = jasmine.createSpyObj<ViewContainerRef>([
-			'clear',
-			'createEmbeddedView',
-		]);
-
 		void TestBed.configureTestingModule({
 			declarations: [IfChangesDirective],
 		}).compileComponents();
 	});
 
 	beforeEach(() => {
+		mockViewContainerRef = MockService(ViewContainerRef, {
+			clear: jest.fn(),
+			createEmbeddedView: jest.fn(() => MockService(EmbeddedViewRef)),
+		});
+
 		directive = new IfChangesDirective<string>(
 			mockViewContainerRef,
 			{} as TemplateRef<unknown>,

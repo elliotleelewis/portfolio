@@ -1,7 +1,9 @@
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { MockProvider } from 'ng-mocks';
+import { BehaviorSubject } from 'rxjs';
 import { SubSink } from 'subsink';
 
+import { Project } from '@app-models/project';
 import { DataRef } from '@app-refs/data.ref';
 
 import { ProjectService } from './project.service';
@@ -9,16 +11,17 @@ import { ProjectService } from './project.service';
 describe('ProjectService', () => {
 	let service: ProjectService;
 
-	let mockDataRef: jasmine.SpyObj<DataRef>;
-
 	const subs = new SubSink();
 
-	beforeEach(() => {
-		mockDataRef = jasmine.createSpyObj<DataRef>(['getProjects']);
-		mockDataRef.getProjects.and.returnValue(of([]));
+	const mockGetProjects = new BehaviorSubject<Project[]>([]);
 
+	beforeEach(() => {
 		TestBed.configureTestingModule({
-			providers: [{ provide: DataRef, useValue: mockDataRef }],
+			providers: [
+				MockProvider(DataRef, {
+					getProjects: () => mockGetProjects.asObservable(),
+				}),
+			],
 		});
 		service = TestBed.inject(ProjectService);
 	});
@@ -46,15 +49,14 @@ describe('ProjectService', () => {
 	});
 
 	it('should find and return a value when #getProjects is called', (done) => {
-		mockDataRef.getProjects.and.returnValue(
-			of([
-				{
-					id: 'test1',
-					title: 'Test',
-					description: 'Test test test.',
-				},
-			]),
-		);
+		mockGetProjects.next([
+			{
+				id: 'test1',
+				title: 'Test',
+				description: 'Test test test.',
+			},
+		]);
+
 		subs.sink = service.getProject('test1').subscribe((project) => {
 			expect(project).toBeTruthy();
 			done();
@@ -62,15 +64,14 @@ describe('ProjectService', () => {
 	});
 
 	it('should return null when #getProjects is called with a non-existent id', (done) => {
-		mockDataRef.getProjects.and.returnValue(
-			of([
-				{
-					id: 'test1',
-					title: 'Test',
-					description: 'Test test test.',
-				},
-			]),
-		);
+		mockGetProjects.next([
+			{
+				id: 'test1',
+				title: 'Test',
+				description: 'Test test test.',
+			},
+		]);
+
 		subs.sink = service.getProject('test2').subscribe((project) => {
 			expect(project).toBeNull();
 			done();

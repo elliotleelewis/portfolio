@@ -34,7 +34,11 @@ export class ExperienceService {
 			return of(null);
 		}
 		return this.getExperiences().pipe(
-			map((e) => e.find((experience) => experience.id === id) ?? null),
+			map(
+				(experiences) =>
+					experiences.find((experience) => experience.id === id) ??
+					null,
+			),
 		);
 	}
 }

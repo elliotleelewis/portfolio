@@ -1,7 +1,9 @@
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { MockProvider } from 'ng-mocks';
+import { BehaviorSubject } from 'rxjs';
 import { SubSink } from 'subsink';
 
+import { Education } from '@app-models/education';
 import { DataRef } from '@app-refs/data.ref';
 
 import { EducationService } from './education.service';
@@ -9,16 +11,17 @@ import { EducationService } from './education.service';
 describe('EducationService', () => {
 	let service: EducationService;
 
-	let mockDataRef: jasmine.SpyObj<DataRef>;
-
 	const subs = new SubSink();
 
-	beforeEach(() => {
-		mockDataRef = jasmine.createSpyObj<DataRef>(['getEducations']);
-		mockDataRef.getEducations.and.returnValue(of([]));
+	const mockGetEducations = new BehaviorSubject<Education[]>([]);
 
+	beforeEach(() => {
 		TestBed.configureTestingModule({
-			providers: [{ provide: DataRef, useValue: mockDataRef }],
+			providers: [
+				MockProvider(DataRef, {
+					getEducations: () => mockGetEducations.asObservable(),
+				}),
+			],
 		});
 		service = TestBed.inject(EducationService);
 	});
@@ -46,15 +49,14 @@ describe('EducationService', () => {
 	});
 
 	it('should find and return a value when #getEducation is called', (done) => {
-		mockDataRef.getEducations.and.returnValue(
-			of([
-				{
-					id: 'test1',
-					title: 'Test',
-					description: 'Test test test.',
-				},
-			]),
-		);
+		mockGetEducations.next([
+			{
+				id: 'test1',
+				title: 'Test',
+				description: 'Test test test.',
+			},
+		]);
+
 		subs.sink = service.getEducation('test1').subscribe((education) => {
 			expect(education).toBeTruthy();
 			done();
@@ -62,15 +64,14 @@ describe('EducationService', () => {
 	});
 
 	it('should return null when #getEducation is called with a non-existent id', (done) => {
-		mockDataRef.getEducations.and.returnValue(
-			of([
-				{
-					id: 'test1',
-					title: 'Test',
-					description: 'Test test test.',
-				},
-			]),
-		);
+		mockGetEducations.next([
+			{
+				id: 'test1',
+				title: 'Test',
+				description: 'Test test test.',
+			},
+		]);
+
 		subs.sink = service.getEducation('test2').subscribe((education) => {
 			expect(education).toBeNull();
 			done();

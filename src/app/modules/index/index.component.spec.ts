@@ -26,29 +26,24 @@ describe('IndexComponent', () => {
 
 	const subs = new SubSink();
 
-	beforeEach(
-		waitForAsync(() => {
-			void TestBed.configureTestingModule({
-				declarations: [
-					IndexComponent,
-					MockDirective(IfChangesDirective),
-				],
-				imports: [NoopAnimationsModule],
-				providers: [
-					MockProvider(EducationService, {
-						getEducations: () => of([]),
-					}),
-					MockProvider(ExperienceService, {
-						getExperiences: () => of([]),
-					}),
-					MockProvider(ProjectService, {
-						getProjects: () => of([]),
-					}),
-				],
-				schemas: [CUSTOM_ELEMENTS_SCHEMA],
-			}).compileComponents();
-		}),
-	);
+	beforeEach(waitForAsync(() => {
+		void TestBed.configureTestingModule({
+			declarations: [IndexComponent, MockDirective(IfChangesDirective)],
+			imports: [NoopAnimationsModule],
+			providers: [
+				MockProvider(EducationService, {
+					getEducations: () => of([]),
+				}),
+				MockProvider(ExperienceService, {
+					getExperiences: () => of([]),
+				}),
+				MockProvider(ProjectService, {
+					getProjects: () => of([]),
+				}),
+			],
+			schemas: [CUSTOM_ELEMENTS_SCHEMA],
+		}).compileComponents();
+	}));
 
 	beforeEach(() => {
 		fixture = TestBed.createComponent(IndexComponent);

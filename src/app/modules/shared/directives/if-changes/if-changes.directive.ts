@@ -1,4 +1,5 @@
-import { Directive, Input, TemplateRef, ViewContainerRef } from '@angular/core';
+import type { TemplateRef, ViewContainerRef } from '@angular/core';
+import { Directive, Input } from '@angular/core';
 
 /**
  * Directive that re-renders component when given value changes

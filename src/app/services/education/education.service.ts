@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import type { Observable } from 'rxjs';
+import { of } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { Education } from '@app-models/education';
-import { DataRef } from '@app-refs/data.ref';
+import type { Education } from '@app-models/education';
+import type { DataRef } from '@app-refs/data.ref';
 
 /**
  * Personal education service

@@ -1,10 +1,11 @@
-import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import { Observable } from 'rxjs';
+import type { OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import type { ActivatedRoute } from '@angular/router';
+import type { Observable } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
-import { Project } from '@app-models/project';
-import { ProjectService } from '@app-services/project/project.service';
+import type { Project } from '@app-models/project';
+import type { ProjectService } from '@app-services/project/project.service';
 
 @Component({
 	selector: 'portfolio-project',

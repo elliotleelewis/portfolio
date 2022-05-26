@@ -1,4 +1,4 @@
-import { ModuleWithProviders, Provider, Type } from '@angular/core';
+import type { ModuleWithProviders, Provider, Type } from '@angular/core';
 
 /**
  * Environment settings model

@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import type { Observable } from 'rxjs';
+import { of } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { Project } from '@app-models/project';
-import { DataRef } from '@app-refs/data.ref';
+import type { Project } from '@app-models/project';
+import type { DataRef } from '@app-refs/data.ref';
 
 /**
  * Personal project service

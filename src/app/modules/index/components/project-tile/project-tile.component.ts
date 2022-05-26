@@ -5,7 +5,7 @@ import {
 	Input,
 } from '@angular/core';
 
-import { Project } from '@app-models/project';
+import type { Project } from '@app-models/project';
 
 @Component({
 	selector: 'portfolio-project-tile',

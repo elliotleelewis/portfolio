@@ -5,22 +5,19 @@ import {
 	transition,
 	trigger,
 } from '@angular/animations';
-import {
-	ChangeDetectionStrategy,
-	Component,
-	OnDestroy,
-	OnInit,
-} from '@angular/core';
-import { Observable, timer } from 'rxjs';
+import type { OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import type { Observable } from 'rxjs';
+import { timer } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { SubSink } from 'subsink';
 
-import { Education } from '@app-models/education';
-import { Experience } from '@app-models/experience';
-import { Project } from '@app-models/project';
-import { EducationService } from '@app-services/education/education.service';
-import { ExperienceService } from '@app-services/experience/experience.service';
-import { ProjectService } from '@app-services/project/project.service';
+import type { Education } from '@app-models/education';
+import type { Experience } from '@app-models/experience';
+import type { Project } from '@app-models/project';
+import type { EducationService } from '@app-services/education/education.service';
+import type { ExperienceService } from '@app-services/experience/experience.service';
+import type { ProjectService } from '@app-services/project/project.service';
 
 import { shuffle } from '../../helpers';
 

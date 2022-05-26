@@ -1,4 +1,4 @@
-import { NgModule } from '@angular/core';
+import type { NgModule } from '@angular/core';
 
 import { AppModule, ROUTES } from './app.module';
 import { IndexModule } from './modules/index/index.module';

@@ -27,7 +27,6 @@ import { shuffle } from '../../helpers';
 @Component({
 	selector: 'portfolio-index',
 	templateUrl: './index.component.html',
-	styleUrls: ['./index.component.scss'],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	animations: [
 		trigger('flash', [

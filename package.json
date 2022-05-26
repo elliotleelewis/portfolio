@@ -390,7 +390,7 @@
       "at-rule-no-unknown": null,
       "at-rule-no-vendor-prefix": true,
       "media-feature-name-no-vendor-prefix": true,
-      "no-empty-source": null,
+      "no-empty-source": true,
       "property-no-vendor-prefix": true,
       "selector-no-vendor-prefix": true,
       "selector-pseudo-element-colon-notation": "single",

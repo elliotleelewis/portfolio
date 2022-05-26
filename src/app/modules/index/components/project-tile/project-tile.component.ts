@@ -10,7 +10,6 @@ import { Project } from '@app-models/project';
 @Component({
 	selector: 'portfolio-project-tile',
 	templateUrl: './project-tile.component.html',
-	styleUrls: ['./project-tile.component.scss'],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProjectTileComponent {

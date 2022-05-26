@@ -9,7 +9,6 @@ import { ProjectService } from '@app-services/project/project.service';
 @Component({
 	selector: 'portfolio-project',
 	templateUrl: './project.component.html',
-	styleUrls: ['./project.component.scss'],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProjectComponent implements OnInit {

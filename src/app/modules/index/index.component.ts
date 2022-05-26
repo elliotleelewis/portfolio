@@ -5,7 +5,12 @@ import {
 	transition,
 	trigger,
 } from '@angular/animations';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import {
+	ChangeDetectionStrategy,
+	Component,
+	OnDestroy,
+	OnInit,
+} from '@angular/core';
 import { Observable, timer } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { SubSink } from 'subsink';
@@ -23,6 +28,7 @@ import { shuffle } from '../../helpers';
 	selector: 'portfolio-index',
 	templateUrl: './index.component.html',
 	styleUrls: ['./index.component.scss'],
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	animations: [
 		trigger('flash', [
 			state(

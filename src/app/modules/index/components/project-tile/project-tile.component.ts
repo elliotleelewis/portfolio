@@ -1,4 +1,9 @@
-import { Component, HostBinding, Input } from '@angular/core';
+import {
+	ChangeDetectionStrategy,
+	Component,
+	HostBinding,
+	Input,
+} from '@angular/core';
 
 import { Project } from '@app-models/project';
 
@@ -6,6 +11,7 @@ import { Project } from '@app-models/project';
 	selector: 'portfolio-project-tile',
 	templateUrl: './project-tile.component.html',
 	styleUrls: ['./project-tile.component.scss'],
+	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProjectTileComponent {
 	@HostBinding('class.notification')

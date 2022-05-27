@@ -1,10 +1,12 @@
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap, ParamMap } from '@angular/router';
-import { MockBuilder, MockedComponentFixture, MockRender } from 'ng-mocks';
+import type { ParamMap } from '@angular/router';
+import { ActivatedRoute, convertToParamMap } from '@angular/router';
+import type { MockedComponentFixture } from 'ng-mocks';
+import { MockBuilder, MockRender } from 'ng-mocks';
 import { BehaviorSubject } from 'rxjs';
 import { SubSink } from 'subsink';
 
-import { Project } from '@app-models/project';
+import type { Project } from '@app-models/project';
 import { ProjectService } from '@app-services/project/project.service';
 
 import { ProjectComponent } from './project.component';

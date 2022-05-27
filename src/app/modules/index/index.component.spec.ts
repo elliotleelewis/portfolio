@@ -1,11 +1,6 @@
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
-import {
-	ComponentFixture,
-	fakeAsync,
-	TestBed,
-	tick,
-	waitForAsync,
-} from '@angular/core/testing';
+import type { ComponentFixture } from '@angular/core/testing';
+import { fakeAsync, TestBed, tick, waitForAsync } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MockDirective, MockProvider } from 'ng-mocks';
 import { of } from 'rxjs';

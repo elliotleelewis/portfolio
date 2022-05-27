@@ -7,7 +7,7 @@
  */
 import 'zone.js/plugins/zone-error';
 
-import { Environment } from '@app-models/environment';
+import type { Environment } from '@app-models/environment';
 
 // This file can be replaced during build by using the `fileReplacements` array.
 // `ng build --prod` replaces `environment.ts` with `environment.prod.ts`.

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 /**
  * Root application component
@@ -6,6 +6,6 @@ import { Component } from '@angular/core';
 @Component({
 	selector: 'portfolio-root',
 	templateUrl: './app.component.html',
-	styleUrls: ['./app.component.scss'],
+	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppComponent {}

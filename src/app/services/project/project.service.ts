@@ -1,8 +1,9 @@
-import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Inject, Injectable } from '@angular/core';
+import type { Observable } from 'rxjs';
+import { of } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { Project } from '@app-models/project';
+import type { Project } from '@app-models/project';
 import { DataRef } from '@app-refs/data.ref';
 
 /**
@@ -12,7 +13,7 @@ import { DataRef } from '@app-refs/data.ref';
 	providedIn: 'root',
 })
 export class ProjectService {
-	constructor(private dataRef: DataRef) {}
+	constructor(@Inject(DataRef) private dataRef: DataRef) {}
 
 	/**
 	 * Gets all projects

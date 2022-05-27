@@ -1,4 +1,6 @@
 declare module 'vfile-message' {
+	import type { Node, Point, Position } from 'unist';
+
 	export class VFileMessage extends Error {
 		/**
 		 * Reason for message.
@@ -85,7 +87,6 @@ declare module 'vfile-message' {
 			origin?: string,
 		);
 	}
-	export type Node = import('unist').Node;
-	export type Position = import('unist').Position;
-	export type Point = import('unist').Point;
+
+	export type { Node, Point, Position };
 }

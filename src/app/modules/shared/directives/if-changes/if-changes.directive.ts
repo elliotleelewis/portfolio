@@ -1,5 +1,10 @@
-import type { TemplateRef, ViewContainerRef } from '@angular/core';
-import { Directive, Input } from '@angular/core';
+import {
+	Directive,
+	Inject,
+	Input,
+	TemplateRef,
+	ViewContainerRef,
+} from '@angular/core';
 
 /**
  * Directive that re-renders component when given value changes
@@ -12,8 +17,8 @@ export class IfChangesDirective<T> {
 	private _hasView = false;
 
 	constructor(
-		private viewContainerRef: ViewContainerRef,
-		private templateRef: TemplateRef<unknown>,
+		@Inject(ViewContainerRef) private viewContainerRef: ViewContainerRef,
+		@Inject(TemplateRef) private templateRef: TemplateRef<unknown>,
 	) {}
 
 	/**

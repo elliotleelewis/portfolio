@@ -1,10 +1,10 @@
-import { Injectable } from '@angular/core';
+import { Inject, Injectable } from '@angular/core';
 import type { Observable } from 'rxjs';
 import { of } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import type { Experience } from '@app-models/experience';
-import type { DataRef } from '@app-refs/data.ref';
+import { DataRef } from '@app-refs/data.ref';
 
 /**
  * Personal experience service
@@ -13,7 +13,7 @@ import type { DataRef } from '@app-refs/data.ref';
 	providedIn: 'root',
 })
 export class ExperienceService {
-	constructor(private dataRef: DataRef) {}
+	constructor(@Inject(DataRef) private dataRef: DataRef) {}
 
 	/**
 	 * Gets all experiences

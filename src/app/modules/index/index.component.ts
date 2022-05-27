@@ -6,7 +6,7 @@ import {
 	trigger,
 } from '@angular/animations';
 import type { OnDestroy, OnInit } from '@angular/core';
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Inject } from '@angular/core';
 import type { Observable } from 'rxjs';
 import { timer } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -15,9 +15,9 @@ import { SubSink } from 'subsink';
 import type { Education } from '@app-models/education';
 import type { Experience } from '@app-models/experience';
 import type { Project } from '@app-models/project';
-import type { EducationService } from '@app-services/education/education.service';
-import type { ExperienceService } from '@app-services/experience/experience.service';
-import type { ProjectService } from '@app-services/project/project.service';
+import { EducationService } from '@app-services/education/education.service';
+import { ExperienceService } from '@app-services/experience/experience.service';
+import { ProjectService } from '@app-services/project/project.service';
 
 import { shuffle } from '../../helpers';
 
@@ -79,9 +79,9 @@ export class IndexComponent implements OnInit, OnDestroy {
 	private _subs = new SubSink();
 
 	constructor(
-		private educationService: EducationService,
-		private experienceService: ExperienceService,
-		private projectService: ProjectService,
+		@Inject(EducationService) private educationService: EducationService,
+		@Inject(ExperienceService) private experienceService: ExperienceService,
+		@Inject(ProjectService) private projectService: ProjectService,
 	) {}
 
 	get theme(): string | undefined {

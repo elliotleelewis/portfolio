@@ -3,7 +3,7 @@ import { MockProvider } from 'ng-mocks';
 import { BehaviorSubject } from 'rxjs';
 import { SubSink } from 'subsink';
 
-import { Education } from '@app-models/education';
+import type { Education } from '@app-models/education';
 import { DataRef } from '@app-refs/data.ref';
 
 import { EducationService } from './education.service';

@@ -1,8 +1,9 @@
-import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Inject, Injectable } from '@angular/core';
+import type { Observable } from 'rxjs';
+import { of } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { Education } from '@app-models/education';
+import type { Education } from '@app-models/education';
 import { DataRef } from '@app-refs/data.ref';
 
 /**
@@ -12,7 +13,7 @@ import { DataRef } from '@app-refs/data.ref';
 	providedIn: 'root',
 })
 export class EducationService {
-	constructor(private dataRef: DataRef) {}
+	constructor(@Inject(DataRef) private dataRef: DataRef) {}
 
 	/**
 	 * Gets all educations

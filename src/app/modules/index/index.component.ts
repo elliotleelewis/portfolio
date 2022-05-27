@@ -5,14 +5,16 @@ import {
 	transition,
 	trigger,
 } from '@angular/animations';
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Observable, timer } from 'rxjs';
+import type { OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Inject } from '@angular/core';
+import type { Observable } from 'rxjs';
+import { timer } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { SubSink } from 'subsink';
 
-import { Education } from '@app-models/education';
-import { Experience } from '@app-models/experience';
-import { Project } from '@app-models/project';
+import type { Education } from '@app-models/education';
+import type { Experience } from '@app-models/experience';
+import type { Project } from '@app-models/project';
 import { EducationService } from '@app-services/education/education.service';
 import { ExperienceService } from '@app-services/experience/experience.service';
 import { ProjectService } from '@app-services/project/project.service';
@@ -22,7 +24,7 @@ import { shuffle } from '../../helpers';
 @Component({
 	selector: 'portfolio-index',
 	templateUrl: './index.component.html',
-	styleUrls: ['./index.component.scss'],
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	animations: [
 		trigger('flash', [
 			state(
@@ -77,9 +79,9 @@ export class IndexComponent implements OnInit, OnDestroy {
 	private _subs = new SubSink();
 
 	constructor(
-		private educationService: EducationService,
-		private experienceService: ExperienceService,
-		private projectService: ProjectService,
+		@Inject(EducationService) private educationService: EducationService,
+		@Inject(ExperienceService) private experienceService: ExperienceService,
+		@Inject(ProjectService) private projectService: ProjectService,
 	) {}
 
 	get theme(): string | undefined {

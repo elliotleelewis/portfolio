@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 /**
  * Standard page navbar component
@@ -6,7 +6,7 @@ import { Component } from '@angular/core';
 @Component({
 	selector: 'portfolio-navbar',
 	templateUrl: './navbar.component.html',
-	styleUrls: ['./navbar.component.scss'],
+	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NavbarComponent {
 	/**

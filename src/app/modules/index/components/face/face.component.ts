@@ -5,7 +5,7 @@ import {
 	transition,
 	trigger,
 } from '@angular/animations';
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import spring from 'css-spring';
 
 /**
@@ -15,6 +15,7 @@ import spring from 'css-spring';
 	selector: 'portfolio-face',
 	templateUrl: './face.component.html',
 	styleUrls: ['./face.component.scss'],
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	animations: [
 		trigger('spin', [
 			transition(':increment', [

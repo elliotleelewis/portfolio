@@ -2,7 +2,7 @@ import { getAnalytics, provideAnalytics } from '@angular/fire/analytics';
 import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { getPerformance, providePerformance } from '@angular/fire/performance';
 
-import { Environment } from '@app-models/environment';
+import type { Environment } from '@app-models/environment';
 
 export const ENVIRONMENT: Environment = {
 	production: true,

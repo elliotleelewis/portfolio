@@ -3,7 +3,7 @@ import { MockProvider } from 'ng-mocks';
 import { BehaviorSubject } from 'rxjs';
 import { SubSink } from 'subsink';
 
-import { Experience } from '@app-models/experience';
+import type { Experience } from '@app-models/experience';
 import { DataRef } from '@app-refs/data.ref';
 
 import { ExperienceService } from './experience.service';

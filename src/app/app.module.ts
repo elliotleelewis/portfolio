@@ -1,7 +1,8 @@
 import { HttpClientModule } from '@angular/common/http';
 import { NgModule } from '@angular/core';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
+import type { Routes } from '@angular/router';
+import { PreloadAllModules, RouterModule } from '@angular/router';
 import { ServiceWorkerModule } from '@angular/service-worker';
 import { ScrollToModule } from '@nicky-lenaers/ngx-scroll-to';
 

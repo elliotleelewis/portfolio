@@ -11112,10 +11112,10 @@ stylelint-scss@^4.0.0:
     postcss-selector-parser "^6.0.6"
     postcss-value-parser "^4.1.0"
 
-stylelint-use-logical-spec@^3.0.0:
-  version "3.2.2"
-  resolved "https://registry.yarnpkg.com/stylelint-use-logical-spec/-/stylelint-use-logical-spec-3.2.2.tgz#0f97e5fa5745ba11a59af8876c2cdca144a00fab"
-  integrity sha512-NNh1NWIEpponGnBrCQ+jdYgQRvzu0FUnDOO7ZeyPHlNKXHvRz8nvNFkU8zLUCLbpWjc92rN0G0gc0MDsjSRPMA==
+stylelint-use-logical-spec@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/stylelint-use-logical-spec/-/stylelint-use-logical-spec-4.0.0.tgz#a3eff93e56709e494f732fbc24378ae78c527154"
+  integrity sha512-/pHsmBQEoyTQj0rtG62q1ycn+Z4jAMWFlxVjxb7klnD+ImtKc8H5WMuaU6Y/Xp5VynblQE7nvozWXUALFBAWtQ==
 
 stylelint@^14.0.0:
   version "14.8.5"

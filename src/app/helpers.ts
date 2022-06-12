@@ -1,3 +1,5 @@
+import type { EasingLogic } from 'ngx-page-scroll-core';
+
 /**
  * Randomly shuffles given array
  *
@@ -17,4 +19,22 @@ export const shuffle = <T>(
 		}
 	}
 	return array;
+};
+
+/**
+ * Easing function for scroll behaviour
+ *
+ * @param t - current time
+ * @param b - beginning value
+ * @param c - change in value
+ * @param d - duration
+ * @returns scroll position
+ */
+export const easeInOut: EasingLogic = (t, b, c, d) => {
+	t /= d / 2;
+	if (t < 1) {
+		return (c / 2) * t * t + b;
+	}
+	t--;
+	return (-c / 2) * (t * (t - 2) - 1) + b;
 };

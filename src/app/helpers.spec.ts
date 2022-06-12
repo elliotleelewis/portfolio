@@ -1,4 +1,4 @@
-import { shuffle } from './helpers';
+import { easeInOut, shuffle } from './helpers';
 
 describe('helpers', () => {
 	describe('#shuffle', () => {
@@ -21,6 +21,20 @@ describe('helpers', () => {
 				1,
 				undefined,
 			]);
+		});
+	});
+
+	describe('#easeInOut', () => {
+		it('should exist', () => {
+			expect(easeInOut).toBeTruthy();
+		});
+
+		it('should calculate ease in value', () => {
+			expect(easeInOut(75, 0, 100, 100)).toEqual(87.5);
+		});
+
+		it('should calculate ease out value', () => {
+			expect(easeInOut(25, 0, 100, 100)).toEqual(12.5);
 		});
 	});
 });

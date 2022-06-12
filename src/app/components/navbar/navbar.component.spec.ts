@@ -1,7 +1,8 @@
 import type { ComponentFixture } from '@angular/core/testing';
 import { TestBed, waitForAsync } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
-import { ScrollToModule } from '@nicky-lenaers/ngx-scroll-to';
+import { NgxPageScrollModule } from 'ngx-page-scroll';
+import { NgxPageScrollCoreModule } from 'ngx-page-scroll-core';
 
 import { NavbarComponent } from './navbar.component';
 
@@ -12,7 +13,11 @@ describe('NavbarComponent', () => {
 	beforeEach(waitForAsync(() => {
 		void TestBed.configureTestingModule({
 			declarations: [NavbarComponent],
-			imports: [RouterTestingModule, ScrollToModule.forRoot()],
+			imports: [
+				RouterTestingModule,
+				NgxPageScrollCoreModule.forRoot(),
+				NgxPageScrollModule,
+			],
 		}).compileComponents();
 	}));
 

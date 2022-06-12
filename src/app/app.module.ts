@@ -4,13 +4,15 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import type { Routes } from '@angular/router';
 import { PreloadAllModules, RouterModule } from '@angular/router';
 import { ServiceWorkerModule } from '@angular/service-worker';
-import { ScrollToModule } from '@nicky-lenaers/ngx-scroll-to';
+import { NgxPageScrollModule } from 'ngx-page-scroll';
+import { NgxPageScrollCoreModule } from 'ngx-page-scroll-core';
 
 import { ENVIRONMENT } from '../environments/environment';
 
 import { AppComponent } from './app.component';
 import { FooterComponent } from './components/footer/footer.component';
 import { NavbarComponent } from './components/navbar/navbar.component';
+import { easeInOut } from './helpers';
 import { SharedModule } from './modules/shared/shared.module';
 
 export const ROUTES: Routes = [
@@ -51,7 +53,11 @@ export const ROUTES: Routes = [
 			enabled: ENVIRONMENT.production,
 		}),
 		// External Modules
-		ScrollToModule.forRoot(),
+		NgxPageScrollCoreModule.forRoot({
+			duration: 625,
+			easingLogic: easeInOut,
+		}),
+		NgxPageScrollModule,
 		// Application Modules
 		SharedModule,
 		// Environment Modules

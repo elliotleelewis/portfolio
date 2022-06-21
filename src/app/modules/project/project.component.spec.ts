@@ -23,9 +23,15 @@ describe('ProjectComponent', () => {
 
 	beforeEach(() =>
 		MockBuilder(ProjectComponent, ProjectModule)
-			.mock(ActivatedRoute, {
-				paramMap: mockParamMap.asObservable(),
-			})
+			.mock(
+				ActivatedRoute,
+				{
+					paramMap: mockParamMap.asObservable(),
+				},
+				{
+					export: true,
+				},
+			)
 			.mock(ProjectService, {
 				getProject: jest.fn(() => mockGetProject.asObservable()),
 			}),

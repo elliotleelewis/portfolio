@@ -27,7 +27,7 @@
     "bulma": "^0.9.0",
     "css-spring": "^4.0.0",
     "firebase": "^9.0.0",
-    "ngx-page-scroll": "^8.0.0",
+    "ngx-page-scroll": "^9.0.0",
     "ngx-page-scroll-core": "^8.0.0",
     "rxfire": "^6.0.0",
     "rxjs": "~7.5.0",

@@ -8609,10 +8609,10 @@ ngx-page-scroll-core@^8.0.0:
   dependencies:
     tslib "^2.0.0"
 
-ngx-page-scroll@^8.0.0:
-  version "8.0.0"
-  resolved "https://registry.yarnpkg.com/ngx-page-scroll/-/ngx-page-scroll-8.0.0.tgz#3554f9d61a41ddca7472e120ce6b3baf16b4968a"
-  integrity sha512-wJFg/IUBCvTeDZtYhHGJJ1Bx/3NxvU+FUGQkz4XEN3+hYLcs+i1HN7ZSBQBeeIqNPv8Pi96jlcm+HmIqMzmq0g==
+ngx-page-scroll@^9.0.0:
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/ngx-page-scroll/-/ngx-page-scroll-9.0.0.tgz#3fbc41397e4db137971940255f8a47da03c1af68"
+  integrity sha512-q2Cg52AnqC5bhxsWE/WgmiuQ3P8hQ+5yNexkxbovv5cKd+1u8lohTCFb/fO3PQxYHI+ZPXggjDqaisMzG/d0cQ==
   dependencies:
     tslib "^2.0.0"
 

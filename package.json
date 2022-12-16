@@ -30,7 +30,7 @@
     "ngx-page-scroll": "^9.0.0",
     "ngx-page-scroll-core": "^9.0.0",
     "rxfire": "^6.0.0",
-    "rxjs": "~7.6.0",
+    "rxjs": "~7.8.0",
     "subsink": "^1.0.0",
     "tslib": "^2.0.0",
     "zone.js": "^0.12.0"

@@ -18,7 +18,7 @@ $family-secondary: $family-serif;
 
 // ---- Overrides - Font Awesome ----
 $fa-font-display: swap;
-$fa-font-path: '~@fortawesome/fontawesome-free/webfonts';
+$fa-font-path: '../webfonts';
 
 // ---- Variables - External ----
-@import '~bulma/sass/utilities/all';
+@import 'bulma/sass/utilities/all';

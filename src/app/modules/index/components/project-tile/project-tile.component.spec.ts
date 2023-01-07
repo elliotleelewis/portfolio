@@ -18,6 +18,11 @@ describe('ProjectTileComponent', () => {
 	beforeEach(() => {
 		fixture = TestBed.createComponent(ProjectTileComponent);
 		component = fixture.componentInstance;
+		component.project = {
+			id: '1',
+			title: 'Test',
+			description: 'This is a test.',
+		};
 		fixture.detectChanges();
 	});
 

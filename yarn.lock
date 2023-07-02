@@ -9088,10 +9088,10 @@ ng-mocks@^14.0.0:
   resolved "https://registry.yarnpkg.com/ng-mocks/-/ng-mocks-14.10.1.tgz#68f8f005a137f944e320a1542e1b4c41cfb0f974"
   integrity sha512-XUjsFQD0olZ4tfIU9goUVxV8G0eI6AelQfzNy05Go/WIZ3TEYBxhzAZdI74ek1rE0WtBXQc+ROMqIrUqCGLCyA==
 
-ngx-page-scroll-core@^10.0.0:
-  version "10.0.0"
-  resolved "https://registry.yarnpkg.com/ngx-page-scroll-core/-/ngx-page-scroll-core-10.0.0.tgz#268ebbc464f1f931f5a297046f325dc066f06039"
-  integrity sha512-Z4YtZYZJmE/WSMkXJcU1oaf3W8T9onjf4gGktqpdT3K+IfqfHRS/ZMVhXnsGN5eZ5Fy0UUzUULP0TiHF4PrWTg==
+ngx-page-scroll-core@^11.0.0:
+  version "11.0.0"
+  resolved "https://registry.yarnpkg.com/ngx-page-scroll-core/-/ngx-page-scroll-core-11.0.0.tgz#65c7356817fc549a8ac3fc80a31c5bbb34fcd465"
+  integrity sha512-2UEtPzFGpxLHYoP6a3NMPYlE6+23FshK/7v5fpE8wRVQqFeidoLtjo0oqmBNmao8EBHePnNO3KL3O2diXZmHrg==
   dependencies:
     tslib "^2.0.0"
 

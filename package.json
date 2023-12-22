@@ -39,11 +39,11 @@
     "@angular-builders/custom-webpack": "~17.0.0",
     "@angular-builders/jest": "~17.0.0",
     "@angular-devkit/build-angular": "~17.0.0",
-    "@angular-eslint/builder": "~17.0.0",
-    "@angular-eslint/eslint-plugin": "~17.0.0",
-    "@angular-eslint/eslint-plugin-template": "~17.0.0",
-    "@angular-eslint/schematics": "~17.0.0",
-    "@angular-eslint/template-parser": "~17.0.0",
+    "@angular-eslint/builder": "~17.1.1",
+    "@angular-eslint/eslint-plugin": "~17.1.1",
+    "@angular-eslint/eslint-plugin-template": "~17.1.1",
+    "@angular-eslint/schematics": "~17.1.1",
+    "@angular-eslint/template-parser": "~17.1.1",
     "@angular/cli": "~17.0.0",
     "@angular/compiler-cli": "~17.0.0",
     "@angular/language-service": "~17.0.0",
@@ -60,7 +60,7 @@
     "eslint-plugin-file-progress": "^1.0.0",
     "eslint-plugin-import": "^2.0.0",
     "eslint-plugin-jest": "^27.0.0",
-    "eslint-plugin-jsdoc": "^41.0.0",
+    "eslint-plugin-jsdoc": "^46.9.1",
     "eslint-plugin-prefer-arrow": "^1.0.0",
     "glob": "^10.0.0",
     "husky": "^8.0.0",
@@ -69,7 +69,6 @@
     "postcss": "^8.0.0",
     "postcss-html": "^1.0.0",
     "prettier": "~3.1.0",
-    "pretty-quick": "^3.0.0",
     "purgecss-webpack-plugin": "^5.0.0",
     "stylelint": "^15.0.0",
     "stylelint-config-prettier": "^9.0.0",
@@ -130,6 +129,7 @@
           "eslint:recommended",
           "plugin:eslint-comments/recommended",
           "plugin:jest/recommended",
+          "plugin:@angular-eslint/recommended",
           "plugin:@typescript-eslint/recommended",
           "plugin:@typescript-eslint/recommended-requiring-type-checking",
           "prettier"
@@ -314,8 +314,14 @@
             }
           ],
           "jest/no-done-callback": "off",
-          "jsdoc/newline-after-description": "error",
           "jsdoc/no-types": "error",
+          "jsdoc/tag-lines": [
+            "error",
+            "any",
+            {
+              "startLines": 1
+            }
+          ],
           "curly": "error",
           "eqeqeq": [
             "error",
@@ -363,15 +369,13 @@
           "plugin:@angular-eslint/template/recommended"
         ],
         "rules": {
-          "@angular-eslint/template/accessibility-alt-text": "error",
-          "@angular-eslint/template/accessibility-elements-content": "error",
-          "@angular-eslint/template/accessibility-label-for": "error",
-          "@angular-eslint/template/accessibility-table-scope": "error",
-          "@angular-eslint/template/accessibility-valid-aria": "error",
+          "@angular-eslint/template/alt-text": "error",
           "@angular-eslint/template/banana-in-box": "error",
           "@angular-eslint/template/click-events-have-key-events": "error",
           "@angular-eslint/template/conditional-complexity": "error",
           "@angular-eslint/template/cyclomatic-complexity": "error",
+          "@angular-eslint/template/elements-content": "error",
+          "@angular-eslint/template/label-has-associated-control": "error",
           "@angular-eslint/template/mouse-events-have-key-events": "error",
           "@angular-eslint/template/no-any": "error",
           "@angular-eslint/template/no-autofocus": "error",
@@ -379,7 +383,9 @@
           "@angular-eslint/template/no-distracting-elements": "error",
           "@angular-eslint/template/no-negated-async": "error",
           "@angular-eslint/template/no-positive-tabindex": "error",
-          "@angular-eslint/template/use-track-by-function": "error"
+          "@angular-eslint/template/table-scope": "error",
+          "@angular-eslint/template/use-track-by-function": "error",
+          "@angular-eslint/template/valid-aria": "error"
         }
       }
     ]

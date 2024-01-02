@@ -60,7 +60,7 @@
     "eslint-plugin-file-progress": "^1.0.0",
     "eslint-plugin-import": "^2.0.0",
     "eslint-plugin-jest": "^27.0.0",
-    "eslint-plugin-jsdoc": "^47.0.0",
+    "eslint-plugin-jsdoc": "^48.0.0",
     "eslint-plugin-prefer-arrow": "^1.0.0",
     "glob": "^10.0.0",
     "husky": "^8.0.0",

@@ -9295,12 +9295,12 @@ ng-mocks@^14.0.0:
   resolved "https://registry.yarnpkg.com/ng-mocks/-/ng-mocks-14.12.1.tgz#a2d698c872616e0ceeefa08ecb4bd357ae85a7dd"
   integrity sha512-5OdTYYOva7IkCCi6kTtgnII1hSfw+qYOM1ScrKhyo7iaI/ViV8xI4MGa89Ts7XnH6XqISSez2Un3zFSomkFpmg==
 
-ngx-page-scroll-core@^11.0.0:
-  version "11.0.0"
-  resolved "https://registry.yarnpkg.com/ngx-page-scroll-core/-/ngx-page-scroll-core-11.0.0.tgz#65c7356817fc549a8ac3fc80a31c5bbb34fcd465"
-  integrity sha512-2UEtPzFGpxLHYoP6a3NMPYlE6+23FshK/7v5fpE8wRVQqFeidoLtjo0oqmBNmao8EBHePnNO3KL3O2diXZmHrg==
+ngx-page-scroll-core@^12.0.0:
+  version "12.0.0"
+  resolved "https://registry.yarnpkg.com/ngx-page-scroll-core/-/ngx-page-scroll-core-12.0.0.tgz#2c9b85f555a8e974924b3dce635fc2bae6f5fc7b"
+  integrity sha512-UMy6k+/RLiXfEVfONfqGWHFRkeu90vev++v6CgGS7gXEd3b5h5J0OofhOOsb0Oa/gDKyPTou+rVkPgdMG5oYwA==
   dependencies:
-    tslib "^2.0.0"
+    tslib "^2.6.2"
 
 ngx-page-scroll@^12.0.0:
   version "12.0.0"

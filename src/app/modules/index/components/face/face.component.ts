@@ -31,7 +31,7 @@ import spring from 'css-spring';
 						).map(([key, value]) =>
 							style({
 								transform: `rotate(${value.rotate})`,
-								offset: parseFloat(key) / 100,
+								offset: Number.parseFloat(key) / 100,
 							}),
 						),
 					),

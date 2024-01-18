@@ -13,5 +13,5 @@ declare module 'css-spring' {
 		start: T,
 		target: T,
 		options?: Options,
-	): { [key: string]: T };
+	): Record<string, T>;
 }

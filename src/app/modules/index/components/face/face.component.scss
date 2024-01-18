@@ -5,11 +5,15 @@
 
 // Styles
 svg {
-	max-block-size: 50vh;
-	outline: none;
-	transform: rotate(-9deg);
 	cursor: pointer;
+
+	transform: rotate(-9deg);
+
+	max-block-size: 50vh;
+
 	filter: drop-shadow(0.5rem 0.5rem 1rem color.adjust($black, $alpha: -0.5));
+	outline: none;
+
 	transition: all $speed ease-in-out;
 
 	&:hover,

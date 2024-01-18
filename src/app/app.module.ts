@@ -61,11 +61,11 @@ export const ROUTES: Routes = [
 		// Application Modules
 		SharedModule,
 		// Environment Modules
-		...(ENVIRONMENT.imports || []),
+		...ENVIRONMENT.imports,
 	],
 	providers: [
 		// Environment Providers
-		...(ENVIRONMENT.providers || []),
+		...ENVIRONMENT.providers,
 	],
 	bootstrap: [AppComponent],
 })

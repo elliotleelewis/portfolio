@@ -62,6 +62,7 @@
     "eslint-plugin-jest": "^27.0.0",
     "eslint-plugin-jsdoc": "^48.0.0",
     "eslint-plugin-prefer-arrow": "^1.0.0",
+    "eslint-plugin-unicorn": "^50.0.0",
     "glob": "^10.0.0",
     "husky": "^8.0.0",
     "jest": "^29.0.0",
@@ -70,13 +71,10 @@
     "postcss-html": "^1.0.0",
     "prettier": "~3.2.0",
     "purgecss-webpack-plugin": "^5.0.0",
-    "stylelint": "^15.0.0",
-    "stylelint-config-prettier": "^9.0.0",
-    "stylelint-config-rational-order": "^0.1.0",
-    "stylelint-config-standard-scss": "^12.0.0",
-    "stylelint-order": "^6.0.0",
+    "stylelint": "^16.0.0",
+    "stylelint-config-clean-order": "^5.0.0",
+    "stylelint-config-standard-scss": "^13.0.0",
     "stylelint-use-logical-spec": "^5.0.0",
-    "tslint-config-prettier": "^1.0.0",
     "typescript": "~5.3.0"
   },
   "browserslist": [
@@ -127,11 +125,14 @@
         ],
         "extends": [
           "eslint:recommended",
+          "plugin:@angular-eslint/recommended",
+          "plugin:@typescript-eslint/strict",
+          "plugin:@typescript-eslint/strict-type-checked",
+          "plugin:@typescript-eslint/stylistic",
+          "plugin:@typescript-eslint/stylistic-type-checked",
           "plugin:eslint-comments/recommended",
           "plugin:jest/recommended",
-          "plugin:@angular-eslint/recommended",
-          "plugin:@typescript-eslint/recommended",
-          "plugin:@typescript-eslint/recommended-requiring-type-checking",
+          "plugin:unicorn/recommended",
           "prettier"
         ],
         "rules": {
@@ -286,6 +287,7 @@
           "@typescript-eslint/member-ordering": "error",
           "@typescript-eslint/no-empty-function": "error",
           "@typescript-eslint/no-explicit-any": "error",
+          "@typescript-eslint/no-extraneous-class": "off",
           "@typescript-eslint/no-non-null-asserted-optional-chain": "error",
           "@typescript-eslint/no-non-null-assertion": "error",
           "@typescript-eslint/no-unused-vars": "error",
@@ -322,6 +324,10 @@
               "startLines": 1
             }
           ],
+          "unicorn/no-array-reduce": "off",
+          "unicorn/no-null": "off",
+          "unicorn/prefer-top-level-await": "off",
+          "unicorn/prevent-abbreviations": "off",
           "curly": "error",
           "eqeqeq": [
             "error",
@@ -393,8 +399,7 @@
   "stylelint": {
     "extends": [
       "stylelint-config-standard-scss",
-      "stylelint-config-rational-order",
-      "stylelint-config-prettier"
+      "stylelint-config-clean-order/error"
     ],
     "plugins": [
       "stylelint-use-logical-spec"

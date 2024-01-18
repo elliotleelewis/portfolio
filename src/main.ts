@@ -10,4 +10,6 @@ if (ENVIRONMENT.production) {
 
 platformBrowser()
 	.bootstrapModule(AppModule)
-	.catch((err) => console.error(err));
+	.catch((error) => {
+		console.error(error);
+	});

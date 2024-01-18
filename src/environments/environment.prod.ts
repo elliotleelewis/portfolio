@@ -22,4 +22,5 @@ export const ENVIRONMENT: Environment = {
 			}),
 		),
 	],
+	providers: [],
 };

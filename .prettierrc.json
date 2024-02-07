@@ -1,0 +1,20 @@
+{
+  "arrowParens": "always",
+  "bracketSpacing": true,
+  "endOfLine": "lf",
+  "overrides": [
+    {
+      "files": ["*.json", "*.md", "*.yml"],
+      "options": {
+        "tabWidth": 2,
+        "useTabs": false
+      }
+    }
+  ],
+  "plugins": ["prettier-plugin-astro"],
+  "semi": true,
+  "singleQuote": true,
+  "tabWidth": 4,
+  "trailingComma": "all",
+  "useTabs": true
+}

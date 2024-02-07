@@ -1,5 +1,0 @@
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
-
-# TODO - Re-enable
-# yarn run pretty-quick --staged --pattern "**/*.{md,ts,js,scss,html,json,yml}"

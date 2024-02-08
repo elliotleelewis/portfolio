@@ -1,16 +1,12 @@
 ---
-import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Layout from '../layout/Layout.astro';
 ---
 
 <Layout title="Elliot Lewis">
 	<main
 		class="flex h-screen w-screen items-center justify-center p-4 text-white"
 	>
-		<h1 class="text-center text-6xl font-bold">
-			Coming <span
-				class="bg-gradient-to-r from-green-600 to-white bg-[size:400%] bg-clip-text text-transparent"
-				>soon</span
-			>.
-		</h1>
+		<Header />
 	</main>
 </Layout>

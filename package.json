@@ -5,7 +5,7 @@
   "scripts": {
     "prepare": "husky",
     "astro": "astro",
-    "start": "astro dev",
+    "start": "astro dev --host",
     "build": "astro check && astro build",
     "preview": "astro preview",
     "lint": "eslint \"**/*.{astro,ts,js,cjs,mjs}\"",

@@ -45,6 +45,24 @@ module.exports = {
 				...baseExtends,
 			],
 			plugins: basePlugins,
+			rules: {
+				...baseRules,
+				'@typescript-eslint/no-unsafe-return': 'off', // https://github.com/ota-meshi/eslint-plugin-astro/issues/168
+			},
+		},
+		{
+			files: ['*.ts'],
+			parserOptions: {
+				project: './tsconfig.json',
+			},
+			extends: [
+				'plugin:@typescript-eslint/strict',
+				'plugin:@typescript-eslint/strict-type-checked',
+				'plugin:@typescript-eslint/stylistic',
+				'plugin:@typescript-eslint/stylistic-type-checked',
+				...baseExtends,
+			],
+			plugins: basePlugins,
 			rules: baseRules,
 		},
 		{

@@ -1,12 +1,24 @@
 ---
-import Header from '../components/Header.astro';
+import Bio from '../content/Bio.astro';
+import Educations from '../content/Educations.astro';
+import Experiences from '../content/Experiences.astro';
+import Header from '../content/Header.astro';
+import Skills from '../content/Skills.astro';
 import Layout from '../layout/Layout.astro';
 ---
 
 <Layout title="Elliot Lewis">
 	<main
-		class="flex h-screen w-screen items-center justify-center p-4 text-white"
+		class="container mx-auto flex min-h-screen flex-col gap-4 px-8 py-16 text-slate-950/75 md:flex-row md:px-16"
 	>
-		<Header />
+		<div class="flex grow basis-2/3 flex-col gap-4">
+			<Header />
+			<Experiences />
+			<Educations />
+		</div>
+		<div class="flex grow basis-1/3 flex-col gap-4">
+			<Skills />
+			<Bio />
+		</div>
 	</main>
 </Layout>

@@ -1,0 +1,27 @@
+---
+import { Image } from 'astro:assets';
+
+import Card from '../components/Card.astro';
+import Record from '../components/Record.astro';
+import mmu from '../media/mmu.svg';
+---
+
+<Card>
+	<Record
+		title="Computer Science BSC (Hons) w/ Sandwich Year"
+		entity="Manchester Metropolitan University"
+		from="Sep 2015"
+		to="May 2019"
+	>
+		<div slot="logo" class="mr-4 rounded bg-white p-2">
+			<Image
+				src={mmu}
+				class="size-8"
+				alt="Manchester Metropolitan University logo."
+				width={32}
+				height={32}
+			/>
+		</div>
+		<p>This is a description.</p>
+	</Record>
+</Card>

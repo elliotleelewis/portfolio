@@ -17,7 +17,11 @@ const { title, entity, from, to = 'Present' } = Astro.props;
 			class="flex items-center justify-between gap-2 text-sm font-light uppercase tracking-widest opacity-50"
 		>
 			<h4 class="text-start">{entity}</h4>
-			<div class="text-end">{from} - {to}</div>
+			<div class="text-end">
+				<span class="whitespace-nowrap">{from}</span> - <span
+					class="whitespace-nowrap">{to}</span
+				>
+			</div>
 		</div>
 	</div>
 </div>

@@ -1,0 +1,64 @@
+---
+import { Image } from 'astro:assets';
+
+import Card from '../components/Card.astro';
+import Record from '../components/Record.astro';
+import jabil from '../media/jabil.svg';
+import snap from '../media/snap.svg';
+---
+
+<Card>
+	<div class="flex flex-col gap-4">
+		<Record
+			title="Software Engineer"
+			entity="Snap Inc"
+			from="Aug 2021"
+			to="Feb 2024"
+		>
+			<div slot="logo" class="mr-4 rounded bg-[#fffc00] p-2">
+				<Image
+					src={snap}
+					class="size-8"
+					alt="Snap Inc logo."
+					width={32}
+					height={32}
+				/>
+			</div>
+			<p>This is a description.</p>
+		</Record>
+		<Record
+			title="Senior Software Engineer"
+			entity="Jabil"
+			from="May 2019"
+			to="Aug 2021"
+		>
+			<div slot="logo" class="mr-4 rounded bg-[#002b49] p-2">
+				<Image
+					src={jabil}
+					class="size-8"
+					alt="Jabil logo."
+					width={32}
+					height={32}
+				/>
+			</div>
+			<p>This is a description.</p>
+		</Record>
+		<Record
+			title="Software Engineer"
+			entity="Jabil"
+			from="May 2017"
+			to="Sep 2018"
+		>
+			<div slot="logo" class="mr-4 rounded bg-[#002b49] p-2">
+				<Image
+					src={jabil}
+					class="size-8"
+					alt="Jabil logo."
+					width={32}
+					height={32}
+				/>
+			</div>
+			<p>This is a description.</p>
+		</Record>
+	</div>
+</Card>

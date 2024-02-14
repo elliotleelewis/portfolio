@@ -14,7 +14,7 @@ const { title, entity, from, to = 'Present' } = Astro.props;
 	<div class="w-full">
 		<h3 class="text-xl font-bold leading-none">{title}</h3>
 		<div
-			class="flex items-center justify-between gap-2 text-sm font-light uppercase tracking-widest opacity-50"
+			class="mt-0.5 flex items-center justify-between gap-2 text-xs font-light uppercase tracking-widest opacity-50"
 		>
 			<h4 class="text-start">{entity}</h4>
 			<div class="text-end">
@@ -23,5 +23,6 @@ const { title, entity, from, to = 'Present' } = Astro.props;
 				>
 			</div>
 		</div>
+		<div class="mt-1 text-sm"><slot /></div>
 	</div>
 </div>

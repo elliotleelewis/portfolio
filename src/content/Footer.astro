@@ -1,0 +1,13 @@
+---
+const year = new Date().getFullYear();
+---
+
+<div class="text-center">&copy; <span id="year">{year}</span> Elliot Lewis</div>
+
+<script>
+	const el = document.getElementById('year');
+	const year = new Date().getFullYear();
+	if (el) {
+		el.innerHTML = String(year);
+	}
+</script>

@@ -12,17 +12,19 @@
 	);
 
 	if (el && !prefersReducedMotion) {
-		document.body.addEventListener('mousemove', (event: MouseEvent) => {
-			const { clientX, clientY, currentTarget } = event;
-			if (!(currentTarget instanceof HTMLElement)) {
-				return;
-			}
+		document.body.addEventListener(
+			'mousemove',
+			({ clientX, clientY, currentTarget }: MouseEvent) => {
+				if (!(currentTarget instanceof HTMLElement)) {
+					return;
+				}
 
-			const rect = currentTarget.getBoundingClientRect();
-			const offsetX = clientX - rect.left;
-			const offsetY = clientY - rect.top;
-			el.style.backgroundPositionX = `${offsetX * scaleFactor}px`;
-			el.style.backgroundPositionY = `${offsetY * scaleFactor}px`;
-		});
+				const rect = currentTarget.getBoundingClientRect();
+				const offsetX = clientX - rect.left;
+				const offsetY = clientY - rect.top;
+				el.style.backgroundPositionX = `${offsetX * scaleFactor}px`;
+				el.style.backgroundPositionY = `${offsetY * scaleFactor}px`;
+			},
+		);
 	}
 </script>

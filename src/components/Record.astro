@@ -9,20 +9,22 @@ interface Props {
 const { title, entity, from, to = 'Present' } = Astro.props;
 ---
 
-<div class="flex">
-	<div class="shrink-0"><slot name="logo" /></div>
-	<div class="w-full">
-		<h3 class="text-xl font-bold leading-none">{title}</h3>
-		<div
-			class="mt-0.5 flex items-center justify-between gap-2 text-xs font-light uppercase tracking-widest opacity-50"
-		>
-			<h4 class="text-start">{entity}</h4>
-			<div class="text-end">
-				<span class="whitespace-nowrap">{from}</span> - <span
-					class="whitespace-nowrap">{to}</span
-				>
+<div>
+	<div class="flex items-center">
+		<div class="shrink-0"><slot name="logo" /></div>
+		<div class="w-full">
+			<h3 class="text-xl font-bold leading-none">{title}</h3>
+			<div
+				class="mt-0.5 flex items-center justify-between gap-2 text-xs font-light uppercase tracking-widest opacity-50"
+			>
+				<h4 class="text-start">{entity}</h4>
+				<div class="text-end">
+					<span class="whitespace-nowrap">{from}</span> - <span
+						class="whitespace-nowrap">{to}</span
+					>
+				</div>
 			</div>
 		</div>
-		<div class="mt-1 text-sm"><slot /></div>
 	</div>
+	<div class="mt-1 text-sm lg:ml-16"><slot /></div>
 </div>

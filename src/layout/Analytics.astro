@@ -4,9 +4,51 @@
 	async
 	src="https://www.googletagmanager.com/gtag/js?id=G-0GN6H51MWN"></script>
 <script type="text/partytown">
+	const ANALYTICS_LOG = 'ANALYTICS:';
+
 	window.dataLayer = window.dataLayer || [];
-	function gtag() {
+	window.gtag = function () {
 		dataLayer.push(arguments);
+	};
+
+	window.consentGranted = function () {
+		console.log(ANALYTICS_LOG, 'consent granted');
+		gtag('consent', 'update', {
+			ad_storage: 'granted',
+			analytics_storage: 'granted',
+			functionality_storage: 'granted',
+			personalization_storage: 'granted',
+			security_storage: 'granted',
+		});
+	};
+
+	window.getCookieConsent = function () {
+		try {
+			const consent = document.cookie.match(/cookie-consent=([^;]+)/)[1];
+			return consent;
+		} catch (error) {
+			return 'unk';
+		}
+	};
+
+	if (window.getCookieConsent() == 'granted') {
+		console.log(ANALYTICS_LOG, 'default set to granted');
+		gtag('consent', 'default', {
+			ad_storage: 'granted',
+			analytics_storage: 'granted',
+			functionality_storage: 'granted',
+			personalization_storage: 'granted',
+			security_storage: 'granted',
+		});
+	} else {
+		console.log(ANALYTICS_LOG, 'default set to denied');
+		gtag('consent', 'default', {
+			ad_storage: 'denied',
+			analytics_storage: 'denied',
+			functionality_storage: 'denied',
+			personalization_storage: 'denied',
+			security_storage: 'denied',
+		});
 	}
 
 	gtag('js', new Date());

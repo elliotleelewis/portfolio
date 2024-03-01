@@ -1,5 +1,15 @@
+---
+interface Props {
+	small?: boolean;
+	justify?: boolean;
+}
+
+const { small = false, justify = false } = Astro.props;
+---
+
 <div
 	class="rounded-lg border border-solid border-white/20 bg-white/10 p-5 backdrop-blur-sm"
+	class:list={[small && 'text-sm', justify && 'text-justify']}
 >
 	<slot />
 </div>

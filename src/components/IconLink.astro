@@ -1,0 +1,19 @@
+---
+import ExternalIcon from './ExternalIcon.astro';
+
+interface Props {
+	href: string;
+}
+
+const { href } = Astro.props;
+---
+
+<a
+	href={href}
+	target="_blank"
+	rel="noopener noreferrer"
+	class="group relative text-slate-950/80 outline-none hover:text-slate-700/80 focus:text-slate-700/80 focus:ring active:text-slate-900/80 dark:text-slate-50/80 dark:hover:text-slate-300/80 dark:focus:text-slate-300/80 dark:active:text-slate-100/80"
+>
+	<slot />
+	<ExternalIcon />
+</a>

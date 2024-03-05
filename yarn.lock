@@ -5346,10 +5346,10 @@ synckit@^0.9.0:
     "@pkgr/core" "^0.1.0"
     tslib "^2.6.2"
 
-tailwindcss-bg-patterns@^0.3.0:
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/tailwindcss-bg-patterns/-/tailwindcss-bg-patterns-0.3.0.tgz#533a6ca05a35f599ecdcdb4596c04214c12bea28"
-  integrity sha512-3pXCiu9MPBvfBAEYgrxpNZLZoDlVHdkofpuQ9uhVQ2RT+80BTTweL9s0uIvakfH2LRl4GCG+nncyCB+1aN1gpA==
+tailwindcss-patterns@^0.1.0:
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/tailwindcss-patterns/-/tailwindcss-patterns-0.1.2.tgz#5c0ccdac557f93f886b596fcc771da87b9583747"
+  integrity sha512-gfi6HCSGjI9ix/uiBoLjgmsypIF1wXGN+ye9sM9AtALdvY3GkavwGARL6BWOUx88MEcnZHe0zeKgCwMgolo7hA==
 
 tailwindcss@^3.0.0:
   version "3.4.1"
@@ -6008,6 +6008,7 @@ widest-line@^4.0.1:
     string-width "^5.0.1"
 
 "wrap-ansi-cjs@npm:wrap-ansi@^7.0.0", wrap-ansi@^7.0.0:
+  name wrap-ansi-cjs
   version "7.0.0"
   resolved "https://registry.yarnpkg.com/wrap-ansi/-/wrap-ansi-7.0.0.tgz#67e145cff510a6a6984bdf1152911d69d2eb9e43"
   integrity sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q==

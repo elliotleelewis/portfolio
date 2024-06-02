@@ -1,1 +1,1 @@
-yarn run commitlint -e
+pnpm run commitlint -e

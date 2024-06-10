@@ -27,6 +27,7 @@ const baseRules = {
 
 module.exports = {
 	root: true,
+	ignorePatterns: ['dist/', '.astro/', 'node_modules/'],
 	overrides: [
 		{
 			files: ['*.astro'],

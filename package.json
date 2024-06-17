@@ -11,9 +11,9 @@
     "build": "astro check && astro build",
     "preview": "astro preview",
     "lint": "eslint \"**/*.{astro,ts,js,cjs,mjs}\"",
-    "lint:fix": "yarn run lint --fix",
+    "lint:fix": "pnpm run lint --fix",
     "format": "prettier --check \"**/*.{md,astro,ts,js,cjs,mjs,scss,html,json,yml}\" --ignore-path .gitignore",
-    "format:fix": "yarn run format --write"
+    "format:fix": "pnpm run format --write"
   },
   "dependencies": {
     "@astrojs/partytown": "^2.0.0",

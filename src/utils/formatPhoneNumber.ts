@@ -1,6 +1,6 @@
 export const formatPhoneNumber = (phoneNumber: number): string => {
 	const cleaned = String(phoneNumber).replaceAll(/\D/g, '');
-	const parts = cleaned.match(/^(1|)?(\d{3})(\d{3})(\d{4})$/);
+	const parts = /^(1|)?(\d{3})(\d{3})(\d{4})$/.exec(cleaned);
 	if (!parts) {
 		return '';
 	}

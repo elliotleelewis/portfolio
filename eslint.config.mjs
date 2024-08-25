@@ -23,6 +23,14 @@ const compat = new FlatCompat({
 export default tseslint.config(
 	includeIgnoreFile(path.resolve(__dirname, '.gitignore')),
 	{
+		extends: [eslint.configs.recommended],
+		languageOptions: {
+			globals: {
+				...globals.node,
+			},
+		},
+	},
+	{
 		files: ['**/*.ts'],
 		extends: [
 			eslint.configs.recommended,
@@ -170,11 +178,7 @@ export default tseslint.config(
 		extends: [...tailwind.configs['flat/recommended']],
 	},
 	{
-		extends: [eslint.configs.recommended],
 		languageOptions: {
-			globals: {
-				...globals.node,
-			},
 			parserOptions: {
 				project: true,
 				tsconfigRootDir: import.meta.dirname,

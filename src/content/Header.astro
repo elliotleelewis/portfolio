@@ -38,7 +38,7 @@ import profile from '../media/profile.jpg';
 						<a
 							id="email-link"
 							class="inline-flex items-center gap-1 outline-none hover:underline focus:ring"
-							href="#"
+							href="mailto:"
 						>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
@@ -60,7 +60,7 @@ import profile from '../media/profile.jpg';
 						<a
 							id="phone-link"
 							class="inline-flex items-center gap-1 outline-none hover:underline focus:ring"
-							href="#"
+							href="mailto:"
 						>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
@@ -83,7 +83,7 @@ import profile from '../media/profile.jpg';
 </Card>
 
 <script>
-	import { formatPhoneNumber } from '../utils/formatPhoneNumber';
+	import { formatPhoneNumber } from '../utils/format-phone-number';
 
 	// Obfuscate for simple scraper bots
 	const email = [...'siweleeltoille'].reverse().join('') + '@gmail.com';

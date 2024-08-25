@@ -10,9 +10,9 @@
     "start": "astro dev --host",
     "build": "astro check && astro build",
     "preview": "astro preview",
-    "lint": "eslint \"**/*.{astro,ts,js,cjs,mjs}\"",
+    "lint": "eslint \"**/*.{ts,js,cjs,mjs,html,astro}\"",
     "lint:fix": "pnpm run lint --fix",
-    "format": "prettier --check \"**/*.{md,astro,ts,js,cjs,mjs,scss,html,json,yml}\" --ignore-path .gitignore",
+    "format": "prettier --check \"**/*.{md,ts,js,cjs,mjs,scss,html,json,yml,astro}\" --ignore-path .gitignore",
     "format:fix": "pnpm run format --write"
   },
   "dependencies": {
@@ -29,19 +29,24 @@
     "@astrojs/check": "^0.9.0",
     "@commitlint/cli": "^19.0.0",
     "@commitlint/config-conventional": "^19.0.0",
+    "@eslint/compat": "^1.0.0",
+    "@eslint/eslintrc": "^3.0.0",
+    "@eslint/js": "^9.0.0",
+    "@eslint-community/eslint-plugin-eslint-comments": "^4.0.0",
     "@types/node": "^20.0.0",
-    "@typescript-eslint/eslint-plugin": "^8.0.0",
-    "@typescript-eslint/parser": "^8.0.0",
-    "eslint": "^8.0.0",
+    "eslint": "^9.0.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-astro": "^1.0.0",
-    "eslint-plugin-file-progress": "^1.0.0",
     "eslint-plugin-import": "^2.0.0",
+    "eslint-plugin-jsdoc": "^50.0.0",
+    "eslint-plugin-jsx-a11y": "^6.0.0",
     "eslint-plugin-tailwindcss": "^3.0.0",
     "eslint-plugin-unicorn": "^55.0.0",
+    "globals": "^15.0.0",
     "husky": "^9.0.0",
     "prettier": "~3.3.0",
     "prettier-plugin-astro": "^0.14.0",
-    "typescript": "~5.5.0"
+    "typescript": "~5.5.0",
+    "typescript-eslint": "^8.0.0"
   }
 }

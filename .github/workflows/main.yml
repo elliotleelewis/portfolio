@@ -39,9 +39,10 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - uses: peaceiris/actions-gh-pages@v4
+      - uses: cloudflare/pages-action@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          force_orphan: true
-          cname: elliotleelewis.com
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: 08bcfcb3f50021eafc9bd1bfb1f06ad0
+          projectName: portfolio
+          directory: ./dist/browser
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}

@@ -44,5 +44,5 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: 08bcfcb3f50021eafc9bd1bfb1f06ad0
           projectName: portfolio
-          directory: ./dist/browser
+          directory: ./dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}

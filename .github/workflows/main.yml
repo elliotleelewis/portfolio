@@ -29,7 +29,6 @@ jobs:
       - run: pnpm build
   deploy:
     runs-on: ubuntu-22.04
-    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
       - run: corepack enable

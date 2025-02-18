@@ -41,7 +41,7 @@
     "eslint-plugin-jsdoc": "^50.0.0",
     "eslint-plugin-jsx-a11y": "^6.0.0",
     "eslint-plugin-tailwindcss": "^3.0.0",
-    "eslint-plugin-unicorn": "^56.0.0",
+    "eslint-plugin-unicorn": "^57.0.0",
     "globals": "^15.0.0",
     "husky": "^9.0.0",
     "prettier": "~3.5.0",

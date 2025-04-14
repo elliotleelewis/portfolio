@@ -1,6 +1,6 @@
 {
   "name": "portfolio",
-  "packageManager": "pnpm@10.8.0",
+  "packageManager": "pnpm@10.8.1",
   "private": true,
   "license": "UNLICENSED",
   "type": "module",

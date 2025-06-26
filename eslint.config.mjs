@@ -55,7 +55,7 @@ export default tseslint.config(
 				},
 			},
 			'better-tailwindcss': {
-				tailwindConfig: 'tailwind.config.mjs',
+				entryPoint: 'src/styles/global.css',
 			},
 		},
 		plugins: {
@@ -184,7 +184,7 @@ export default tseslint.config(
 		files: ['**/*.astro'],
 		settings: {
 			'better-tailwindcss': {
-				tailwindConfig: 'tailwind.config.mjs',
+				entryPoint: 'src/styles/global.css',
 			},
 		},
 		plugins: {

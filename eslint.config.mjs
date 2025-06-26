@@ -7,8 +7,8 @@ import eslint from '@eslint/js';
 import comments from '@eslint-community/eslint-plugin-eslint-comments/configs';
 import configPrettier from 'eslint-config-prettier';
 import astro from 'eslint-plugin-astro';
+import tailwind from 'eslint-plugin-better-tailwindcss';
 import jsdoc from 'eslint-plugin-jsdoc';
-import tailwind from 'eslint-plugin-tailwindcss';
 import unicorn from 'eslint-plugin-unicorn';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -40,7 +40,6 @@ export default tseslint.config(
 			...compat.extends('plugin:import/recommended'),
 			...compat.extends('plugin:import/typescript'),
 			jsdoc.configs['flat/recommended-typescript-error'],
-			...tailwind.configs['flat/recommended'],
 			unicorn.configs['flat/recommended'],
 		],
 		languageOptions: {
@@ -55,8 +54,15 @@ export default tseslint.config(
 					project: './tsconfig.json',
 				},
 			},
+			'better-tailwindcss': {
+				tailwindConfig: 'tailwind.config.mjs',
+			},
+		},
+		plugins: {
+			'better-tailwindcss': tailwind,
 		},
 		rules: {
+			...tailwind.configs['recommended-error'].rules,
 			'@angular-eslint/prefer-standalone': 'off',
 			'@angular-eslint/prefer-standalone-component': 'off',
 			'@typescript-eslint/naming-convention': [
@@ -107,6 +113,7 @@ export default tseslint.config(
 				},
 			],
 			'@typescript-eslint/no-extraneous-class': 'off',
+			'better-tailwindcss/enforce-consistent-line-wrapping': 'off',
 			'import/consistent-type-specifier-style': [
 				'error',
 				'prefer-inline',
@@ -175,7 +182,18 @@ export default tseslint.config(
 	...astro.configs['jsx-a11y-strict'],
 	{
 		files: ['**/*.astro'],
-		extends: [...tailwind.configs['flat/recommended']],
+		settings: {
+			'better-tailwindcss': {
+				tailwindConfig: 'tailwind.config.mjs',
+			},
+		},
+		plugins: {
+			'better-tailwindcss': tailwind,
+		},
+		rules: {
+			...tailwind.configs['recommended-error'].rules,
+			'better-tailwindcss/enforce-consistent-line-wrapping': 'off',
+		},
 	},
 	{
 		languageOptions: {

@@ -40,7 +40,7 @@
     "eslint-plugin-import": "^2.0.0",
     "eslint-plugin-jsdoc": "^51.0.0",
     "eslint-plugin-jsx-a11y": "^6.0.0",
-    "eslint-plugin-unicorn": "^59.0.0",
+    "eslint-plugin-unicorn": "^60.0.0",
     "globals": "^16.0.0",
     "husky": "^9.0.0",
     "prettier": "~3.6.0",

@@ -1,6 +1,6 @@
 {
   "repositories": ["elliotleelewis/portfolio"],
-  "extends": ["config:recommended", ":preserveSemverRanges"],
+  "extends": ["config:recommended", "security:minimumReleaseAgeNpm", ":preserveSemverRanges"],
   "lockFileMaintenance": {
     "enabled": true
   }

@@ -76,8 +76,8 @@ importers:
         specifier: ^6.0.0
         version: 6.10.2(eslint@10.3.0(jiti@2.7.0))
       eslint-plugin-unicorn:
-        specifier: ^65.0.0
-        version: 65.0.0(eslint@10.3.0(jiti@2.7.0))
+        specifier: ^66.0.0
+        version: 66.0.0(eslint@10.3.0(jiti@2.7.0))
       globals:
         specifier: ^17.0.0
         version: 17.6.0
@@ -159,6 +159,10 @@ packages:
 
   '@babel/helper-validator-identifier@7.28.5':
     resolution: {integrity: sha512-qSs4ifwzKJSV39ucNjsvc6WVHs6b7S03sOh2OcHF9UHfVPqWWALUsNUVzhSBiItjRZoLHx7nIarVjqKVusUZ1Q==}
+    engines: {node: '>=6.9.0'}
+
+  '@babel/helper-validator-identifier@7.29.7':
+    resolution: {integrity: sha512-qehxGkRj55h/ff8EMaJ+cYhyaKlHIxqYDn682wQD7RNp9UujOQsHog2uS0r2vzr4pW+sXf90NeeayjcNaX3fFg==}
     engines: {node: '>=6.9.0'}
 
   '@babel/parser@7.29.3':
@@ -1903,11 +1907,11 @@ packages:
     peerDependencies:
       eslint: ^3 || ^4 || ^5 || ^6 || ^7 || ^8 || ^9
 
-  eslint-plugin-unicorn@65.0.0:
-    resolution: {integrity: sha512-wE75x2QqMuPgZXcoc8LgTz7+gk5+SZK93Cxe6jkfouKp6+FwYwjMGrbYQTMRH8HK8X6jeTBhPPI2Cun923EMLQ==}
-    engines: {node: ^20.10.0 || >=21.0.0}
+  eslint-plugin-unicorn@66.0.0:
+    resolution: {integrity: sha512-+ywdy8T3foyZ2t3nRBujGa3vfOVMobHIi5iLB0L+fogdVO3EiUJ4BAyIacogWytnweLw3hgT70LQL9KoKTY/kA==}
+    engines: {node: '>=22'}
     peerDependencies:
-      eslint: '>=9.38.0'
+      eslint: '>=10.4'
 
   eslint-scope@8.4.0:
     resolution: {integrity: sha512-sNXOfKCn74rt8RICKMvJS7XKV/Xk9kA7DyJr8mJik3S7Cwgy3qlkkmyS2uQB3jiJg6VNdZd/pDBJu0nvG2NlTg==}
@@ -3830,6 +3834,8 @@ snapshots:
 
   '@babel/helper-validator-identifier@7.28.5': {}
 
+  '@babel/helper-validator-identifier@7.29.7': {}
+
   '@babel/parser@7.29.3':
     dependencies:
       '@babel/types': 7.29.0
@@ -3895,7 +3901,7 @@ snapshots:
   '@commitlint/is-ignored@21.0.0':
     dependencies:
       '@commitlint/types': 21.0.0
-      semver: 7.8.0
+      semver: 7.8.4
 
   '@commitlint/lint@21.0.0':
     dependencies:
@@ -3967,7 +3973,7 @@ snapshots:
     dependencies:
       '@simple-libs/child-process-utils': 1.0.2
       '@simple-libs/stream-utils': 1.2.0
-      semver: 7.8.0
+      semver: 7.8.4
     optionalDependencies:
       conventional-commits-parser: 6.4.0
 
@@ -4719,7 +4725,7 @@ snapshots:
       '@typescript-eslint/visitor-keys': 8.59.2
       debug: 4.4.3
       minimatch: 10.2.5
-      semver: 7.8.0
+      semver: 7.8.4
       tinyglobby: 0.2.16
       ts-api-utils: 2.5.0(typescript@6.0.3)
       typescript: 6.0.3
@@ -4914,7 +4920,7 @@ snapshots:
       espree: 10.4.0
       fast-glob: 3.3.3
       is-glob: 4.0.3
-      semver: 7.8.0
+      semver: 7.8.4
     transitivePeerDependencies:
       - supports-color
 
@@ -5472,7 +5478,7 @@ snapshots:
   eslint-compat-utils@0.6.5(eslint@10.3.0(jiti@2.7.0)):
     dependencies:
       eslint: 10.3.0(jiti@2.7.0)
-      semver: 7.8.0
+      semver: 7.8.4
 
   eslint-config-prettier@10.1.8(eslint@10.3.0(jiti@2.7.0)):
     dependencies:
@@ -5595,10 +5601,11 @@ snapshots:
       safe-regex-test: 1.1.0
       string.prototype.includes: 2.0.1
 
-  eslint-plugin-unicorn@65.0.0(eslint@10.3.0(jiti@2.7.0)):
+  eslint-plugin-unicorn@66.0.0(eslint@10.3.0(jiti@2.7.0)):
     dependencies:
-      '@babel/helper-validator-identifier': 7.28.5
+      '@babel/helper-validator-identifier': 7.29.7
       '@eslint-community/eslint-utils': 4.9.1(eslint@10.3.0(jiti@2.7.0))
+      browserslist: 4.28.2
       change-case: 5.4.4
       ci-info: 4.4.0
       core-js-compat: 3.49.0
@@ -5611,7 +5618,7 @@ snapshots:
       jsesc: 3.1.0
       pluralize: 8.0.0
       regjsparser: 0.13.1
-      semver: 7.8.0
+      semver: 7.8.4
       strip-indent: 4.1.1
 
   eslint-scope@8.4.0:
@@ -7077,7 +7084,7 @@ snapshots:
     dependencies:
       '@img/colour': 1.1.0
       detect-libc: 2.1.2
-      semver: 7.8.0
+      semver: 7.8.4
     optionalDependencies:
       '@img/sharp-darwin-arm64': 0.34.5
       '@img/sharp-darwin-x64': 0.34.5
@@ -7395,7 +7402,7 @@ snapshots:
 
   typescript-auto-import-cache@0.3.6:
     dependencies:
-      semver: 7.8.0
+      semver: 7.8.4
 
   typescript-eslint@8.59.2(eslint@10.3.0(jiti@2.7.0))(typescript@6.0.3):
     dependencies:

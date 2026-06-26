@@ -142,6 +142,7 @@ export default tseslint.config(
 					pathGroupsExcludedImportTypes: ['builtin'],
 				},
 			],
+			'unicorn/name-replacements': 'off',
 			'unicorn/no-array-reduce': 'off',
 			'unicorn/no-null': 'off',
 			'unicorn/prefer-top-level-await': 'off',

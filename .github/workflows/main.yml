@@ -42,10 +42,9 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - uses: cloudflare/pages-action@v1
+      - uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: 08bcfcb3f50021eafc9bd1bfb1f06ad0
-          projectName: portfolio
-          directory: ./dist
+          command: pages deploy ./dist --project-name=portfolio --branch=${{ github.head_ref || github.ref_name }}
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}

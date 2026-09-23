@@ -1,6 +1,2 @@
-export const px = (px: number): string => {
-	if (Number.isNaN(px)) {
-		return '0px';
-	}
-	return `${String(px)}px`;
-};
+export const px = (px: number): string =>
+	Number.isNaN(px) ? '0px' : `${String(px)}px`;

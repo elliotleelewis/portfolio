@@ -23,11 +23,11 @@ const doorWidth = 0.8;
 const doorHeight = 1.95;
 // How close I get before the door flies open.
 const triggerDistance = 55;
-// Where Anthony stands inside, and where he stops once he's stepped out.
+// Where the occupant stands inside, and where he stops once he's stepped out.
 const insideZ = -0.2;
 const outsideZ = 1.25;
 
-interface Anthony {
+interface Occupant {
 	root: Group;
 	body: Group;
 	head: Group;
@@ -211,10 +211,10 @@ const buildGlove = (parent: Object3D): void => {
 	part(thumb, tipGeometry, tip, [0, -0.07, 0]);
 };
 
-// Anthony: slicked-back dark hair down to his collar, a huge grin, stubble,
+// The occupant: slicked-back dark hair down to his collar, a huge grin, stubble,
 // a navy half-zip windbreaker with white piping over a grey tee and a
 // silver chain.
-const buildAnthony = (parent: Object3D): Anthony => {
+const buildOccupant = (parent: Object3D): Occupant => {
 	const skin = standard('#d7a17c');
 	const hair = standard('#211611', { roughness: 0.5 });
 	const stubble = standard('#2a1c14', { transparent: true, opacity: 0.35 });
@@ -402,14 +402,19 @@ const buildAnthony = (parent: Object3D): Anthony => {
 	return { root, body, head, arms, legs };
 };
 
-export const ANTHONY_OUTHOUSE: EasterEgg = {
-	id: 'anthony-outhouse',
+export const OUTHOUSE: EasterEgg = {
+	id: 'outhouse',
 	clearingRadius: 12,
 	footprint: { halfWidth: halfSize + 0.2, halfDepth: halfSize + 0.2 },
+	gallery: {
+		caption: 'Fresh out of the log cabin loo',
+		camera: [2.4, 1.9, 5.4],
+		target: [0, 1.2, 0.6],
+	},
 	create: () => {
 		const root = new Group();
 		const hinge = buildOuthouse(root);
-		const anthony = buildAnthony(root);
+		const occupant = buildOccupant(root);
 
 		let openedAt: number | undefined;
 		const update = ({ time, player }: EasterEggFrame): void => {
@@ -442,13 +447,13 @@ export const ANTHONY_OUTHOUSE: EasterEgg = {
 
 			// Step out...
 			const step = MathUtils.smootherstep(t, 0.35, 1.15);
-			anthony.root.position.z = MathUtils.lerp(insideZ, outsideZ, step);
+			occupant.root.position.z = MathUtils.lerp(insideZ, outsideZ, step);
 			const isWalking = step > 0 && step < 1;
 			const stride = isWalking ? Math.sin(t * 13) : 0;
-			for (const [i, leg] of anthony.legs.entries()) {
+			for (const [i, leg] of occupant.legs.entries()) {
 				leg.rotation.x = stride * (i === 0 ? 0.45 : -0.45);
 			}
-			anthony.body.position.y = isWalking ? -Math.abs(stride) * 0.03 : 0;
+			occupant.body.position.y = isWalking ? -Math.abs(stride) * 0.03 : 0;
 
 			// ...then stop, bring both hands up and take a good look at them.
 			const inspect = MathUtils.smootherstep(t, 1.15, 1.65);
@@ -456,7 +461,7 @@ export const ANTHONY_OUTHOUSE: EasterEgg = {
 			for (const [
 				i,
 				{ shoulder, elbow, wrist },
-			] of anthony.arms.entries()) {
+			] of occupant.arms.entries()) {
 				const side = i === 0 ? -1 : 1;
 				shoulder.rotation.set(
 					MathUtils.lerp(stride * -0.4 * side, -0.55, inspect),
@@ -471,7 +476,7 @@ export const ANTHONY_OUTHOUSE: EasterEgg = {
 					0,
 				);
 			}
-			anthony.head.rotation.set(
+			occupant.head.rotation.set(
 				MathUtils.lerp(0, 0.4, inspect),
 				inspect * turn * 0.15,
 				inspect * Math.sin(t * 1.3) * 0.12,

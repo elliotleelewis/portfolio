@@ -4,6 +4,7 @@ import Educations from '../content/Educations.astro';
 import Experiences from '../content/Experiences.astro';
 import Footer from '../content/Footer.astro';
 import Header from '../content/Header.astro';
+import Hero from '../content/Hero.astro';
 import Links from '../content/Links.astro';
 import Skills from '../content/Skills.astro';
 import Layout from '../layout/Layout.astro';
@@ -12,7 +13,10 @@ import '../styles/global.css';
 ---
 
 <Layout title="Elliot Lewis">
-	<main class="container mx-auto flex min-h-screen flex-col gap-4 p-8 sm:py-16 md:flex-row md:px-16">
+	<div class="container mx-auto px-8 pt-8 sm:pt-16 md:px-16">
+		<Hero />
+	</div>
+	<main class="container mx-auto flex min-h-screen flex-col gap-4 p-8 sm:pb-16 md:flex-row md:px-16">
 		<div class="flex basis-3/4 flex-col gap-4 md:grow">
 			<Header />
 			<Experiences />

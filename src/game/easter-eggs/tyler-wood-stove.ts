@@ -609,7 +609,6 @@ export const TYLER_WOOD_STOVE: EasterEgg = {
 	clearingRadius: 12,
 	footprint: { halfWidth: 1, halfDepth: 0.9 },
 	gallery: {
-		name: 'Tyler',
 		caption: 'Man make fire',
 		camera: [1.4, 1.9, 4.4],
 		target: [-0.25, 1, 0.2],

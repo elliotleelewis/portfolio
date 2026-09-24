@@ -354,7 +354,6 @@ export const JAKE_TAHOE: EasterEgg = {
 	clearingRadius: 13.5,
 	footprint: { halfWidth: 1.1, halfDepth: 2.7 },
 	gallery: {
-		name: 'Jake',
 		caption: 'Reading in the back of the Tahoe',
 		camera: [3.4, 2.3, 7.4],
 		target: [0, 1.2, 1.3],

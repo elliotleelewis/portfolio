@@ -19,7 +19,6 @@ export interface EasterEggInstance {
  * space, where it faces +z.
  */
 export interface EasterEggShowcase {
-	name: string;
 	caption: string;
 	// Where the camera sits, and what it looks at.
 	camera: [number, number, number];

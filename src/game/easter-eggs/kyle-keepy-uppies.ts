@@ -307,7 +307,6 @@ export const KYLE_KEEPY_UPPIES: EasterEgg = {
 	clearingRadius: 10.5,
 	footprint: { halfWidth: 0.5, halfDepth: 0.5 },
 	gallery: {
-		name: 'Kyle',
 		caption: 'Keepy-uppies in the Everton kit',
 		camera: [1.3, 1.5, 4.3],
 		target: [0, 1, 0],

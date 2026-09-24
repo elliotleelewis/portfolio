@@ -149,8 +149,7 @@ import hero from '../media/hero.jpg';
 				class="flex-1 rounded-2xl bg-white/85 px-4 py-3 text-center text-slate-900 shadow-xl backdrop-blur-md"
 				aria-live="polite"
 			>
-				<p id="hero-gallery-name" class="text-xl font-black"></p>
-				<p id="hero-gallery-caption" class="text-sm text-slate-600"></p>
+				<p id="hero-gallery-caption" class="text-lg font-bold"></p>
 			</div>
 			<button
 				id="hero-gallery-next"
@@ -196,8 +195,6 @@ import hero from '../media/hero.jpg';
 		document.querySelector<HTMLButtonElement>('#hero-over-exit');
 	const galleryOpen =
 		document.querySelector<HTMLButtonElement>('#hero-gallery-open');
-	const galleryName =
-		document.querySelector<HTMLElement>('#hero-gallery-name');
 	const galleryCaption = document.querySelector<HTMLElement>(
 		'#hero-gallery-caption',
 	);
@@ -450,11 +447,8 @@ import hero from '../media/hero.jpg';
 
 	const showEasterEgg = (
 		index: number,
-		{ name, caption }: { name: string; caption: string },
+		{ caption }: { caption: string },
 	): void => {
-		if (galleryName) {
-			galleryName.textContent = name;
-		}
 		if (galleryCaption) {
 			galleryCaption.textContent = caption;
 		}

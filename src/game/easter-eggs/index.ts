@@ -4,6 +4,7 @@ import { JAKE_TAHOE } from './jake-tahoe';
 import { KEVIN_MONEY_RAIN } from './kevin-money-rain';
 import { KYLE_KEEPY_UPPIES } from './kyle-keepy-uppies';
 import { TOMMY_BATTLESTATION } from './tommy-battlestation';
+import { TYLER_CAMPFIRE } from './tyler-campfire';
 import { type EasterEgg } from './types';
 
 export { disposeObject } from './parts';
@@ -17,6 +18,7 @@ const allEasterEggs: EasterEgg[] = [
 	KEVIN_MONEY_RAIN,
 	TOMMY_BATTLESTATION,
 	HECTOR_JAILBREAK,
+	TYLER_CAMPFIRE,
 ];
 
 // Shuffled once per page load (Fisher–Yates), then placed down the mountain

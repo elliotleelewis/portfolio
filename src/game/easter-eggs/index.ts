@@ -1,27 +1,25 @@
-import { ANTHONY_OUTHOUSE } from './anthony-outhouse';
-import { HECTOR_JAILBREAK } from './hector-jailbreak';
-import { JAKE_TAHOE } from './jake-tahoe';
-import { KEVIN_MONEY_RAIN } from './kevin-money-rain';
-import { KYLE_KEEPY_UPPIES } from './kyle-keepy-uppies';
-import { TOMMY_BATTLESTATION } from './tommy-battlestation';
-import { TYLER_WOOD_STOVE } from './tyler-wood-stove';
+import { BATTLESTATION } from './battlestation';
+import { JAILBREAK } from './jailbreak';
+import { KEEPY_UPPIES } from './keepy-uppies';
+import { MONEY_RAIN } from './money-rain';
+import { OUTHOUSE } from './outhouse';
+import { TAHOE_READER } from './tahoe-reader';
 import { type EasterEgg } from './types';
+import { WOOD_STOVE } from './wood-stove';
 
 export { disposeObject } from './parts';
 export type { EasterEgg, EasterEggInstance, EasterEggShowcase } from './types';
 
-// Landmarks from the stag do, in alphabetical order of their ids (the
-// gallery's order).
-// Add new ones here.
+// Landmarks from the stag do, in gallery order. Add new ones here.
 export const ALL_EASTER_EGGS: readonly EasterEgg[] = [
-	ANTHONY_OUTHOUSE,
-	HECTOR_JAILBREAK,
-	JAKE_TAHOE,
-	KEVIN_MONEY_RAIN,
-	KYLE_KEEPY_UPPIES,
-	TOMMY_BATTLESTATION,
-	TYLER_WOOD_STOVE,
-].toSorted((a, b) => a.id.localeCompare(b.id));
+	OUTHOUSE,
+	JAILBREAK,
+	TAHOE_READER,
+	MONEY_RAIN,
+	KEEPY_UPPIES,
+	BATTLESTATION,
+	WOOD_STOVE,
+];
 
 // Shuffled once per page load (Fisher–Yates), then placed down the mountain
 // in that order and round again, so every run in a visit shares the order.

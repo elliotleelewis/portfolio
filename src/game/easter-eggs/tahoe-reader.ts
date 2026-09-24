@@ -16,9 +16,9 @@ import {
 import { joint, part, standard } from './parts';
 import { type EasterEgg, type EasterEggFrame } from './types';
 
-// Jake: long wavy brown hair, round glasses, stubble, a stonewashed denim
+// The reader: long wavy brown hair, round glasses, stubble, a stonewashed denim
 // jacket over a white band tee, and his nose in a book.
-const buildJake = (
+const buildReader = (
 	parent: Object3D,
 ): { head: Group; page: Group; upper: Group; knees: Group[] } => {
 	const skin = standard('#e9c1a4');
@@ -349,8 +349,8 @@ const buildTahoe = (parent: Object3D): void => {
 	}
 };
 
-export const JAKE_TAHOE: EasterEgg = {
-	id: 'jake-tahoe',
+export const TAHOE_READER: EasterEgg = {
+	id: 'tahoe-reader',
 	clearingRadius: 13.5,
 	footprint: { halfWidth: 1.1, halfDepth: 2.7 },
 	gallery: {
@@ -361,7 +361,7 @@ export const JAKE_TAHOE: EasterEgg = {
 	create: () => {
 		const root = new Group();
 		buildTahoe(root);
-		const jake = buildJake(joint(root, [0, 1.06, 2.25]));
+		const reader = buildReader(joint(root, [0, 1.06, 2.25]));
 
 		let lookUp = 0;
 		const update = ({ time, dt, player }: EasterEggFrame): void => {
@@ -370,19 +370,19 @@ export const JAKE_TAHOE: EasterEgg = {
 			const target = distance < 28 ? 1 : 0;
 			lookUp = MathUtils.lerp(lookUp, target, 1 - Math.exp(-4 * dt));
 			const yaw = Math.atan2(player.x, Math.max(1, player.z - 2.25));
-			jake.head.rotation.set(
+			reader.head.rotation.set(
 				MathUtils.lerp(0.4, -0.15, lookUp),
 				MathUtils.clamp(yaw, -0.9, 0.9) * lookUp,
 				0,
 			);
-			jake.upper.rotation.x = MathUtils.lerp(0.14, 0.02, lookUp);
+			reader.upper.rotation.x = MathUtils.lerp(0.14, 0.02, lookUp);
 
 			// Turn a page every few seconds (right page over to the left).
 			const turn = MathUtils.smootherstep(time % 5, 4.3, 4.9);
-			jake.page.rotation.y = -0.3 - turn * (Math.PI - 0.6);
+			reader.page.rotation.y = -0.3 - turn * (Math.PI - 0.6);
 
 			// Swing the legs.
-			for (const [i, knee] of jake.knees.entries()) {
+			for (const [i, knee] of reader.knees.entries()) {
 				knee.rotation.x = Math.sin(time * 2 + i * Math.PI) * 0.18;
 			}
 		};

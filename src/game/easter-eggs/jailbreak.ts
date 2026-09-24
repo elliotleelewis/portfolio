@@ -17,7 +17,7 @@ import {
 import { canvasTexture, joint, part, standard } from './parts';
 import { type EasterEgg, type EasterEggFrame } from './types';
 
-// How close I get before Hector makes his break.
+// How close I get before the prisoner makes his break.
 const triggerDistance = 50;
 // Radius of the circle they run round, and how fast.
 const circleRadius = 2.3;
@@ -40,7 +40,7 @@ interface Outfit {
 	top: string;
 	bottoms: string;
 	shoes: string;
-	// Torso radius: Hector's a bit stockier.
+	// Torso radius: the prisoner's a bit stockier.
 	build: number;
 }
 
@@ -167,10 +167,10 @@ const face = (
 	mouth.rotation.x = -0.25;
 };
 
-// Hector: short dark hair, spiky at the front; a full dark beard; a maroon
+// The prisoner: short dark hair, spiky at the front; a full dark beard; a maroon
 // hooded long-sleeve and khakis. (The officer's taken his backpack.)
-const buildHector = (parent: Object3D): Runner => {
-	const hector = buildRunner(parent, {
+const buildPrisoner = (parent: Object3D): Runner => {
+	const prisoner = buildRunner(parent, {
 		skin: '#cf9a74',
 		top: '#6b1f2c',
 		bottoms: '#b8a68b',
@@ -179,7 +179,7 @@ const buildHector = (parent: Object3D): Runner => {
 	});
 	const hair = standard('#1c1411', { roughness: 0.5 });
 	const beard = standard('#1f1612', { roughness: 0.95 });
-	const { head, body } = hector;
+	const { head, body } = prisoner;
 	face(head, { hair, isGrinning: true, isBearded: true });
 
 	// Full, neatly trimmed beard and moustache.
@@ -230,7 +230,7 @@ const buildHector = (parent: Object3D): Runner => {
 		standard('#e9e6f2'),
 		[0.12, 1.36, 0.172],
 	);
-	return hector;
+	return prisoner;
 };
 
 // A police officer: navy uniform, hi-vis vest, peaked cap with a chequered
@@ -365,8 +365,8 @@ const run = (runner: Runner, phase: number, lean: number): void => {
 	runner.body.position.y = Math.abs(Math.cos(phase)) * 0.06;
 };
 
-export const HECTOR_JAILBREAK: EasterEgg = {
-	id: 'hector-jailbreak',
+export const JAILBREAK: EasterEgg = {
+	id: 'jailbreak',
 	clearingRadius: 12,
 	footprint: { halfWidth: circleRadius + 0.4, halfDepth: circleRadius + 0.4 },
 	gallery: {
@@ -376,17 +376,17 @@ export const HECTOR_JAILBREAK: EasterEgg = {
 	},
 	create: () => {
 		const root = new Group();
-		const hector = buildHector(root);
+		const prisoner = buildPrisoner(root);
 		const officer = buildOfficer(root);
-		const hectorStart = new Vector3(0.35, 0, 0);
+		const prisonerStart = new Vector3(0.35, 0, 0);
 		const officerStart = new Vector3(-0.45, 0, 0.1);
-		hector.root.position.copy(hectorStart);
+		prisoner.root.position.copy(prisonerStart);
 		officer.root.position.copy(officerStart);
 		officer.root.rotation.y = 0.35;
 
 		// Handcuffs: a cuff on each wrist, three links between them.
 		const steel = standard('#c5cbd1', { metalness: 0.9, roughness: 0.25 });
-		for (const { wrist } of hector.arms) {
+		for (const { wrist } of prisoner.arms) {
 			const cuff = part(
 				wrist,
 				new TorusGeometry(0.05, 0.011, 8, 16),
@@ -403,7 +403,7 @@ export const HECTOR_JAILBREAK: EasterEgg = {
 		});
 
 		let triggeredAt: number | undefined;
-		let hectorAngle = 0;
+		let prisonerAngle = 0;
 		let isSnapped = false;
 		const update = ({ time, dt, player }: EasterEggFrame): void => {
 			const distance = Math.hypot(player.x, player.z);
@@ -413,7 +413,7 @@ export const HECTOR_JAILBREAK: EasterEgg = {
 				distance < triggerDistance
 			) {
 				triggeredAt = time;
-				hectorAngle = Math.atan2(hectorStart.z, hectorStart.x);
+				prisonerAngle = Math.atan2(prisonerStart.z, prisonerStart.x);
 			}
 			const t = triggeredAt === undefined ? -1 : time - triggeredAt;
 
@@ -424,7 +424,7 @@ export const HECTOR_JAILBREAK: EasterEgg = {
 				for (const [
 					i,
 					{ shoulder, elbow, wrist },
-				] of hector.arms.entries()) {
+				] of prisoner.arms.entries()) {
 					const side = i === 0 ? -1 : 1;
 					shoulder.rotation.set(
 						0.4 + strain,
@@ -435,10 +435,10 @@ export const HECTOR_JAILBREAK: EasterEgg = {
 					elbow.rotation.set(0.35, 0, side * -1.45);
 					wrist.rotation.set(0, 0, 0);
 				}
-				hector.head.rotation.set(0.1, Math.sin(time * 0.7) * 0.3, 0);
+				prisoner.head.rotation.set(0.1, Math.sin(time * 0.7) * 0.3, 0);
 				// The chain hangs between his wrists.
 				root.updateMatrixWorld(true);
-				const [left, right] = hector.arms.map(({ wrist }) =>
+				const [left, right] = prisoner.arms.map(({ wrist }) =>
 					root.worldToLocal(wrist.getWorldPosition(new Vector3())),
 				);
 				for (const [i, { mesh }] of links.entries()) {
@@ -492,7 +492,10 @@ export const HECTOR_JAILBREAK: EasterEgg = {
 					breakAt,
 					breakAt + 0.15,
 				);
-				for (const [i, { shoulder, elbow }] of hector.arms.entries()) {
+				for (const [
+					i,
+					{ shoulder, elbow },
+				] of prisoner.arms.entries()) {
 					const side = i === 0 ? -1 : 1;
 					shoulder.rotation.set(
 						0,
@@ -501,7 +504,7 @@ export const HECTOR_JAILBREAK: EasterEgg = {
 					);
 					elbow.rotation.set(0, 0, side * 0.3);
 				}
-				hector.head.rotation.set(-0.2, 0, 0);
+				prisoner.head.rotation.set(-0.2, 0, 0);
 				const startle = MathUtils.smootherstep(
 					t,
 					breakAt,
@@ -522,11 +525,11 @@ export const HECTOR_JAILBREAK: EasterEgg = {
 
 			// Round and round they go.
 			const running = t - runAt;
-			hectorAngle += (runSpeed / circleRadius) * dt;
-			const officerAngle = hectorAngle - chaseGap;
+			prisonerAngle += (runSpeed / circleRadius) * dt;
+			const officerAngle = prisonerAngle - chaseGap;
 			const ease = MathUtils.smootherstep(running, 0, 0.6);
 			for (const [runner, angle, start] of [
-				[hector, hectorAngle, hectorStart],
+				[prisoner, prisonerAngle, prisonerStart],
 				[officer, officerAngle, officerStart],
 			] as const) {
 				const x = Math.cos(angle) * circleRadius;
@@ -544,8 +547,8 @@ export const HECTOR_JAILBREAK: EasterEgg = {
 				run(runner, time * 13 + (runner === officer ? 1.3 : 0), 0.22);
 			}
 
-			// Hector pumps his arms and keeps checking over his shoulder.
-			for (const [i, { shoulder, elbow }] of hector.arms.entries()) {
+			// The prisoner pumps his arms and keeps checking over his shoulder.
+			for (const [i, { shoulder, elbow }] of prisoner.arms.entries()) {
 				const side = i === 0 ? -1 : 1;
 				shoulder.rotation.set(
 					Math.sin(time * 13) * side * 0.9,
@@ -554,12 +557,12 @@ export const HECTOR_JAILBREAK: EasterEgg = {
 				);
 				elbow.rotation.set(-1.3, 0, 0);
 			}
-			hector.head.rotation.set(
+			prisoner.head.rotation.set(
 				0,
 				Math.sin(time * 2.2) > 0 ? 1.1 : 0.15,
 				0,
 			);
-			hector.body.rotation.z = 0.12;
+			prisoner.body.rotation.z = 0.12;
 
 			// The officer reaches out for him, hand on his hat.
 			const [officerLeft, officerRight] = officer.arms;

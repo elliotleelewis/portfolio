@@ -20,7 +20,7 @@ import {
 import { canvasTexture, joint, part, standard } from './parts';
 import { type EasterEgg, type EasterEggFrame } from './types';
 
-// Tommy sits at z = sitZ facing -z, at a low table whose top is at
+// The worker sits at z = sitZ facing -z, at a low table whose top is at
 // tableHeight. His screens face him, and so face me (+z) as I roll up.
 const tableHeight = 0.4;
 const tableZ = -0.3;
@@ -419,9 +419,9 @@ const buildWorkstation = (parent: Object3D): Workstation => {
 };
 
 // ---------------------------------------------------------------------------
-// Tommy
+// The worker
 
-interface Tommy {
+interface Worker {
 	upper: Group;
 	head: Group;
 	wrists: Group[];
@@ -452,9 +452,9 @@ const limb = (
 	);
 };
 
-// Tommy: short dark hair, a neat full beard, clubmaster sunglasses, and an
+// The worker: short dark hair, a neat full beard, clubmaster sunglasses, and an
 // olive zip-up fleece hoodie. Built facing +z, sitting cross-legged.
-const buildTommy = (parent: Object3D): Tommy => {
+const buildWorker = (parent: Object3D): Worker => {
 	const skin = standard('#efc6aa');
 	const hair = standard('#3a2619', { roughness: 0.85 });
 	const beard = standard('#4f3423', { roughness: 0.95 });
@@ -685,8 +685,8 @@ const buildTommy = (parent: Object3D): Tommy => {
 	return { upper, head, wrists, elbows, shoulders };
 };
 
-export const TOMMY_BATTLESTATION: EasterEgg = {
-	id: 'tommy-battlestation',
+export const BATTLESTATION: EasterEgg = {
+	id: 'battlestation',
 	clearingRadius: 13.5,
 	footprint: { halfWidth: 1.5, halfDepth: 0.9 },
 	gallery: {
@@ -697,16 +697,16 @@ export const TOMMY_BATTLESTATION: EasterEgg = {
 	create: () => {
 		const root = new Group();
 		const station = buildWorkstation(root);
-		// Tommy faces his screens (-z), on the near side of the table.
+		// The worker faces his screens (-z), on the near side of the table.
 		const seat = joint(root, [0.08, 0, sitZ]);
 		seat.rotation.y = Math.PI;
-		const tommy = buildTommy(seat);
+		const worker = buildWorker(seat);
 
 		const rgbColor = new Color();
 		let glance = 0;
 		const update = ({ time, dt, player }: EasterEggFrame): void => {
 			// Hammering away at the keyboard.
-			for (const [i, wrist] of tommy.wrists.entries()) {
+			for (const [i, wrist] of worker.wrists.entries()) {
 				const tap = Math.max(0, Math.sin(time * 22 + i * 1.9)) ** 3;
 				wrist.rotation.x = 0.6 + tap * 0.35;
 				wrist.rotation.z = Math.sin(time * 3.1 + i) * 0.15;
@@ -717,7 +717,7 @@ export const TOMMY_BATTLESTATION: EasterEgg = {
 				0.55,
 				0.8,
 			);
-			const [, rightShoulder] = tommy.shoulders;
+			const [, rightShoulder] = worker.shoulders;
 			rightShoulder.rotation.z = 0.12 - mouse * 0.35;
 
 			// Eyes flick between the screens.
@@ -734,15 +734,15 @@ export const TOMMY_BATTLESTATION: EasterEgg = {
 			);
 			// Seen from behind him, I'm off to one side.
 			const side = player.x >= 0 ? -1 : 1;
-			tommy.upper.rotation.y = side * 0.45 * glance;
-			tommy.head.rotation.set(
+			worker.upper.rotation.y = side * 0.45 * glance;
+			worker.head.rotation.set(
 				MathUtils.lerp(
-					tommy.head.rotation.x,
+					worker.head.rotation.x,
 					MathUtils.lerp(targetPitch, -0.05, glance),
 					1 - Math.exp(-8 * dt),
 				),
 				MathUtils.lerp(
-					tommy.head.rotation.y,
+					worker.head.rotation.y,
 					MathUtils.lerp(targetYaw, side * 1.25, glance),
 					1 - Math.exp(-8 * dt),
 				),

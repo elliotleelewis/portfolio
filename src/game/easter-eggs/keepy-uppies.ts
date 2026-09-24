@@ -26,7 +26,7 @@ const touchHeight = 0.34;
 const ballRadius = 0.11;
 const puffCount = 8;
 
-interface Kyle {
+interface Juggler {
 	body: Group;
 	head: Group;
 	legs: { hip: Group; knee: Group }[];
@@ -75,9 +75,9 @@ const buildBall = (): Mesh => {
 	return ball;
 };
 
-// Kyle: navy trucker cap with a stars-and-stripes patch, moustache and
+// The juggler: navy trucker cap with a stars-and-stripes patch, moustache and
 // goatee, in the royal blue Everton home kit, fag in mouth.
-const buildKyle = (parent: Object3D): Kyle => {
+const buildJuggler = (parent: Object3D): Juggler => {
 	const skin = standard('#d8a684');
 	const hair = standard('#2a1c14', { roughness: 0.95 });
 	const stubble = standard('#2a1c14', { transparent: true, opacity: 0.45 });
@@ -302,8 +302,8 @@ const buildKyle = (parent: Object3D): Kyle => {
 	};
 };
 
-export const KYLE_KEEPY_UPPIES: EasterEgg = {
-	id: 'kyle-keepy-uppies',
+export const KEEPY_UPPIES: EasterEgg = {
+	id: 'keepy-uppies',
 	clearingRadius: 10.5,
 	footprint: { halfWidth: 0.5, halfDepth: 0.5 },
 	gallery: {
@@ -313,7 +313,7 @@ export const KYLE_KEEPY_UPPIES: EasterEgg = {
 	},
 	create: () => {
 		const root = new Group();
-		const kyle = buildKyle(root);
+		const juggler = buildJuggler(root);
 		const ball = buildBall();
 		root.add(ball);
 
@@ -336,7 +336,7 @@ export const KYLE_KEEPY_UPPIES: EasterEgg = {
 			const touch = Math.floor(beats);
 			const s = beats - touch;
 			const fromSide = touch % 2 === 0 ? 1 : -1;
-			for (const [i, { hip, knee }] of kyle.legs.entries()) {
+			for (const [i, { hip, knee }] of juggler.legs.entries()) {
 				const side = i === 0 ? -1 : 1;
 				// Distance (in touches) to this foot's nearest touch.
 				const phase = MathUtils.euclideanModulo(
@@ -361,8 +361,9 @@ export const KYLE_KEEPY_UPPIES: EasterEgg = {
 			ball.rotation.z += dt * fromSide * 1.5;
 
 			// Balance: a bit of bob, arms out, eyes on the ball.
-			kyle.body.position.y = -Math.abs(Math.sin(beats * Math.PI)) * 0.03;
-			for (const [i, arm] of kyle.arms.entries()) {
+			juggler.body.position.y =
+				-Math.abs(Math.sin(beats * Math.PI)) * 0.03;
+			for (const [i, arm] of juggler.arms.entries()) {
 				const side = i === 0 ? -1 : 1;
 				arm.rotation.z = side * (0.5 + Math.sin(time * 3 + i) * 0.12);
 				arm.rotation.x = -0.15;
@@ -377,14 +378,14 @@ export const KYLE_KEEPY_UPPIES: EasterEgg = {
 			);
 			const ballPitch = 0.35 - (ball.position.y - touchHeight) * 0.3;
 			const yaw = MathUtils.clamp(Math.atan2(player.x, player.z), -1, 1);
-			kyle.head.rotation.set(
+			juggler.head.rotation.set(
 				MathUtils.lerp(ballPitch, -0.05, look),
 				yaw * look,
 				0,
 			);
 
 			// The cigarette glows as he draws on it, and puffs out smoke.
-			kyle.ember.emissiveIntensity = 0.7 + Math.sin(time * 1.7) * 0.4;
+			juggler.ember.emissiveIntensity = 0.7 + Math.sin(time * 1.7) * 0.4;
 			for (const puff of puffs) {
 				puff.age += dt;
 				if (puff.age > 2.4) {
@@ -393,11 +394,11 @@ export const KYLE_KEEPY_UPPIES: EasterEgg = {
 				const k = puff.age / 2.4;
 				// Drifts off to the side and away from his face as it rises.
 				puff.mesh.position.set(
-					kyle.emberTip.x +
+					juggler.emberTip.x +
 						k * 0.35 +
 						Math.sin(k * 7 + time) * 0.04 * k,
-					kyle.emberTip.y + k * 0.55,
-					kyle.emberTip.z + k * 0.25,
+					juggler.emberTip.y + k * 0.55,
+					juggler.emberTip.z + k * 0.25,
 				);
 				puff.mesh.scale.setScalar(0.3 + k * 1.4);
 				puff.material.opacity = 0.5 * (1 - k);

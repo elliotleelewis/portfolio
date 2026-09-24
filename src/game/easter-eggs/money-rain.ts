@@ -116,7 +116,7 @@ const noteTexture = (value: string, color: string): CanvasTexture =>
 		context.fillText('CANADA', 10, 44);
 	});
 
-interface Kevin {
+interface Dancer {
 	root: Group;
 	body: Group;
 	head: Group;
@@ -124,9 +124,9 @@ interface Kevin {
 	legs: { hip: Group; knee: Group }[];
 }
 
-// Kevin: short dark hair, faded at the sides; trimmed moustache and goatee;
+// The dancer: short dark hair, faded at the sides; trimmed moustache and goatee;
 // the widest grin; a gold chain; and a Portugal-flag tee.
-const buildKevin = (parent: Object3D): Kevin => {
+const buildDancer = (parent: Object3D): Dancer => {
 	const skin = standard('#e8bf9f');
 	const hair = standard('#2a1d16', { roughness: 0.8 });
 	const fade = standard('#2a1d16', { transparent: true, opacity: 0.55 });
@@ -382,8 +382,8 @@ interface Money {
 	rest: number;
 }
 
-export const KEVIN_MONEY_RAIN: EasterEgg = {
-	id: 'kevin-money-rain',
+export const MONEY_RAIN: EasterEgg = {
+	id: 'money-rain',
 	clearingRadius: 10.5,
 	footprint: { halfWidth: 0.5, halfDepth: 0.5 },
 	gallery: {
@@ -393,7 +393,7 @@ export const KEVIN_MONEY_RAIN: EasterEgg = {
 	},
 	create: () => {
 		const root = new Group();
-		const kevin = buildKevin(root);
+		const dancer = buildDancer(root);
 		const cloud = buildCloud(root);
 
 		// The money: a flurry of notes, plus the odd loonie.
@@ -470,21 +470,21 @@ export const KEVIN_MONEY_RAIN: EasterEgg = {
 			);
 
 			// Hop on every beat, hips swinging.
-			kevin.body.position.y = bounce * 0.12;
+			dancer.body.position.y = bounce * 0.12;
 			// Every other bar ends with a full spin.
 			const spin =
 				bar % 2 === 1
 					? MathUtils.smootherstep(inBar, 6, 8) * Math.PI * 2
 					: 0;
-			kevin.root.rotation.y = MathUtils.lerp(
+			dancer.root.rotation.y = MathUtils.lerp(
 				Math.sin(beats * Math.PI) * 0.35 + spin,
 				Math.atan2(player.x, player.z),
 				pointing,
 			);
-			kevin.body.rotation.z = Math.sin(beats * Math.PI) * 0.12;
+			dancer.body.rotation.z = Math.sin(beats * Math.PI) * 0.12;
 
 			// Knees up, alternating.
-			for (const [i, { hip, knee }] of kevin.legs.entries()) {
+			for (const [i, { hip, knee }] of dancer.legs.entries()) {
 				const lift = Math.max(0, Math.sin((beats + i) * Math.PI));
 				hip.rotation.x = -1.1 * lift;
 				knee.rotation.x = 1.4 * lift;
@@ -492,7 +492,7 @@ export const KEVIN_MONEY_RAIN: EasterEgg = {
 			}
 
 			// Raise the roof: arms pumping overhead, alternating.
-			for (const [i, { shoulder, elbow }] of kevin.arms.entries()) {
+			for (const [i, { shoulder, elbow }] of dancer.arms.entries()) {
 				const side = i === 0 ? -1 : 1;
 				const pump = Math.sin((beats + i) * Math.PI);
 				const up = 2.5 + pump * 0.35;
@@ -512,7 +512,7 @@ export const KEVIN_MONEY_RAIN: EasterEgg = {
 						),
 				);
 			}
-			kevin.head.rotation.set(
+			dancer.head.rotation.set(
 				-0.15 + bounce * 0.12,
 				0,
 				Math.sin(beats * Math.PI * 0.5) * 0.25,

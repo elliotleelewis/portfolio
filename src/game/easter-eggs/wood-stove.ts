@@ -20,11 +20,11 @@ import { type EasterEgg, type EasterEggFrame } from './types';
 
 // How close I get before he goes into overdrive and lights it.
 const triggerDistance = 65;
-// The stove sits at the origin, door facing +z; Tyler crouches beside it,
+// The stove sits at the origin, door facing +z; the stoker crouches beside it,
 // on its left, turned to the door.
-const tylerX = -0.72;
-const tylerZ = 0.5;
-const tylerFacing = 1.9;
+const stokerX = -0.72;
+const stokerZ = 0.5;
+const stokerFacing = 1.9;
 const stickCount = 8;
 const stickLength = 0.5;
 // Seconds per stick while I'm far off, and once he's in a hurry.
@@ -36,7 +36,7 @@ const catchAt = 1.9;
 const emberCount = 18;
 const smokeCount = 6;
 
-interface Tyler {
+interface Stoker {
 	root: Group;
 	body: Group;
 	upper: Group;
@@ -48,9 +48,9 @@ interface Tyler {
 	stick: Mesh;
 }
 
-// Tyler: a heathered oatmeal beanie over wavy dark hair, light stubble, a
+// The stoker: a heathered oatmeal beanie over wavy dark hair, light stubble, a
 // black quarter-zip, a silver chain and a black backpack.
-const buildTyler = (parent: Object3D): Tyler => {
+const buildStoker = (parent: Object3D): Stoker => {
 	const skin = standard('#f0c9ae');
 	const hair = standard('#2e1e15', { roughness: 0.6 });
 	const stubble = standard('#3a281c', { transparent: true, opacity: 0.3 });
@@ -572,7 +572,7 @@ const buildStove = (
 			spareGeometry,
 			i % 2 === 0 ? wood : woodLight,
 			[
-				tylerX - 0.05 + (i % 3) * 0.075,
+				stokerX - 0.05 + (i % 3) * 0.075,
 				0.035 + Math.floor(i / 3) * 0.06,
 				1.15,
 			],
@@ -595,17 +595,17 @@ const buildStove = (
 };
 
 // Crouched down at the fire: knees bent, leaning in.
-const crouch = (tyler: Tyler, amount: number): void => {
-	for (const { hip, knee } of tyler.legs) {
+const crouch = (stoker: Stoker, amount: number): void => {
+	for (const { hip, knee } of stoker.legs) {
 		hip.rotation.x = -1.3 * amount;
 		knee.rotation.x = 1.9 * amount;
 	}
-	tyler.body.position.y = -0.4 * amount;
-	tyler.upper.rotation.x = 0.55 * amount;
+	stoker.body.position.y = -0.4 * amount;
+	stoker.upper.rotation.x = 0.55 * amount;
 };
 
-export const TYLER_WOOD_STOVE: EasterEgg = {
-	id: 'tyler-wood-stove',
+export const WOOD_STOVE: EasterEgg = {
+	id: 'wood-stove',
 	clearingRadius: 12,
 	footprint: { halfWidth: 1, halfDepth: 0.9 },
 	gallery: {
@@ -616,10 +616,10 @@ export const TYLER_WOOD_STOVE: EasterEgg = {
 	create: () => {
 		const root = new Group();
 		const fire = buildStove(root);
-		const tyler = buildTyler(root);
-		tyler.root.position.set(tylerX, 0, tylerZ);
-		tyler.root.rotation.y = tylerFacing;
-		const [leftArm, rightArm] = tyler.arms;
+		const stoker = buildStoker(root);
+		stoker.root.position.set(stokerX, 0, stokerZ);
+		stoker.root.rotation.y = stokerFacing;
+		const [leftArm, rightArm] = stoker.arms;
 
 		let triggeredAt: number | undefined;
 		// Sticks placed so far, and how far through placing the next one.
@@ -656,7 +656,7 @@ export const TYLER_WOOD_STOVE: EasterEgg = {
 				}
 				const isDone = placed >= stickCount;
 				const reach = isDone ? 0 : Math.sin(progress * Math.PI);
-				crouch(tyler, 1);
+				crouch(stoker, 1);
 				// Right arm swings from the pile (his right) to the door.
 				rightArm.shoulder.rotation.set(
 					-1 - reach * 0.3,
@@ -666,41 +666,41 @@ export const TYLER_WOOD_STOVE: EasterEgg = {
 				rightArm.elbow.rotation.set(-0.6, 0, 0);
 				leftArm.shoulder.rotation.set(-0.9 + reach * 0.2, 0, -0.2);
 				leftArm.elbow.rotation.set(-0.7, 0, 0);
-				tyler.stick.visible = !isDone && progress < 0.85;
-				tyler.head.rotation.set(
+				stoker.stick.visible = !isDone && progress < 0.85;
+				stoker.head.rotation.set(
 					0.35,
 					MathUtils.lerp(-0.5, 0, progress),
 					0,
 				);
 			} else if (t < catchAt) {
 				// Crouched right down, striking a light at the base.
-				crouch(tyler, 1.1);
-				tyler.stick.visible = false;
+				crouch(stoker, 1.1);
+				stoker.stick.visible = false;
 				const strike = Math.sin((t - lightAt) * 30);
 				rightArm.shoulder.rotation.set(-1.25, 0, 0.15);
 				rightArm.elbow.rotation.set(-0.3 + strike * 0.2, 0, 0);
 				leftArm.shoulder.rotation.set(-1.2, 0, -0.15);
 				leftArm.elbow.rotation.set(-0.35, 0, 0);
-				tyler.head.rotation.set(0.6, 0, 0);
+				stoker.head.rotation.set(0.6, 0, 0);
 				fire.spark.visible = strike > 0.3;
 			} else {
 				// It's lit! Leap up, arms in the air, and shout about it, turning
 				// round to face me.
 				fire.spark.visible = false;
 				const up = MathUtils.smootherstep(t, catchAt, catchAt + 0.35);
-				crouch(tyler, 1 - up);
+				crouch(stoker, 1 - up);
 				const c = t - catchAt;
-				tyler.root.position.y = up * Math.abs(Math.sin(c * 6)) * 0.28;
-				tyler.root.rotation.y = MathUtils.lerp(tylerFacing, 0.5, up);
-				for (const [i, arm] of tyler.arms.entries()) {
+				stoker.root.position.y = up * Math.abs(Math.sin(c * 6)) * 0.28;
+				stoker.root.rotation.y = MathUtils.lerp(stokerFacing, 0.5, up);
+				for (const [i, arm] of stoker.arms.entries()) {
 					const side = i === 0 ? -1 : 1;
 					const pump = Math.sin(c * 12 + i * Math.PI) * 0.25;
 					arm.shoulder.rotation.set(0, 0, side * (2.6 + pump) * up);
 					arm.elbow.rotation.set(0, 0, side * 0.5 * up);
 				}
-				tyler.head.rotation.set(-0.35 * up, Math.sin(c * 3) * 0.3, 0);
-				tyler.smile.visible = false;
-				tyler.shout.visible = true;
+				stoker.head.rotation.set(-0.35 * up, Math.sin(c * 3) * 0.3, 0);
+				stoker.smile.visible = false;
+				stoker.shout.visible = true;
 			}
 			for (const [i, stick] of fire.sticks.entries()) {
 				stick.visible = i < placed;

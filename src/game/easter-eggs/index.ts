@@ -4,7 +4,7 @@ import { JAKE_TAHOE } from './jake-tahoe';
 import { KEVIN_MONEY_RAIN } from './kevin-money-rain';
 import { KYLE_KEEPY_UPPIES } from './kyle-keepy-uppies';
 import { TOMMY_BATTLESTATION } from './tommy-battlestation';
-import { TYLER_CAMPFIRE } from './tyler-campfire';
+import { TYLER_WOOD_STOVE } from './tyler-wood-stove';
 import { type EasterEgg } from './types';
 
 export { disposeObject } from './parts';
@@ -19,7 +19,7 @@ export const ALL_EASTER_EGGS: readonly EasterEgg[] = [
 	KEVIN_MONEY_RAIN,
 	KYLE_KEEPY_UPPIES,
 	TOMMY_BATTLESTATION,
-	TYLER_CAMPFIRE,
+	TYLER_WOOD_STOVE,
 ].toSorted((a, b) => a.gallery.name.localeCompare(b.gallery.name));
 
 // Shuffled once per page load (Fisher–Yates), then placed down the mountain

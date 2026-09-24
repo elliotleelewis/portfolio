@@ -1,10 +1,10 @@
 import {
+	BackSide,
 	BoxGeometry,
 	CapsuleGeometry,
 	CircleGeometry,
 	ConeGeometry,
 	CylinderGeometry,
-	DodecahedronGeometry,
 	Group,
 	MathUtils,
 	type Mesh,
@@ -20,10 +20,13 @@ import { type EasterEgg, type EasterEggFrame } from './types';
 
 // How close I get before he goes into overdrive and lights it.
 const triggerDistance = 65;
-// The fire sits at the origin; Tyler crouches behind it, facing +z.
-const tylerZ = -0.75;
-const stickCount = 12;
-const stickLength = 0.75;
+// The stove sits at the origin, door facing +z; Tyler crouches beside it,
+// on its left, turned to the door.
+const tylerX = -0.72;
+const tylerZ = 0.5;
+const tylerFacing = 1.9;
+const stickCount = 8;
+const stickLength = 0.5;
 // Seconds per stick while I'm far off, and once he's in a hurry.
 const stackInterval = 1;
 const hurriedInterval = 0.3;
@@ -279,112 +282,229 @@ const buildTyler = (parent: Object3D): Tyler => {
 	return { root, body, upper, head, arms, legs, smile, shout, stick };
 };
 
-// A teepee of sticks, a ring of stones, the fire and its sparks & smoke.
-const buildFire = (
+// A black cast-iron cabin wood stove on a slate hearth, with a stovepipe
+// chimney. Its door faces +z, hinged on the right.
+const buildStove = (
 	parent: Object3D,
 ): {
 	sticks: Mesh[];
+	door: Group;
 	flameGroup: Group;
 	flames: Mesh[];
+	glass: MeshStandardMaterial;
 	glow: MeshStandardMaterial;
 	spark: Mesh;
 	embers: { mesh: Mesh; age: number; drift: Vector3 }[];
 	smoke: { mesh: Mesh; material: MeshStandardMaterial; age: number }[];
+	chimneyTop: number;
 } => {
+	const iron = standard('#1b1c1e', { metalness: 0.55, roughness: 0.55 });
+	const ironDark = standard('#101112', { metalness: 0.4, roughness: 0.7 });
+	// Only its inside faces, so it doesn't hide the fire from the front.
+	const firebox = standard('#0b0908', { roughness: 1, side: BackSide });
+	const steel = standard('#b9bec4', { metalness: 0.9, roughness: 0.3 });
+	const slate = standard('#4a4f55', { roughness: 0.9 });
 	const wood = standard('#6a4b2f', { roughness: 0.95 });
 	const woodLight = standard('#8b6843', { roughness: 0.95 });
-	const stone = standard('#8a8d8f', { roughness: 1 });
-	const stoneDark = standard('#6f7274', { roughness: 1 });
 
-	// Stones round the fire pit.
-	const rock = new DodecahedronGeometry(0.1, 0);
-	for (let i = 0; i < 11; i++) {
-		const angle = (i / 11) * Math.PI * 2;
-		const mesh = part(parent, rock, i % 2 === 0 ? stone : stoneDark, [
-			Math.cos(angle) * 0.46,
-			0.05,
-			Math.sin(angle) * 0.46,
-		]);
-		mesh.scale.set(1, 0.6, 1.1);
-		mesh.rotation.y = angle * 3;
+	// Slate hearth pad.
+	part(parent, new BoxGeometry(1.1, 0.04, 1.1), slate, [0, 0.02, 0.1]);
+
+	// Legs, then the firebox: panels round an opening at the front.
+	for (const x of [-0.24, 0.24]) {
+		for (const z of [-0.19, 0.19]) {
+			part(parent, new BoxGeometry(0.06, 0.18, 0.06), iron, [x, 0.13, z]);
+		}
+	}
+	const width = 0.62;
+	const height = 0.56;
+	const depth = 0.5;
+	const bottom = 0.22;
+	const middle = bottom + height / 2;
+	const panel = (
+		size: [number, number, number],
+		position: [number, number, number],
+	): void => {
+		part(parent, new BoxGeometry(...size), iron, position);
+	};
+	panel([width, 0.04, depth], [0, bottom, 0]);
+	panel([width, 0.04, depth], [0, bottom + height, 0]);
+	panel([width, height, 0.04], [0, middle, -depth / 2]);
+	panel([0.04, height, depth], [-width / 2, middle, 0]);
+	panel([0.04, height, depth], [width / 2, middle, 0]);
+	// Front frame round the door opening.
+	const openingWidth = 0.38;
+	const openingHeight = 0.3;
+	const openingY = middle - 0.02;
+	const side = (width - openingWidth) / 2;
+	for (const x of [-1, 1]) {
+		panel(
+			[side, height, 0.04],
+			[x * (width / 2 - side / 2), middle, depth / 2],
+		);
+	}
+	panel(
+		[openingWidth, openingY - openingHeight / 2 - bottom, 0.04],
+		[0, (bottom + openingY - openingHeight / 2) / 2, depth / 2],
+	);
+	panel(
+		[openingWidth, bottom + height - openingY - openingHeight / 2, 0.04],
+		[0, (bottom + height + openingY + openingHeight / 2) / 2, depth / 2],
+	);
+	// Sooty lining inside.
+	part(
+		parent,
+		new BoxGeometry(width - 0.06, height - 0.06, depth - 0.06),
+		firebox,
+		[0, middle, -0.005],
+	).scale.z = 0.98;
+	// Cast-iron details: a lipped top plate, ribs down the sides.
+	part(parent, new BoxGeometry(width + 0.06, 0.035, depth + 0.06), ironDark, [
+		0,
+		bottom + height + 0.035,
+		0,
+	]);
+	for (const x of [-1, 1]) {
+		for (let i = 0; i < 3; i++) {
+			part(parent, new BoxGeometry(0.02, height - 0.1, 0.03), ironDark, [
+				x * (width / 2 + 0.01),
+				middle,
+				-0.15 + i * 0.15,
+			]);
+		}
 	}
 
-	// The teepee, stick by stick.
-	const stickGeometry = new CylinderGeometry(0.022, 0.026, stickLength, 6);
-	const lean = Math.asin(0.22 / stickLength);
+	// Logs, fed in one at a time.
+	const logGeometry = new CylinderGeometry(0.03, 0.034, 0.44, 7);
 	const sticks = Array.from({ length: stickCount }, (_, i) => {
-		const angle = (i / stickCount) * Math.PI * 2 + (i % 2) * 0.2;
-		const pivot = joint(parent, [0, 0, 0]);
-		pivot.rotation.y = angle;
-		const mesh = part(
-			pivot,
-			stickGeometry,
-			i % 3 === 0 ? woodLight : wood,
-			[
-				0.22 - Math.sin(lean) * (stickLength / 2),
-				Math.cos(lean) * (stickLength / 2),
-				0,
-			],
-		);
-		mesh.rotation.z = lean;
-		mesh.visible = false;
-		return mesh;
+		const layer = Math.floor(i / 4);
+		const log = part(parent, logGeometry, i % 3 === 0 ? woodLight : wood, [
+			-0.15 + (i % 4) * 0.1,
+			bottom + 0.05 + layer * 0.06,
+			-0.02 + (layer % 2) * 0.04,
+		]);
+		log.rotation.set(Math.PI / 2, 0, (i % 2) * 0.15);
+		log.visible = false;
+		return log;
 	});
 
-	// Spare sticks piled up beside him.
-	for (let i = 0; i < 5; i++) {
-		const spare = part(
-			parent,
-			stickGeometry,
-			i % 2 === 0 ? wood : woodLight,
-			[
-				0.85 + (i % 2) * 0.05,
-				0.03 + Math.floor(i / 2) * 0.045,
-				-0.6 + i * 0.03,
-			],
-		);
-		spare.rotation.set(Math.PI / 2, 0, 0.3 + i * 0.1);
-	}
-
-	// Flames: tongues of fire in three layers, each flickering on its own.
-	// Hidden until it catches.
-	const flameGroup = joint(parent, [0, 0.04, 0]);
+	// Flames in the firebox, hidden until it catches.
+	const flameGroup = joint(parent, [0, bottom + 0.1, 0]);
 	flameGroup.scale.setScalar(0.001);
 	const flames = (
 		[
-			['#ff4d00', 0.11, 0.55, 0.8, 0.13, 6],
-			['#ff9a1a', 0.08, 0.45, 0.85, 0.08, 5],
-			['#ffe066', 0.055, 0.32, 0.9, 0.03, 3],
+			['#ff4d00', 0.07, 0.3, 0.85, 0.12, 5],
+			['#ff9a1a', 0.05, 0.24, 0.9, 0.08, 4],
+			['#ffe066', 0.035, 0.16, 0.95, 0.03, 3],
 		] as const
-	).flatMap(([color, radius, height, opacity, spread, count]) => {
+	).flatMap(([color, radius, flameHeight, opacity, spread, count]) => {
 		const material = standard(color, {
 			emissive: color,
-			emissiveIntensity: 1.6,
+			emissiveIntensity: 1.8,
 			transparent: true,
 			opacity,
 			depthWrite: false,
 		});
-		const geometry = new ConeGeometry(radius, height, 7, 1, true).translate(
-			0,
-			height / 2,
-			0,
-		);
+		const geometry = new ConeGeometry(
+			radius,
+			flameHeight,
+			7,
+			1,
+			true,
+		).translate(0, flameHeight / 2, 0);
 		return Array.from({ length: count }, (_, i) => {
-			const angle = (i / count) * Math.PI * 2;
 			const tongue = part(flameGroup, geometry, material, [
-				Math.cos(angle) * spread,
+				-spread + ((i + 0.5) / count) * spread * 2,
 				0,
-				Math.sin(angle) * spread,
+				(i % 2) * 0.05 - 0.02,
 			]);
 			tongue.castShadow = false;
-			tongue.rotation.set(
-				Math.sin(angle) * 0.2,
-				0,
-				-Math.cos(angle) * 0.2,
-			);
 			return tongue;
 		});
 	});
+
+	// The door: a glass window and a steel handle. Swings open to the right.
+	const door = joint(parent, [
+		openingWidth / 2 + 0.01,
+		openingY,
+		depth / 2 + 0.03,
+	]);
+	// A frame round the window, so you can see into the firebox.
+	const doorWidth = openingWidth + 0.04;
+	const doorHeight = openingHeight + 0.04;
+	const bar = 0.06;
+	for (const y of [-1, 1]) {
+		part(door, new BoxGeometry(doorWidth, bar, 0.025), iron, [
+			-doorWidth / 2,
+			y * (doorHeight / 2 - bar / 2),
+			0,
+		]);
+	}
+	for (const x of [0, 1]) {
+		part(door, new BoxGeometry(bar, doorHeight - bar * 2, 0.025), iron, [
+			-bar / 2 - x * (doorWidth - bar),
+			0,
+			0,
+		]);
+	}
+	// Smoked glass: see-through, so the flames show, with a warm tint once
+	// it's burning.
+	const glass = standard('#2a1a10', {
+		emissive: '#ff6a10',
+		emissiveIntensity: 0,
+		roughness: 0.1,
+		metalness: 0.2,
+		transparent: true,
+		opacity: 0.45,
+		depthWrite: false,
+	});
+	part(
+		door,
+		new BoxGeometry(openingWidth - 0.06, openingHeight - 0.06, 0.006),
+		glass,
+		[-(openingWidth + 0.04) / 2, 0, 0.013],
+	).castShadow = false;
+	part(door, new CylinderGeometry(0.012, 0.012, 0.12, 8), steel, [
+		-openingWidth - 0.005,
+		0,
+		0.035,
+	]);
+
+	// Stovepipe chimney, a damper handle, and a rain cap on top.
+	const pipeTop = 2.7;
+	const pipeBottom = bottom + height + 0.05;
+	part(
+		parent,
+		new CylinderGeometry(0.075, 0.075, pipeTop - pipeBottom, 16),
+		iron,
+		[0, (pipeTop + pipeBottom) / 2, -0.1],
+	);
+	for (const y of [pipeBottom + 0.02, pipeBottom + 0.7, pipeBottom + 1.4]) {
+		part(parent, new CylinderGeometry(0.082, 0.082, 0.03, 16), ironDark, [
+			0,
+			y,
+			-0.1,
+		]);
+	}
+	part(parent, new BoxGeometry(0.2, 0.015, 0.015), steel, [
+		0.08,
+		pipeBottom + 0.35,
+		-0.1,
+	]);
+	part(parent, new ConeGeometry(0.16, 0.1, 16), ironDark, [
+		0,
+		pipeTop + 0.1,
+		-0.1,
+	]);
+	for (const angle of [0, (Math.PI * 2) / 3, (Math.PI * 4) / 3]) {
+		part(parent, new BoxGeometry(0.012, 0.08, 0.012), ironDark, [
+			Math.cos(angle) * 0.07,
+			pipeTop + 0.03,
+			-0.1 + Math.sin(angle) * 0.07,
+		]);
+	}
+
+	// Warm light spilling out onto the hearth.
 	const glowMaterial = standard('#ff7a1a', {
 		emissive: '#ff6a00',
 		emissiveIntensity: 1,
@@ -394,24 +514,25 @@ const buildFire = (
 	});
 	const glow = part(
 		parent,
-		new CircleGeometry(0.75, 24),
+		new CircleGeometry(0.35, 20),
 		glowMaterial,
-		[0, 0.015, 0],
+		[0, 0.045, 0.45],
 	);
 	glow.rotation.x = -Math.PI / 2;
 	glow.castShadow = false;
 	glow.receiveShadow = false;
 
-	// The spark as he lights it.
+	// The spark as he lights it, just inside the door.
 	const spark = part(
 		parent,
 		new SphereGeometry(0.03, 8, 6),
 		standard('#fff2a8', { emissive: '#ffd24d', emissiveIntensity: 3 }),
-		[0.05, 0.06, -0.18],
+		[0, bottom + 0.1, 0.12],
 	);
 	spark.castShadow = false;
 	spark.visible = false;
 
+	// Sparks and smoke out of the top of the chimney.
 	const emberGeometry = new BoxGeometry(0.02, 0.02, 0.02);
 	const emberMaterial = standard('#ffb347', {
 		emissive: '#ff7a00',
@@ -425,9 +546,9 @@ const buildFire = (
 			mesh,
 			age: (i / emberCount) * 1.6,
 			drift: new Vector3(
-				MathUtils.randFloatSpread(0.4),
-				MathUtils.randFloat(0.8, 1.4),
-				MathUtils.randFloatSpread(0.4),
+				MathUtils.randFloatSpread(0.5),
+				MathUtils.randFloat(0.6, 1.1),
+				MathUtils.randFloatSpread(0.5),
 			),
 		};
 	});
@@ -443,14 +564,33 @@ const buildFire = (
 		return { mesh, material, age: (i / smokeCount) * 3 };
 	});
 
+	// Spare logs piled up beside him.
+	const spareGeometry = new CylinderGeometry(0.03, 0.034, 0.5, 7);
+	for (let i = 0; i < 6; i++) {
+		const spare = part(
+			parent,
+			spareGeometry,
+			i % 2 === 0 ? wood : woodLight,
+			[
+				tylerX - 0.05 + (i % 3) * 0.075,
+				0.035 + Math.floor(i / 3) * 0.06,
+				1.15,
+			],
+		);
+		spare.rotation.set(0, 0, Math.PI / 2);
+	}
+
 	return {
 		sticks,
+		door,
 		flameGroup,
 		flames,
+		glass,
 		glow: glowMaterial,
 		spark,
 		embers,
 		smoke,
+		chimneyTop: pipeTop + 0.15,
 	};
 };
 
@@ -464,26 +604,27 @@ const crouch = (tyler: Tyler, amount: number): void => {
 	tyler.upper.rotation.x = 0.55 * amount;
 };
 
-export const TYLER_CAMPFIRE: EasterEgg = {
-	id: 'tyler-campfire',
+export const TYLER_WOOD_STOVE: EasterEgg = {
+	id: 'tyler-wood-stove',
 	clearingRadius: 12,
-	footprint: { halfWidth: 0.9, halfDepth: 1.2 },
+	footprint: { halfWidth: 1, halfDepth: 0.9 },
 	gallery: {
 		name: 'Tyler',
 		caption: 'Man make fire',
-		camera: [1.3, 1.8, 3.9],
-		target: [0, 0.8, -0.4],
+		camera: [1.4, 1.9, 4.4],
+		target: [-0.25, 1, 0.2],
 	},
 	create: () => {
 		const root = new Group();
-		const fire = buildFire(root);
+		const fire = buildStove(root);
 		const tyler = buildTyler(root);
-		tyler.root.position.z = tylerZ;
+		tyler.root.position.set(tylerX, 0, tylerZ);
+		tyler.root.rotation.y = tylerFacing;
 		const [leftArm, rightArm] = tyler.arms;
 
 		let triggeredAt: number | undefined;
 		// Sticks placed so far, and how far through placing the next one.
-		let placed = 3;
+		let placed = 2;
 		let progress = 0;
 		const update = ({ time, dt, player }: EasterEggFrame): void => {
 			const distance = Math.hypot(player.x, player.z);
@@ -496,7 +637,7 @@ export const TYLER_CAMPFIRE: EasterEgg = {
 			}
 			const t = triggeredAt === undefined ? -1 : time - triggeredAt;
 
-			// Stacking: grab a stick from the pile, lean it on the teepee.
+			// Stacking: grab a log from the pile, feed it into the stove.
 			if (t < lightAt) {
 				const interval = t < 0 ? stackInterval : hurriedInterval;
 				progress += dt / interval;
@@ -510,14 +651,14 @@ export const TYLER_CAMPFIRE: EasterEgg = {
 						placed,
 						Math.min(
 							stickCount,
-							3 + Math.ceil((t / lightAt) * stickCount),
+							2 + Math.ceil((t / lightAt) * stickCount),
 						),
 					);
 				}
 				const isDone = placed >= stickCount;
 				const reach = isDone ? 0 : Math.sin(progress * Math.PI);
 				crouch(tyler, 1);
-				// Right arm swings from the pile (his right) to the teepee.
+				// Right arm swings from the pile (his right) to the door.
 				rightArm.shoulder.rotation.set(
 					-1 - reach * 0.3,
 					0,
@@ -544,12 +685,14 @@ export const TYLER_CAMPFIRE: EasterEgg = {
 				tyler.head.rotation.set(0.6, 0, 0);
 				fire.spark.visible = strike > 0.3;
 			} else {
-				// It's lit! Leap up, arms in the air, and shout about it.
+				// It's lit! Leap up, arms in the air, and shout about it, turning
+				// round to face me.
 				fire.spark.visible = false;
 				const up = MathUtils.smootherstep(t, catchAt, catchAt + 0.35);
 				crouch(tyler, 1 - up);
 				const c = t - catchAt;
 				tyler.root.position.y = up * Math.abs(Math.sin(c * 6)) * 0.28;
+				tyler.root.rotation.y = MathUtils.lerp(tylerFacing, 0.5, up);
 				for (const [i, arm] of tyler.arms.entries()) {
 					const side = i === 0 ? -1 : 1;
 					const pump = Math.sin(c * 12 + i * Math.PI) * 0.25;
@@ -564,11 +707,18 @@ export const TYLER_CAMPFIRE: EasterEgg = {
 				stick.visible = i < placed;
 			}
 
-			// The fire itself.
+			// The door stands open while he loads it, then swings shut once
+			// it's going.
+			const shut = MathUtils.smootherstep(t, catchAt + 0.5, catchAt + 1);
+			fire.door.rotation.y = MathUtils.lerp(1.9, 0, shut);
+
+			// The fire itself, glowing through the door's window.
 			const burn =
 				t < catchAt
 					? 0
 					: MathUtils.smootherstep(t, catchAt, catchAt + 0.8);
+			const flicker =
+				0.85 + Math.sin(time * 17) * 0.1 + Math.sin(time * 41) * 0.05;
 			fire.flameGroup.scale.setScalar(Math.max(0.001, burn));
 			for (const [i, flame] of fire.flames.entries()) {
 				flame.scale.y =
@@ -576,16 +726,16 @@ export const TYLER_CAMPFIRE: EasterEgg = {
 					Math.sin(time * (11 + (i % 5) * 3) + i) * 0.22 +
 					Math.sin(time * (27 + (i % 3) * 7) + i * 2) * 0.12;
 			}
-			fire.flameGroup.rotation.y = time * 0.8;
-			fire.glow.opacity = burn * (0.18 + Math.sin(time * 17) * 0.04);
+			fire.glass.emissiveIntensity = burn * 0.45 * flicker;
+			fire.glow.opacity = burn * 0.14 * flicker;
 			for (const ember of fire.embers) {
 				ember.mesh.visible = burn > 0.3;
 				ember.age = (ember.age + dt) % 1.6;
 				const k = ember.age / 1.6;
 				ember.mesh.position.set(
 					ember.drift.x * k + Math.sin(time * 4 + k * 9) * 0.05,
-					0.2 + ember.drift.y * k,
-					ember.drift.z * k,
+					fire.chimneyTop + ember.drift.y * k,
+					-0.1 + ember.drift.z * k,
 				);
 				ember.mesh.scale.setScalar(1 - k);
 			}
@@ -593,12 +743,12 @@ export const TYLER_CAMPFIRE: EasterEgg = {
 				puff.age = (puff.age + dt) % 3;
 				const k = puff.age / 3;
 				puff.mesh.position.set(
-					Math.sin(k * 5) * 0.15,
-					0.8 + k * 2.2,
-					0.2 + k * 0.6,
+					Math.sin(k * 5) * 0.15 + k * 0.4,
+					fire.chimneyTop + k * 1.8,
+					-0.1 + k * 0.3,
 				);
-				puff.mesh.scale.setScalar(0.6 + k * 2.4);
-				puff.material.opacity = burn * 0.35 * (1 - k);
+				puff.mesh.scale.setScalar(0.5 + k * 2.4);
+				puff.material.opacity = burn * 0.4 * (1 - k);
 			}
 		};
 		return { object: root, update };

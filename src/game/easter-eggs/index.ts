@@ -1,3 +1,4 @@
+import { ANTHONY_OUTHOUSE } from './anthony-outhouse';
 import { JAKE_TAHOE } from './jake-tahoe';
 import { KYLE_KEEPY_UPPIES } from './kyle-keepy-uppies';
 import { type EasterEgg } from './types';
@@ -6,7 +7,11 @@ export { disposeObject } from './parts';
 export type { EasterEgg, EasterEggInstance } from './types';
 
 // Landmarks from the stag do. Add new ones here.
-const allEasterEggs: EasterEgg[] = [JAKE_TAHOE, KYLE_KEEPY_UPPIES];
+const allEasterEggs: EasterEgg[] = [
+	JAKE_TAHOE,
+	KYLE_KEEPY_UPPIES,
+	ANTHONY_OUTHOUSE,
+];
 
 // Shuffled once per page load (Fisher–Yates), then placed down the mountain
 // in that order and round again, so every run in a visit shares the order.

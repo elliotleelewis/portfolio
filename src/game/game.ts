@@ -55,8 +55,6 @@ export interface GameCallbacks {
 	onDistance: (metres: number) => void;
 	// A bear got me.
 	onGameOver: (score: number, metres: number) => void;
-	// I'm rolling up to one of the stag-do easter eggs.
-	onEasterEgg: (label: string) => void;
 }
 
 export interface GameOptions {
@@ -101,7 +99,6 @@ interface PlacedEasterEgg {
 	yaw: number;
 	// Created once it's close enough to matter.
 	instance: EasterEggInstance | undefined;
-	isAnnounced: boolean;
 }
 
 interface Tree {
@@ -855,7 +852,6 @@ export class Game {
 			z,
 			yaw: MathUtils.randFloatSpread(0.6),
 			instance: undefined,
-			isAnnounced: false,
 		});
 	}
 
@@ -904,15 +900,6 @@ export class Game {
 			}
 			if (!placed.instance) {
 				continue;
-			}
-			if (
-				!placed.isAnnounced &&
-				this._rolling &&
-				placed.z < player.z &&
-				placed.z > player.z - 35
-			) {
-				placed.isAnnounced = true;
-				this._callbacks.onEasterEgg(placed.egg.label);
 			}
 			this.updateEasterEgg(placed, placed.instance, dt);
 		}

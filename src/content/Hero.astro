@@ -65,15 +65,6 @@ import hero from '../media/hero.jpg';
 			Back to the trail ✕
 		</button>
 		<div
-			class="absolute inset-x-4 bottom-20 flex justify-center opacity-0 transition-all duration-500 data-show:bottom-24 data-show:opacity-100"
-			id="hero-toast"
-		>
-			<p
-				id="hero-toast-label"
-				class="rounded-full bg-slate-900/75 px-4 py-2 text-center text-sm font-semibold text-white shadow-lg backdrop-blur-sm sm:text-base"
-			></p>
-		</div>
-		<div
 			id="hero-combo"
 			class="absolute top-20 left-1/2 -translate-x-1/2 text-3xl font-black text-amber-400 opacity-0 drop-shadow-[0_2px_2px_rgb(0_0_0/0.5)] transition-all duration-300 data-show:top-16 data-show:opacity-100"
 		></div>
@@ -141,8 +132,6 @@ import hero from '../media/hero.jpg';
 	const distance = document.querySelector<HTMLElement>('#hero-distance');
 	const combo = document.querySelector<HTMLElement>('#hero-combo');
 	const hint = document.querySelector<HTMLElement>('#hero-hint');
-	const toast = document.querySelector<HTMLElement>('#hero-toast');
-	const toastLabel = document.querySelector<HTMLElement>('#hero-toast-label');
 	const over = document.querySelector<HTMLElement>('#hero-over');
 	const overScore = document.querySelector<HTMLElement>('#hero-over-score');
 	const overDistance = document.querySelector<HTMLElement>(
@@ -168,7 +157,6 @@ import hero from '../media/hero.jpg';
 
 	let game: Game | undefined;
 	let comboTimeout: ReturnType<typeof setTimeout> | undefined;
-	let toastTimeout: ReturnType<typeof setTimeout> | undefined;
 	let isGameOver = false;
 
 	const readBest = (): number => {
@@ -249,7 +237,6 @@ import hero from '../media/hero.jpg';
 
 	const resetHud = (): void => {
 		isGameOver = false;
-		delete toast?.dataset.show;
 		delete over?.dataset.show;
 		if (score) {
 			score.textContent = '0';
@@ -330,17 +317,6 @@ import hero from '../media/hero.jpg';
 					}
 				},
 				onGameOver: showGameOver,
-				onEasterEgg: (label) => {
-					if (!toast || !toastLabel) {
-						return;
-					}
-					toastLabel.textContent = label;
-					toast.dataset.show = '';
-					clearTimeout(toastTimeout);
-					toastTimeout = globalThis.setTimeout(() => {
-						delete toast.dataset.show;
-					}, 4000);
-				},
 			},
 			{ skipIntro },
 		);

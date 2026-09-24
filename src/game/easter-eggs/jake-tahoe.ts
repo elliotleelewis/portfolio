@@ -351,7 +351,6 @@ const buildTahoe = (parent: Object3D): void => {
 
 export const JAKE_TAHOE: EasterEgg = {
 	id: 'jake-tahoe',
-	label: '📖 Jake, reading in the back of the Tahoe',
 	clearingRadius: 9,
 	footprint: { halfWidth: 1.1, halfDepth: 2.7 },
 	create: () => {

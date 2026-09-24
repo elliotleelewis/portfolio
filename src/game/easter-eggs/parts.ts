@@ -59,7 +59,7 @@ export const joint = (
 };
 
 /**
- * Frees every geometry and material under an object.
+ * Frees every geometry, material and texture under an object.
  * @param object - The object to dispose.
  */
 export const disposeObject = (object: Object3D): void => {
@@ -71,6 +71,9 @@ export const disposeObject = (object: Object3D): void => {
 		const material = child.material as Material | Material[];
 		const materials = Array.isArray(material) ? material : [material];
 		for (const m of materials) {
+			if (m instanceof MeshStandardMaterial) {
+				m.map?.dispose();
+			}
 			m.dispose();
 		}
 	});

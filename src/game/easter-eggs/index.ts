@@ -1,5 +1,6 @@
 import { ANTHONY_OUTHOUSE } from './anthony-outhouse';
 import { JAKE_TAHOE } from './jake-tahoe';
+import { KEVIN_MONEY_RAIN } from './kevin-money-rain';
 import { KYLE_KEEPY_UPPIES } from './kyle-keepy-uppies';
 import { type EasterEgg } from './types';
 
@@ -11,6 +12,7 @@ const allEasterEggs: EasterEgg[] = [
 	JAKE_TAHOE,
 	KYLE_KEEPY_UPPIES,
 	ANTHONY_OUTHOUSE,
+	KEVIN_MONEY_RAIN,
 ];
 
 // Shuffled once per page load (Fisher–Yates), then placed down the mountain

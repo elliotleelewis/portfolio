@@ -1,0 +1,364 @@
+---
+import { Image } from 'astro:assets';
+
+import hero from '../media/hero.jpg';
+---
+
+<section
+	id="hero"
+	data-state="idle"
+	class="group relative h-[85svh] min-h-120 overflow-hidden rounded-2xl border border-white/20 bg-[#dde3e5] shadow-2xl select-none"
+	aria-label="Elliot on a mountain"
+>
+	<Image
+		src={hero}
+		alt="Elliot smiling on a hiking trail, with pine trees and mountains behind him"
+		class="absolute inset-0 size-full object-cover object-[50%_55%] transition-opacity duration-1500 ease-in-out group-data-[state=playing]:opacity-0"
+		widths={[640, 960, 1280, 1717]}
+		sizes="(min-width: 1536px) 1408px, (min-width: 1280px) 1152px, 100vw"
+		loading="eager"
+		fetchpriority="high"
+	/>
+
+	<div
+		id="hero-stage"
+		class="absolute inset-0 touch-none opacity-0 transition-opacity duration-1500 ease-in-out group-data-[state=playing]:opacity-100"
+	></div>
+
+	<!-- Trigger -->
+	<div class="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 bg-linear-to-t from-slate-950/70 to-transparent px-6 pt-24 pb-8 text-center text-white transition-opacity duration-500 group-data-[state=playing]:opacity-0">
+		<p class="text-sm tracking-widest text-white/80 uppercase">
+			Hi, I’m Elliot 👋
+		</p>
+		<button
+			id="hero-play"
+			type="button"
+			class="pointer-events-auto cursor-pointer rounded-full border border-white/40 bg-white/15 px-6 py-3 font-semibold whitespace-nowrap backdrop-blur-md transition group-data-[state=playing]:pointer-events-none hover:bg-white/25 focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none disabled:cursor-wait disabled:opacity-70 sm:text-lg"
+		>
+			<span class="group-data-[state=loading]:hidden">
+				Take the quick way down ⛰️
+			</span>
+			<span class="hidden group-data-[state=loading]:inline">
+				Getting ready…
+			</span>
+		</button>
+	</div>
+
+	<!-- HUD -->
+	<div
+		class="pointer-events-none absolute inset-0 opacity-0 transition-opacity delay-700 duration-700 group-data-[state=playing]:opacity-100"
+		aria-live="polite"
+	>
+		<div class="absolute top-4 left-4 flex gap-2 font-mono text-sm text-slate-900 sm:text-base">
+			<div class="rounded-lg bg-white/70 px-3 py-1.5 backdrop-blur-sm">
+				🌲 <span id="hero-score">0</span>
+			</div>
+			<div class="rounded-lg bg-white/70 px-3 py-1.5 backdrop-blur-sm">
+				<span id="hero-distance">0</span>m
+			</div>
+		</div>
+		<button
+			id="hero-exit"
+			type="button"
+			class="pointer-events-auto absolute top-4 right-4 cursor-pointer rounded-lg bg-white/70 px-3 py-1.5 text-sm text-slate-900 backdrop-blur-sm group-data-[state=idle]:pointer-events-none hover:bg-white/90 focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none sm:text-base"
+		>
+			Back to the trail ✕
+		</button>
+		<div
+			id="hero-combo"
+			class="absolute top-20 left-1/2 -translate-x-1/2 text-3xl font-black text-amber-400 opacity-0 drop-shadow-[0_2px_2px_rgb(0_0_0/0.5)] transition-all duration-300 data-show:top-16 data-show:opacity-100"
+		></div>
+		<p
+			id="hero-hint"
+			class="absolute inset-x-0 bottom-6 text-center text-sm font-semibold text-slate-900 opacity-0 transition-opacity duration-500 data-show:opacity-100 sm:text-base"
+		>
+			<span class="hidden rounded-full bg-white/70 px-4 py-2 backdrop-blur-sm sm:inline">
+				Use ← → to flatten trees · ↑ ↓ for speed · watch out for bears
+				🐻
+			</span>
+			<span class="rounded-full bg-white/70 px-4 py-2 backdrop-blur-sm sm:hidden">
+				Hold left or right to steer · dodge the bears 🐻
+			</span>
+		</p>
+	</div>
+
+	<!-- Game over -->
+	<div
+		id="hero-over"
+		class="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/30 p-6 opacity-0 transition-opacity duration-500 data-show:pointer-events-auto data-show:opacity-100"
+		role="dialog"
+		aria-labelledby="hero-over-title"
+	>
+		<div class="w-full max-w-sm rounded-2xl bg-white/85 p-6 text-center text-slate-900 shadow-2xl backdrop-blur-md">
+			<p class="text-5xl" aria-hidden="true">
+				🐻
+			</p>
+			<h3 id="hero-over-title" class="mt-2 text-2xl font-black">
+				Caught by a bear!
+			</h3>
+			<p class="mt-2">
+				You flattened <strong id="hero-over-score">0</strong> trees and
+				rolled <strong id="hero-over-distance">0</strong>m.
+			</p>
+			<p id="hero-over-best" class="mt-1 text-sm text-slate-600"></p>
+			<div class="mt-5 flex flex-wrap justify-center gap-2">
+				<button
+					id="hero-again"
+					type="button"
+					class="cursor-pointer rounded-full bg-slate-900 px-5 py-2.5 font-semibold text-white hover:bg-slate-700 focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none"
+				>
+					Roll again
+				</button>
+				<button
+					id="hero-over-exit"
+					type="button"
+					class="cursor-pointer rounded-full border border-slate-900/20 px-5 py-2.5 font-semibold hover:bg-slate-900/5 focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none"
+				>
+					Back to the trail
+				</button>
+			</div>
+		</div>
+	</div>
+</section>
+
+<script>
+	import type { Game } from '../game/game';
+
+	const hero = document.querySelector<HTMLElement>('#hero');
+	const stage = document.querySelector<HTMLElement>('#hero-stage');
+	const play = document.querySelector<HTMLButtonElement>('#hero-play');
+	const exit = document.querySelector<HTMLButtonElement>('#hero-exit');
+	const score = document.querySelector<HTMLElement>('#hero-score');
+	const distance = document.querySelector<HTMLElement>('#hero-distance');
+	const combo = document.querySelector<HTMLElement>('#hero-combo');
+	const hint = document.querySelector<HTMLElement>('#hero-hint');
+	const over = document.querySelector<HTMLElement>('#hero-over');
+	const overScore = document.querySelector<HTMLElement>('#hero-over-score');
+	const overDistance = document.querySelector<HTMLElement>(
+		'#hero-over-distance',
+	);
+	const overBest = document.querySelector<HTMLElement>('#hero-over-best');
+	const again = document.querySelector<HTMLButtonElement>('#hero-again');
+	const overExit =
+		document.querySelector<HTMLButtonElement>('#hero-over-exit');
+
+	const BEST_KEY = 'hero-best-trees';
+
+	const KEYS: Record<string, keyof Game['input'] | undefined> = {
+		ArrowLeft: 'left',
+		KeyA: 'left',
+		ArrowRight: 'right',
+		KeyD: 'right',
+		ArrowUp: 'faster',
+		KeyW: 'faster',
+		ArrowDown: 'slower',
+		KeyS: 'slower',
+	};
+
+	let game: Game | undefined;
+	let comboTimeout: ReturnType<typeof setTimeout> | undefined;
+	let isGameOver = false;
+
+	const readBest = (): number => {
+		try {
+			return Number(localStorage.getItem(BEST_KEY)) || 0;
+		} catch {
+			return 0;
+		}
+	};
+
+	const saveBest = (value: number): void => {
+		try {
+			localStorage.setItem(BEST_KEY, String(value));
+		} catch {
+			// Storage unavailable (e.g. private browsing); not worth failing over.
+		}
+	};
+
+	const setState = (state: 'idle' | 'loading' | 'playing'): void => {
+		if (hero) {
+			hero.dataset.state = state;
+		}
+	};
+
+	const onKey = (event: KeyboardEvent): void => {
+		if (!game) {
+			return;
+		}
+		if (event.code === 'Escape') {
+			stop();
+			return;
+		}
+		if (isGameOver) {
+			return;
+		}
+		const action = KEYS[event.code];
+		if (action) {
+			event.preventDefault();
+			game.input[action] = event.type === 'keydown';
+			if (action === 'left' || action === 'right') {
+				delete hint?.dataset.show;
+			}
+		}
+	};
+
+	const onPointer = (event: PointerEvent): void => {
+		if (!game || !stage) {
+			return;
+		}
+		const down = event.type === 'pointerdown' || event.buttons > 0;
+		const { left, width } = stage.getBoundingClientRect();
+		const isLeft = event.clientX - left < width / 2;
+		game.input.left = down && isLeft;
+		game.input.right = down && !isLeft;
+		if (down) {
+			delete hint?.dataset.show;
+		}
+	};
+
+	const stop = (): void => {
+		const current = game;
+		if (!current) {
+			return;
+		}
+		game = undefined;
+		isGameOver = false;
+		setState('idle');
+		delete hint?.dataset.show;
+		delete over?.dataset.show;
+		globalThis.removeEventListener('keydown', onKey);
+		globalThis.removeEventListener('keyup', onKey);
+		// Let the photo fade back in before tearing the scene down.
+		setTimeout(() => {
+			current.dispose();
+		}, 1500);
+		play?.focus();
+	};
+
+	const resetHud = (): void => {
+		isGameOver = false;
+		delete over?.dataset.show;
+		if (score) {
+			score.textContent = '0';
+		}
+		if (distance) {
+			distance.textContent = '0';
+		}
+	};
+
+	const showGameOver = (value: number, metres: number): void => {
+		isGameOver = true;
+		delete hint?.dataset.show;
+		const best = readBest();
+		if (overScore) {
+			overScore.textContent = String(value);
+		}
+		if (overDistance) {
+			overDistance.textContent = String(Math.floor(metres));
+		}
+		if (overBest) {
+			if (value > best) {
+				overBest.textContent = 'A new personal best! 🎉';
+			} else if (best > 0) {
+				overBest.textContent = `Your best: ${String(best)} trees`;
+			} else {
+				overBest.textContent =
+					'Flatten some trees before they get you!';
+			}
+		}
+		if (value > best) {
+			saveBest(value);
+		}
+		if (over) {
+			over.dataset.show = '';
+		}
+		again?.focus();
+	};
+
+	/**
+	 * Creates a game in the stage. The previous one (if any) is torn down once
+	 * the new one has drawn its first frame, so there's no flash between them.
+	 * @param skipIntro - Jump straight to the roll, for restarts.
+	 */
+	const launch = async (skipIntro: boolean): Promise<void> => {
+		if (!stage) {
+			return;
+		}
+		const { Game } = await import('../game/game');
+		const previous = game;
+		const next = new Game(
+			stage,
+			{
+				onReady: () => {
+					setState('playing');
+					previous?.dispose();
+				},
+				onRolling: () => {
+					if (hint) {
+						hint.dataset.show = '';
+					}
+				},
+				onScore: (value, streak) => {
+					if (score) {
+						score.textContent = String(value);
+					}
+					if (combo && streak > 1) {
+						combo.textContent = `${String(streak)}× combo!`;
+						combo.dataset.show = '';
+						clearTimeout(comboTimeout);
+						comboTimeout = globalThis.setTimeout(() => {
+							delete combo.dataset.show;
+						}, 900);
+					}
+				},
+				onDistance: (metres) => {
+					if (distance) {
+						distance.textContent = String(Math.floor(metres));
+					}
+				},
+				onGameOver: showGameOver,
+			},
+			{ skipIntro },
+		);
+		game = next;
+		resetHud();
+		next.start();
+	};
+
+	const start = async (): Promise<void> => {
+		if (!stage || game || hero?.dataset.state === 'loading') {
+			return;
+		}
+		setState('loading');
+		hero?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		resetHud();
+		try {
+			await launch(false);
+			globalThis.addEventListener('keydown', onKey);
+			globalThis.addEventListener('keyup', onKey);
+		} catch (error) {
+			console.error(error);
+			setState('idle');
+		}
+	};
+
+	play?.addEventListener('click', () => {
+		void start();
+	});
+	exit?.addEventListener('click', stop);
+	overExit?.addEventListener('click', stop);
+	again?.addEventListener('click', () => {
+		if (game) {
+			void launch(true);
+		}
+	});
+	for (const type of [
+		'pointerdown',
+		'pointermove',
+		'pointerup',
+		'pointercancel',
+		'pointerleave',
+	] as const) {
+		stage?.addEventListener(type, onPointer);
+	}
+</script>

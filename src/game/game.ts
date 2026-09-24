@@ -31,6 +31,12 @@ import {
 } from './bear';
 import { type Character, createCharacter } from './character';
 import {
+	EASTER_EGGS,
+	type EasterEgg,
+	type EasterEggInstance,
+	disposeObject,
+} from './easter-eggs';
+import {
 	CHUNK_LENGTH,
 	LANE_HALF_WIDTH,
 	createGroundChunk,
@@ -49,6 +55,8 @@ export interface GameCallbacks {
 	onDistance: (metres: number) => void;
 	// A bear got me.
 	onGameOver: (score: number, metres: number) => void;
+	// I'm rolling up to one of the stag-do easter eggs.
+	onEasterEgg: (label: string) => void;
 }
 
 export interface GameOptions {
@@ -86,6 +94,16 @@ interface BearActor {
 	offset: Vector3;
 }
 
+interface PlacedEasterEgg {
+	egg: EasterEgg;
+	x: number;
+	z: number;
+	yaw: number;
+	// Created once it's close enough to matter.
+	instance: EasterEggInstance | undefined;
+	isAnnounced: boolean;
+}
+
 interface Tree {
 	mesh: Mesh;
 	bear: BearActor | undefined;
@@ -118,6 +136,8 @@ const bearCount = 8;
 const treeBoundStates = new Set<BearState>(['clinging', 'alert', 'climbing']);
 const bearClimbSpeed = 3.4;
 const bearCatchRadius = 1.35;
+// Roughly how far apart the easter eggs are, in metres.
+const easterEggSpacing = 250;
 // How long after being caught before the game-over screen shows.
 const gameOverDelay = 1.6;
 
@@ -202,6 +222,8 @@ export class Game {
 	private readonly _debrisMesh: InstancedMesh;
 	private readonly _bears: BearActor[] = [];
 	private readonly _bearParts: BearParts;
+	private readonly _easterEggs: PlacedEasterEgg[] = [];
+	private _easterEggCount = 0;
 	private readonly _resizeObserver: ResizeObserver;
 	private readonly _reducedMotion: boolean;
 
@@ -319,6 +341,8 @@ export class Game {
 			});
 		}
 
+		// Plan the first easter egg before the trees, so they leave it a clearing.
+		this.planEasterEgg(-easterEggSpacing + MathUtils.randFloatSpread(40));
 		this.createTrees();
 
 		this._character = createCharacter();
@@ -424,13 +448,22 @@ export class Game {
 	 */
 	private placeTree(tree: Tree, z: number, isInitial = false): void {
 		const isInLane = Math.random() < 0.72;
-		let x = isInLane
-			? MathUtils.randFloatSpread(LANE_HALF_WIDTH * 2)
-			: Math.sign(Math.random() - 0.5) *
-				MathUtils.randFloat(LANE_HALF_WIDTH, 70);
+		const pickX = (): number =>
+			isInLane
+				? MathUtils.randFloatSpread(LANE_HALF_WIDTH * 2)
+				: Math.sign(Math.random() - 0.5) *
+					MathUtils.randFloat(LANE_HALF_WIDTH, 70);
+		let x = pickX();
 		// Keep the first stretch clear so the roll gets going.
 		if (isInitial && z > -14 && Math.abs(x) < 4) {
 			x += Math.sign(x || 1) * 5;
+		}
+		// Leave a clearing around each easter egg.
+		for (let i = 0; i < 6 && this.isInClearing(x, z); i++) {
+			x = pickX();
+		}
+		if (this.isInClearing(x, z)) {
+			x = Math.sign(x || 1) * (LANE_HALF_WIDTH + 8);
 		}
 		const scale = MathUtils.randFloat(0.75, 1.25);
 		tree.state = 'standing';
@@ -540,6 +573,7 @@ export class Game {
 		this.updateCharacter(dt);
 		this.updateTrees(dt);
 		this.updateBears(dt);
+		this.updateEasterEggs(dt);
 		this.updateDebris(dt);
 		this.updateGround();
 		this.updateCamera(dt);
@@ -801,6 +835,124 @@ export class Game {
 		const dx = x - (player.x + offsetX * t);
 		const dz = z - (player.z + offsetZ * t);
 		return dx * dx + dz * dz < 2.5 * 2.5 && z > player.z - 1.5;
+	}
+
+	/**
+	 * Picks the next easter egg and where it goes.
+	 * @param z - Roughly where down the slope to put it.
+	 */
+	private planEasterEgg(z: number): void {
+		if (EASTER_EGGS.length === 0) {
+			return;
+		}
+		const egg = EASTER_EGGS[this._easterEggCount % EASTER_EGGS.length];
+		this._easterEggCount++;
+		// Towards the middle of the slope, where the camera will catch it.
+		const margin = LANE_HALF_WIDTH - 10;
+		this._easterEggs.push({
+			egg,
+			x: MathUtils.randFloatSpread(margin * 2),
+			z,
+			yaw: MathUtils.randFloatSpread(0.6),
+			instance: undefined,
+			isAnnounced: false,
+		});
+	}
+
+	private isInClearing(x: number, z: number): boolean {
+		return this._easterEggs.some(
+			(placed) =>
+				(x - placed.x) ** 2 + (z - placed.z) ** 2 <
+				placed.egg.clearingRadius ** 2,
+		);
+	}
+
+	private updateEasterEggs(dt: number): void {
+		const player = this._character.root.position;
+
+		// Always have the next one planned well ahead of the trees.
+		const last = this._easterEggs.at(-1);
+		if (!last || last.z > player.z - treeWindow - 60) {
+			this.planEasterEgg(
+				(last?.z ?? player.z) -
+					easterEggSpacing +
+					MathUtils.randFloatSpread(60),
+			);
+		}
+
+		// Clear away the ones well behind me.
+		const behind = this._easterEggs.filter(({ z }) => z > player.z + 40);
+		for (const placed of behind) {
+			if (placed.instance) {
+				placed.instance.object.removeFromParent();
+				disposeObject(placed.instance.object);
+			}
+			this._easterEggs.splice(this._easterEggs.indexOf(placed), 1);
+		}
+
+		for (const placed of this._easterEggs) {
+			if (!placed.instance && placed.z > player.z - treeWindow) {
+				placed.instance = placed.egg.create();
+				const { object } = placed.instance;
+				object.position.set(
+					placed.x,
+					terrainHeight(placed.x, placed.z) - 0.05,
+					placed.z,
+				);
+				object.rotation.y = placed.yaw;
+				this._slope.add(object);
+			}
+			if (!placed.instance) {
+				continue;
+			}
+			if (
+				!placed.isAnnounced &&
+				this._rolling &&
+				placed.z < player.z &&
+				placed.z > player.z - 35
+			) {
+				placed.isAnnounced = true;
+				this._callbacks.onEasterEgg(placed.egg.label);
+			}
+			this.updateEasterEgg(placed, placed.instance, dt);
+		}
+	}
+
+	private updateEasterEgg(
+		placed: PlacedEasterEgg,
+		instance: EasterEggInstance,
+		dt: number,
+	): void {
+		const { object } = instance;
+		const root = this._character.root.position;
+		object.updateMatrixWorld();
+		// My position in the easter egg's own space.
+		const local = object.worldToLocal(
+			this._slope.localToWorld(this._v.copy(root)),
+		);
+		instance.update?.({ time: this._time, dt, player: local });
+
+		// Bounce off anything solid.
+		const { footprint } = placed.egg;
+		if (!footprint || !this._rolling || this._caughtAt !== undefined) {
+			return;
+		}
+		const reach = 0.9;
+		if (
+			Math.abs(local.x) > footprint.halfWidth + reach ||
+			Math.abs(local.z) > footprint.halfDepth + reach
+		) {
+			return;
+		}
+		const side = Math.sign(local.x) || 1;
+		local.x = side * (footprint.halfWidth + reach);
+		const pushed = this._slope.worldToLocal(object.localToWorld(local));
+		const away = Math.sign(pushed.x - placed.x) || side;
+		root.x = pushed.x;
+		this._lateral = away * Math.max(8, Math.abs(this._lateral));
+		if (!this._reducedMotion) {
+			this._shake = Math.min(0.4, this._shake + 0.2);
+		}
 	}
 
 	private updateBears(dt: number): void {

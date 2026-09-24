@@ -20,6 +20,15 @@ import {
 	WebGLRenderer,
 } from 'three';
 
+import {
+	BEAR_STANDING_HEIGHT,
+	BEAR_TRUNK_OFFSET,
+	type Bear,
+	type BearParts,
+	createBear,
+	createBearParts,
+	disposeBearParts,
+} from './bear';
 import { type Character, createCharacter } from './character';
 import {
 	CHUNK_LENGTH,
@@ -38,6 +47,13 @@ export interface GameCallbacks {
 	onRolling: () => void;
 	onScore: (score: number, combo: number) => void;
 	onDistance: (metres: number) => void;
+	// A bear got me.
+	onGameOver: (score: number, metres: number) => void;
+}
+
+export interface GameOptions {
+	// Skip straight to the star pose, for a quick restart.
+	skipIntro?: boolean;
 }
 
 export interface GameInput {
@@ -47,8 +63,32 @@ export interface GameInput {
 	slower: boolean;
 }
 
+type BearState =
+	| 'free'
+	| 'clinging'
+	| 'alert'
+	| 'climbing'
+	| 'dismounting'
+	| 'charging'
+	| 'leaving'
+	| 'mauling';
+
+interface BearActor {
+	rig: Bear;
+	state: BearState;
+	tree: Tree | undefined;
+	timer: number;
+	// Height of the bear's middle above the ground.
+	height: number;
+	heading: number;
+	gait: number;
+	// Where the bear stands relative to me once it has caught me.
+	offset: Vector3;
+}
+
 interface Tree {
 	mesh: Mesh;
+	bear: BearActor | undefined;
 	state: 'standing' | 'falling';
 	yaw: number;
 	axis: Vector3;
@@ -73,6 +113,13 @@ const treeCount = 170;
 const treeWindow = 230;
 const debrisCount = 320;
 const contactOffset = 0.05;
+const bearCount = 8;
+// States in which a bear is still up (or on) its tree.
+const treeBoundStates = new Set<BearState>(['clinging', 'alert', 'climbing']);
+const bearClimbSpeed = 3.4;
+const bearCatchRadius = 1.35;
+// How long after being caught before the game-over screen shows.
+const gameOverDelay = 1.6;
 
 // Intro timeline, in seconds.
 const lookStart = 1.5;
@@ -153,6 +200,8 @@ export class Game {
 	private readonly _trees: Tree[] = [];
 	private readonly _debris: Debris[] = [];
 	private readonly _debrisMesh: InstancedMesh;
+	private readonly _bears: BearActor[] = [];
+	private readonly _bearParts: BearParts;
 	private readonly _resizeObserver: ResizeObserver;
 	private readonly _reducedMotion: boolean;
 
@@ -168,6 +217,9 @@ export class Game {
 	private _lastHit = -10;
 	private _shake = 0;
 	private _debrisCursor = 0;
+	private _caughtAt: number | undefined;
+	private _isGameOverReported = false;
+	private _cameraZoom = 1;
 
 	private readonly _v = new Vector3();
 	private readonly _v2 = new Vector3();
@@ -183,9 +235,16 @@ export class Game {
 		slower: false,
 	};
 
-	public constructor(host: HTMLElement, callbacks: GameCallbacks) {
+	public constructor(
+		host: HTMLElement,
+		callbacks: GameCallbacks,
+		options: GameOptions = {},
+	) {
 		this._host = host;
 		this._callbacks = callbacks;
+		if (options.skipIntro) {
+			this._time = starEnd - 0.4;
+		}
 		this._reducedMotion = globalThis.matchMedia(
 			'(prefers-reduced-motion: reduce)',
 		).matches;
@@ -241,6 +300,23 @@ export class Game {
 			shapeGroundChunk(chunk, -CHUNK_LENGTH / 2 - i * CHUNK_LENGTH);
 			this._slope.add(chunk);
 			this._ground.push(chunk);
+		}
+
+		this._bearParts = createBearParts();
+		for (let i = 0; i < bearCount; i++) {
+			const rig = createBear(this._bearParts);
+			rig.root.visible = false;
+			this._slope.add(rig.root);
+			this._bears.push({
+				rig,
+				state: 'free',
+				tree: undefined,
+				timer: 0,
+				height: 0,
+				heading: 0,
+				gait: Math.random() * 10,
+				offset: new Vector3(),
+			});
 		}
 
 		this.createTrees();
@@ -300,6 +376,7 @@ export class Game {
 			mesh.castShadow = true;
 			const tree: Tree = {
 				mesh,
+				bear: undefined,
 				state: 'standing',
 				yaw: 0,
 				axis: new Vector3(),
@@ -366,6 +443,53 @@ export class Game {
 		tree.mesh.scale.setScalar(scale);
 		tree.mesh.position.set(x, terrainHeight(x, z) - 0.15, z);
 		tree.mesh.quaternion.setFromAxisAngle(this._up, tree.yaw);
+
+		if (tree.bear) {
+			this.releaseBear(tree.bear);
+		}
+		// Now and then, a bear is up the tree. More of them further down.
+		const bearChance = Math.min(0.08, 0.025 + this._distance / 12_000);
+		const bear = this._bears.find(({ state }) => state === 'free');
+		if (bear && isInLane && z < -70 && Math.random() < bearChance) {
+			this.attachBear(bear, tree);
+		}
+	}
+
+	/**
+	 * Sends a bear up a tree, clinging to the uphill side of the trunk.
+	 * @param bear - A free bear.
+	 * @param tree - The tree to climb.
+	 */
+	private attachBear(bear: BearActor, tree: Tree): void {
+		const { rig } = bear;
+		const scale = tree.mesh.scale.x;
+		bear.state = 'clinging';
+		bear.tree = tree;
+		bear.timer = 0;
+		bear.height = MathUtils.randFloat(2.6, 3.8) * scale;
+		bear.heading = Math.PI;
+		tree.bear = bear;
+		const { x, y, z } = tree.mesh.position;
+		rig.root.visible = true;
+		rig.root.position.set(x, y + bear.height, z + BEAR_TRUNK_OFFSET);
+		rig.root.rotation.set(0, Math.PI, 0);
+		rig.pose.position.set(0, 0, 0);
+		rig.pose.rotation.set(-Math.PI / 2, 0, 0);
+		rig.head.rotation.set(0, 0, 0);
+		rig.alert.visible = false;
+		rig.alert.position.set(0, 1.4, 0);
+		for (const [i, leg] of rig.legs.entries()) {
+			leg.rotation.set(0, 0, i % 2 === 0 ? 0.35 : -0.35);
+		}
+	}
+
+	private releaseBear(bear: BearActor): void {
+		if (bear.tree) {
+			bear.tree.bear = undefined;
+		}
+		bear.tree = undefined;
+		bear.state = 'free';
+		bear.rig.root.visible = false;
 	}
 
 	private resize(): void {
@@ -415,11 +539,21 @@ export class Game {
 
 		this.updateCharacter(dt);
 		this.updateTrees(dt);
+		this.updateBears(dt);
 		this.updateDebris(dt);
 		this.updateGround();
 		this.updateCamera(dt);
 
 		this._renderer.render(this._scene, this._camera);
+
+		if (
+			this._caughtAt !== undefined &&
+			!this._isGameOverReported &&
+			this._time - this._caughtAt > gameOverDelay
+		) {
+			this._isGameOverReported = true;
+			this._callbacks.onGameOver(this._score, this._distance);
+		}
 
 		if (this._ready) {
 			return;
@@ -460,7 +594,11 @@ export class Game {
 				this._rolling = true;
 				this._callbacks.onRolling();
 			}
-			this.roll(dt);
+			if (this._caughtAt === undefined) {
+				this.roll(dt);
+			} else {
+				this.crash(dt);
+			}
 		}
 
 		// Keep the lowest hand or foot touching the ground.
@@ -472,7 +610,33 @@ export class Game {
 			c.root.worldToLocal(this._v);
 			lowest = Math.min(lowest, this._v.y);
 		}
-		c.roller.position.y = contactOffset - lowest;
+		c.roller.position.y =
+			contactOffset + Math.abs(c.lean.rotation.z) * 0.08 - lowest;
+	}
+
+	// Caught: skid to a stop and flop onto my back.
+	private crash(dt: number): void {
+		const c = this._character;
+		this._speed = MathUtils.lerp(this._speed, 0, damp(3, dt));
+		this._lateral = MathUtils.lerp(this._lateral, 0, damp(3, dt));
+		const root = c.root.position;
+		root.x += this._lateral * dt;
+		root.z -= this._speed * dt;
+		root.y = terrainHeight(root.x, root.z);
+
+		const fullTurn = Math.PI * 2;
+		const upright = Math.round(c.roller.rotation.x / fullTurn) * fullTurn;
+		c.roller.rotation.x = MathUtils.lerp(
+			c.roller.rotation.x,
+			upright,
+			damp(4, dt),
+		);
+		c.lean.rotation.z = MathUtils.lerp(
+			c.lean.rotation.z,
+			Math.PI / 2,
+			damp(3, dt),
+		);
+		c.head.rotation.set(0, -0.6, 0);
 	}
 
 	private roll(dt: number): void {
@@ -531,6 +695,12 @@ export class Game {
 	}
 
 	private topple(tree: Tree, dx: number): void {
+		// Knocking a bear out of its tree is a bad idea.
+		const { bear } = tree;
+		if (bear && treeBoundStates.has(bear.state)) {
+			this.caught(bear);
+		}
+
 		const side = Math.sign(dx) || (Math.random() < 0.5 ? -1 : 1);
 		const direction = this._v
 			.set(side * (0.8 + Math.abs(dx)) + this._lateral * 0.08, 0, -1.4)
@@ -633,6 +803,221 @@ export class Game {
 		return dx * dx + dz * dz < 2.5 * 2.5 && z > player.z - 1.5;
 	}
 
+	private updateBears(dt: number): void {
+		const player = this._character.root.position;
+		for (const bear of this._bears) {
+			if (bear.state === 'free') {
+				continue;
+			}
+			const p = bear.rig.root.position;
+			if (bear.state !== 'mauling' && p.z > player.z + 30) {
+				this.releaseBear(bear);
+				continue;
+			}
+			bear.timer += dt;
+			this.updateBear(bear, dt);
+		}
+	}
+
+	private updateBear(bear: BearActor, dt: number): void {
+		switch (bear.state) {
+			case 'clinging': {
+				this.updateClinging(bear);
+				break;
+			}
+			case 'alert': {
+				bear.rig.alert.position.y =
+					1.4 + Math.abs(Math.sin(bear.timer * 12)) * 0.15;
+				if (bear.timer > 0.35) {
+					bear.state = 'climbing';
+				}
+				break;
+			}
+			case 'climbing': {
+				this.updateClimbing(bear, dt);
+				break;
+			}
+			case 'dismounting': {
+				this.updateDismounting(bear, dt);
+				break;
+			}
+			case 'charging':
+			case 'leaving': {
+				this.updateCharging(bear, dt);
+				break;
+			}
+			case 'mauling': {
+				this.updateMauling(bear, dt);
+				break;
+			}
+		}
+	}
+
+	private updateClinging(bear: BearActor): void {
+		const { rig } = bear;
+		const player = this._character.root.position;
+		rig.pose.rotation.z = Math.sin(this._time * 1.3 + bear.gait) * 0.06;
+		const ahead = player.z - rig.root.position.z;
+		// Spot me early enough to be on the ground as I arrive.
+		if (!(
+			this._rolling &&
+			this._caughtAt === undefined &&
+			ahead > -2 &&
+			ahead < this._speed * 2.6 + 8
+		)) {
+			return;
+		}
+
+		bear.state = 'alert';
+		bear.timer = 0;
+		rig.alert.visible = true;
+		rig.head.rotation.set(0.5, 0, 0);
+		rig.pose.rotation.z = 0;
+	}
+
+	private updateClimbing(bear: BearActor, dt: number): void {
+		const { rig } = bear;
+		const p = rig.root.position;
+		bear.height = Math.max(0.95, bear.height - bearClimbSpeed * dt);
+		bear.gait += dt * 14;
+		for (const [i, leg] of rig.legs.entries()) {
+			leg.rotation.x =
+				Math.sin(bear.gait + (i % 3 === 0 ? 0 : Math.PI)) * 0.5;
+		}
+		p.y = terrainHeight(p.x, p.z) + bear.height;
+		if (!(bear.height <= 0.95)) {
+			return;
+		}
+
+		bear.state = 'dismounting';
+		bear.timer = 0;
+	}
+
+	private updateDismounting(bear: BearActor, dt: number): void {
+		const { rig, tree } = bear;
+		const p = rig.root.position;
+		const k = smooth(0, 0.3, bear.timer);
+		rig.pose.rotation.x = MathUtils.lerp(-Math.PI / 2, 0, k);
+		p.z += dt * 2;
+		p.y =
+			terrainHeight(p.x, p.z) +
+			MathUtils.lerp(0.95, BEAR_STANDING_HEIGHT, k);
+		this.turnBearTowardsMe(bear, dt, 10);
+		if (k < 1) {
+			return;
+		}
+		// Off the tree and after me.
+		if (tree) {
+			tree.bear = undefined;
+		}
+		bear.tree = undefined;
+		bear.state = 'charging';
+		rig.alert.visible = false;
+		rig.head.rotation.set(0, 0, 0);
+		for (const leg of rig.legs) {
+			leg.rotation.set(0, 0, 0);
+		}
+	}
+
+	private updateCharging(bear: BearActor, dt: number): void {
+		const { rig } = bear;
+		const p = rig.root.position;
+		const player = this._character.root.position;
+		if (bear.state === 'charging') {
+			if (p.z > player.z + 3 || this._caughtAt !== undefined) {
+				// Missed me (or someone else got me): wander off sideways.
+				bear.state = 'leaving';
+				bear.heading = (Math.sign(p.x - player.x) || 1) * (Math.PI / 2);
+				rig.root.rotation.y = bear.heading;
+			} else {
+				this.turnBearTowardsMe(bear, dt, 3.5);
+			}
+		}
+		const speed = Math.min(11, 8 + this._distance / 250);
+		p.x += Math.sin(bear.heading) * speed * dt;
+		p.z += Math.cos(bear.heading) * speed * dt;
+
+		// Gallop.
+		bear.gait += dt * speed * 1.5;
+		const [frontLeft, frontRight, backLeft, backRight] = rig.legs;
+		const swing = Math.sin(bear.gait) * 0.8;
+		frontLeft.rotation.set(swing, 0, 0);
+		frontRight.rotation.set(Math.sin(bear.gait + 0.4) * 0.8, 0, 0);
+		backLeft.rotation.set(-swing, 0, 0);
+		backRight.rotation.set(-Math.sin(bear.gait + 0.4) * 0.8, 0, 0);
+		rig.pose.rotation.x = Math.sin(bear.gait * 2) * 0.06;
+		p.y =
+			terrainHeight(p.x, p.z) +
+			BEAR_STANDING_HEIGHT +
+			Math.abs(Math.sin(bear.gait)) * 0.1;
+
+		if (
+			bear.state === 'charging' &&
+			Math.hypot(p.x - player.x, p.z - player.z) < bearCatchRadius
+		) {
+			this.caught(bear);
+		}
+	}
+
+	private updateMauling(bear: BearActor, dt: number): void {
+		const { rig } = bear;
+		const p = rig.root.position;
+		const player = this._character.root.position;
+		// Stand over me, up on hind legs, waving.
+		p.x = MathUtils.lerp(p.x, player.x + bear.offset.x, damp(8, dt));
+		p.z = MathUtils.lerp(p.z, player.z + bear.offset.z, damp(8, dt));
+		const rear = smooth(0.2, 0.7, bear.timer);
+		p.y = terrainHeight(p.x, p.z) + BEAR_STANDING_HEIGHT + rear * 0.45;
+		rig.pose.rotation.x = -1.05 * rear;
+		rig.head.rotation.x = 0.6 * rear;
+		const wave = Math.sin(bear.timer * 9) * 0.5;
+		const [frontLeft, frontRight, backLeft, backRight] = rig.legs;
+		frontLeft.rotation.set(-1.3 * rear + wave, 0, 0.3 * rear);
+		frontRight.rotation.set(-1.3 * rear - wave, 0, -0.3 * rear);
+		backLeft.rotation.set(1 * rear, 0, 0);
+		backRight.rotation.set(1 * rear, 0, 0);
+		this.turnBearTowardsMe(bear, dt, 6);
+	}
+
+	private turnBearTowardsMe(bear: BearActor, dt: number, rate: number): void {
+		const p = bear.rig.root.position;
+		const player = this._character.root.position;
+		const target = Math.atan2(player.x - p.x, player.z - p.z);
+		// Shortest way round.
+		const delta = MathUtils.euclideanModulo(
+			target - bear.heading + Math.PI,
+			Math.PI * 2,
+		);
+		bear.heading += (delta - Math.PI) * damp(rate, dt);
+		bear.rig.root.rotation.y = bear.heading;
+	}
+
+	private caught(bear: BearActor): void {
+		if (this._caughtAt !== undefined) {
+			return;
+		}
+		this._caughtAt = this._time;
+		const player = this._character.root.position;
+		const p = bear.rig.root.position;
+		if (bear.tree) {
+			bear.tree.bear = undefined;
+		}
+		bear.tree = undefined;
+		bear.state = 'mauling';
+		bear.timer = 0;
+		bear.rig.alert.visible = false;
+		bear.rig.pose.rotation.set(0, 0, 0);
+		// Stand on the far side of me from the camera, so we're both in shot.
+		bear.offset
+			.set(-this._chaseOffset.x, 0, -this._chaseOffset.z)
+			.normalize()
+			.multiplyScalar(1.7);
+		bear.heading = Math.atan2(player.x - p.x, player.z - p.z);
+		if (!this._reducedMotion) {
+			this._shake = 0.5;
+		}
+	}
+
 	private updateDebris(dt: number): void {
 		let isActive = false;
 		for (const [i, d] of this._debris.entries()) {
@@ -675,9 +1060,19 @@ export class Game {
 	private updateCamera(dt: number): void {
 		const player = this._character.root.position;
 
+		// Once caught, move in for a closer look.
+		this._cameraZoom = MathUtils.lerp(
+			this._cameraZoom,
+			this._caughtAt === undefined ? 1 : 0.8,
+			damp(2, dt),
+		);
+
 		// Where the chase camera wants to be, in world space.
 		const chase = this._slope.localToWorld(
-			this._v.copy(player).add(this._chaseOffset),
+			this._v
+				.copy(this._chaseOffset)
+				.multiplyScalar(this._cameraZoom)
+				.add(player),
 		);
 		const chaseTarget = this._slope.localToWorld(
 			this._v2.copy(player).add(this._chaseLookAhead),
@@ -744,6 +1139,7 @@ export class Game {
 			material.dispose();
 		}
 		this._debrisMesh.dispose();
+		disposeBearParts(this._bearParts);
 		this._renderer.dispose();
 		this._renderer.domElement.remove();
 	}

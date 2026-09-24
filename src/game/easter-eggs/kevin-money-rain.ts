@@ -386,6 +386,12 @@ export const KEVIN_MONEY_RAIN: EasterEgg = {
 	id: 'kevin-money-rain',
 	clearingRadius: 10.5,
 	footprint: { halfWidth: 0.5, halfDepth: 0.5 },
+	gallery: {
+		name: 'Kevin',
+		caption: 'Making it rain (Canadian dollars)',
+		camera: [1.6, 2.3, 6],
+		target: [0, 1.7, 0],
+	},
 	create: () => {
 		const root = new Group();
 		const kevin = buildKevin(root);

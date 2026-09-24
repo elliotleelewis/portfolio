@@ -8,10 +8,10 @@ import { TYLER_CAMPFIRE } from './tyler-campfire';
 import { type EasterEgg } from './types';
 
 export { disposeObject } from './parts';
-export type { EasterEgg, EasterEggInstance } from './types';
+export type { EasterEgg, EasterEggInstance, EasterEggShowcase } from './types';
 
-// Landmarks from the stag do. Add new ones here.
-const allEasterEggs: EasterEgg[] = [
+// Landmarks from the stag do, in gallery order. Add new ones here.
+export const ALL_EASTER_EGGS: readonly EasterEgg[] = [
 	JAKE_TAHOE,
 	KYLE_KEEPY_UPPIES,
 	ANTHONY_OUTHOUSE,
@@ -34,4 +34,4 @@ const shuffle = <T>(items: readonly T[]): T[] => {
 	return shuffled;
 };
 
-export const EASTER_EGGS: readonly EasterEgg[] = shuffle(allEasterEggs);
+export const EASTER_EGGS: readonly EasterEgg[] = shuffle(ALL_EASTER_EGGS);

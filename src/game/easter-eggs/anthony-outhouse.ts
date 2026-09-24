@@ -406,6 +406,12 @@ export const ANTHONY_OUTHOUSE: EasterEgg = {
 	id: 'anthony-outhouse',
 	clearingRadius: 12,
 	footprint: { halfWidth: halfSize + 0.2, halfDepth: halfSize + 0.2 },
+	gallery: {
+		name: 'Anthony',
+		caption: 'Fresh out of the log cabin loo',
+		camera: [2.4, 1.9, 5.4],
+		target: [0, 1.2, 0.6],
+	},
 	create: () => {
 		const root = new Group();
 		const hinge = buildOuthouse(root);

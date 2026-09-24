@@ -49,7 +49,7 @@ import hero from '../media/hero.jpg';
 		class="pointer-events-none absolute inset-0 opacity-0 transition-opacity delay-700 duration-700 group-data-[state=playing]:opacity-100"
 		aria-live="polite"
 	>
-		<div class="absolute top-4 left-4 flex gap-2 font-mono text-sm text-slate-900 sm:text-base">
+		<div class="absolute top-4 left-4 flex gap-2 font-mono text-sm text-slate-900 group-data-[mode=gallery]:hidden sm:text-base">
 			<div class="rounded-lg bg-white/70 px-3 py-1.5 backdrop-blur-sm">
 				🌲 <span id="hero-score">0</span>
 			</div>
@@ -70,7 +70,7 @@ import hero from '../media/hero.jpg';
 		></div>
 		<p
 			id="hero-hint"
-			class="absolute inset-x-0 bottom-6 text-center text-sm font-semibold text-slate-900 opacity-0 transition-opacity duration-500 data-show:opacity-100 sm:text-base"
+			class="absolute inset-x-0 bottom-6 text-center text-sm font-semibold text-slate-900 opacity-0 transition-opacity duration-500 group-data-[mode=gallery]:hidden data-show:opacity-100 sm:text-base"
 		>
 			<span class="hidden rounded-full bg-white/70 px-4 py-2 backdrop-blur-sm sm:inline">
 				Use ← → to flatten trees · ↑ ↓ for speed · watch out for bears
@@ -97,8 +97,9 @@ import hero from '../media/hero.jpg';
 				Caught by a bear!
 			</h3>
 			<p class="mt-2">
-				You flattened <strong id="hero-over-score">0</strong> trees and
-				rolled <strong id="hero-over-distance">0</strong>m.
+				You flattened <strong id="hero-over-score">0</strong>
+				<span id="hero-over-trees">trees</span> and rolled{' '}
+				<strong id="hero-over-distance">0</strong>m.
 			</p>
 			<p id="hero-over-best" class="mt-1 text-sm text-slate-600"></p>
 			<div class="mt-5 flex flex-wrap justify-center gap-2">
@@ -110,6 +111,13 @@ import hero from '../media/hero.jpg';
 					Roll again
 				</button>
 				<button
+					id="hero-gallery-open"
+					type="button"
+					class="cursor-pointer rounded-full border border-slate-900/20 px-5 py-2.5 font-semibold hover:bg-slate-900/5 focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none"
+				>
+					See the easter eggs
+				</button>
+				<button
 					id="hero-over-exit"
 					type="button"
 					class="cursor-pointer rounded-full border border-slate-900/20 px-5 py-2.5 font-semibold hover:bg-slate-900/5 focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none"
@@ -119,10 +127,54 @@ import hero from '../media/hero.jpg';
 			</div>
 		</div>
 	</div>
+
+	<!-- Easter egg gallery -->
+	<div
+		id="hero-gallery"
+		class="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 px-4 pb-6 opacity-0 transition-opacity duration-500 group-data-[mode=gallery]:pointer-events-auto group-data-[mode=gallery]:opacity-100"
+		role="region"
+		aria-label="Easter egg gallery"
+		aria-roledescription="carousel"
+	>
+		<div class="flex w-full max-w-md items-center gap-2">
+			<button
+				id="hero-gallery-prev"
+				type="button"
+				aria-label="Previous easter egg"
+				class="size-11 shrink-0 cursor-pointer rounded-full bg-white/85 text-xl font-bold text-slate-900 shadow-lg backdrop-blur-md hover:bg-white focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none"
+			>
+				←
+			</button>
+			<div
+				class="flex-1 rounded-2xl bg-white/85 px-4 py-3 text-center text-slate-900 shadow-xl backdrop-blur-md"
+				aria-live="polite"
+			>
+				<p id="hero-gallery-name" class="text-xl font-black"></p>
+				<p id="hero-gallery-caption" class="text-sm text-slate-600"></p>
+			</div>
+			<button
+				id="hero-gallery-next"
+				type="button"
+				aria-label="Next easter egg"
+				class="size-11 shrink-0 cursor-pointer rounded-full bg-white/85 text-xl font-bold text-slate-900 shadow-lg backdrop-blur-md hover:bg-white focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none"
+			>
+				→
+			</button>
+		</div>
+		<div id="hero-gallery-dots" class="flex gap-2"></div>
+		<button
+			id="hero-gallery-again"
+			type="button"
+			class="cursor-pointer rounded-full bg-slate-900 px-5 py-2.5 font-semibold text-white shadow-lg hover:bg-slate-700 focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none"
+		>
+			Roll again
+		</button>
+	</div>
 </section>
 
 <script>
 	import type { Game } from '../game/game';
+	import type { Gallery } from '../game/gallery';
 
 	const hero = document.querySelector<HTMLElement>('#hero');
 	const stage = document.querySelector<HTMLElement>('#hero-stage');
@@ -138,9 +190,26 @@ import hero from '../media/hero.jpg';
 		'#hero-over-distance',
 	);
 	const overBest = document.querySelector<HTMLElement>('#hero-over-best');
+	const overTrees = document.querySelector<HTMLElement>('#hero-over-trees');
 	const again = document.querySelector<HTMLButtonElement>('#hero-again');
 	const overExit =
 		document.querySelector<HTMLButtonElement>('#hero-over-exit');
+	const galleryOpen =
+		document.querySelector<HTMLButtonElement>('#hero-gallery-open');
+	const galleryName =
+		document.querySelector<HTMLElement>('#hero-gallery-name');
+	const galleryCaption = document.querySelector<HTMLElement>(
+		'#hero-gallery-caption',
+	);
+	const galleryDots =
+		document.querySelector<HTMLElement>('#hero-gallery-dots');
+	const galleryPrevious =
+		document.querySelector<HTMLButtonElement>('#hero-gallery-prev');
+	const galleryNext =
+		document.querySelector<HTMLButtonElement>('#hero-gallery-next');
+	const galleryAgain = document.querySelector<HTMLButtonElement>(
+		'#hero-gallery-again',
+	);
 
 	const BEST_KEY = 'hero-best-trees';
 
@@ -155,7 +224,11 @@ import hero from '../media/hero.jpg';
 		KeyS: 'slower',
 	};
 
+	// Whichever scene is in the stage: the game or the gallery.
+	let current: { dispose: () => void } | undefined;
 	let game: Game | undefined;
+	let gallery: Gallery | undefined;
+	let swipeStart: number | undefined;
 	let comboTimeout: ReturnType<typeof setTimeout> | undefined;
 	let isGameOver = false;
 
@@ -181,15 +254,37 @@ import hero from '../media/hero.jpg';
 		}
 	};
 
+	const setMode = (mode: 'game' | 'gallery'): void => {
+		if (hero) {
+			hero.dataset.mode = mode;
+		}
+	};
+
 	const onKey = (event: KeyboardEvent): void => {
-		if (!game) {
+		if (!current) {
 			return;
 		}
 		if (event.code === 'Escape') {
 			stop();
 			return;
 		}
-		if (isGameOver) {
+		if (gallery) {
+			const isPrevious =
+				event.code === 'ArrowLeft' || event.code === 'KeyA';
+			const isNext = event.code === 'ArrowRight' || event.code === 'KeyD';
+			if (isPrevious || isNext) {
+				event.preventDefault();
+				if (event.type === 'keydown') {
+					if (isNext) {
+						gallery.next();
+					} else {
+						gallery.previous();
+					}
+				}
+			}
+			return;
+		}
+		if (!game || isGameOver) {
 			return;
 		}
 		const action = KEYS[event.code];
@@ -203,6 +298,23 @@ import hero from '../media/hero.jpg';
 	};
 
 	const onPointer = (event: PointerEvent): void => {
+		// In the gallery, a swipe moves to the next or previous easter egg.
+		if (gallery) {
+			if (event.type === 'pointerdown') {
+				swipeStart = event.clientX;
+			} else if (event.type === 'pointerup' && swipeStart !== undefined) {
+				const swipe = event.clientX - swipeStart;
+				swipeStart = undefined;
+				if (swipe < -40) {
+					gallery.next();
+				} else if (swipe > 40) {
+					gallery.previous();
+				}
+			} else if (event.type !== 'pointermove') {
+				swipeStart = undefined;
+			}
+			return;
+		}
 		if (!game || !stage) {
 			return;
 		}
@@ -217,11 +329,16 @@ import hero from '../media/hero.jpg';
 	};
 
 	const stop = (): void => {
-		const current = game;
-		if (!current) {
+		const scene = current;
+		if (!scene) {
 			return;
 		}
+		current = undefined;
 		game = undefined;
+		gallery = undefined;
+		if (hero) {
+			delete hero.dataset.mode;
+		}
 		isGameOver = false;
 		setState('idle');
 		delete hint?.dataset.show;
@@ -230,7 +347,7 @@ import hero from '../media/hero.jpg';
 		globalThis.removeEventListener('keyup', onKey);
 		// Let the photo fade back in before tearing the scene down.
 		setTimeout(() => {
-			current.dispose();
+			scene.dispose();
 		}, 1500);
 		play?.focus();
 	};
@@ -252,6 +369,9 @@ import hero from '../media/hero.jpg';
 		const best = readBest();
 		if (overScore) {
 			overScore.textContent = String(value);
+		}
+		if (overTrees) {
+			overTrees.textContent = value === 1 ? 'tree' : 'trees';
 		}
 		if (overDistance) {
 			overDistance.textContent = String(Math.floor(metres));
@@ -285,7 +405,7 @@ import hero from '../media/hero.jpg';
 			return;
 		}
 		const { Game } = await import('../game/game');
-		const previous = game;
+		const previous = current;
 		const next = new Game(
 			stage,
 			{
@@ -320,9 +440,75 @@ import hero from '../media/hero.jpg';
 			},
 			{ skipIntro },
 		);
+		current = next;
 		game = next;
+		gallery = undefined;
+		setMode('game');
 		resetHud();
 		next.start();
+	};
+
+	const showEasterEgg = (
+		index: number,
+		{ name, caption }: { name: string; caption: string },
+	): void => {
+		if (galleryName) {
+			galleryName.textContent = name;
+		}
+		if (galleryCaption) {
+			galleryCaption.textContent = caption;
+		}
+		for (const [i, dot] of [...(galleryDots?.children ?? [])].entries()) {
+			if (dot instanceof HTMLElement) {
+				dot.toggleAttribute('data-active', i === index);
+				dot.setAttribute('aria-current', String(i === index));
+			}
+		}
+	};
+
+	/**
+	 * Swaps the game for the easter egg gallery.
+	 */
+	const openGallery = async (): Promise<void> => {
+		if (!stage || !current) {
+			return;
+		}
+		const { Gallery } = await import('../game/gallery');
+		const previous = current;
+		const next = new Gallery(stage, {
+			onReady: () => {
+				previous.dispose();
+			},
+			onSelect: showEasterEgg,
+		});
+		if (galleryDots && galleryDots.children.length !== next.count) {
+			galleryDots.replaceChildren(
+				...Array.from({ length: next.count }, (_, i) => {
+					const dot = document.createElement('button');
+					dot.type = 'button';
+					dot.className =
+						'size-2.5 cursor-pointer rounded-full bg-white/60 shadow transition-all data-active:w-6 data-active:bg-white';
+					dot.setAttribute(
+						'aria-label',
+						`Easter egg ${String(i + 1)}`,
+					);
+					dot.addEventListener('click', () => {
+						gallery?.select(i);
+					});
+					return dot;
+				}),
+			);
+		}
+		current = next;
+		gallery = next;
+		game = undefined;
+		isGameOver = false;
+		delete over?.dataset.show;
+		setMode('gallery');
+		next.start();
+		// The first easter egg was picked before the dots existed.
+		next.select(0);
+		galleryNext?.focus();
 	};
 
 	const start = async (): Promise<void> => {
@@ -348,9 +534,23 @@ import hero from '../media/hero.jpg';
 	exit?.addEventListener('click', stop);
 	overExit?.addEventListener('click', stop);
 	again?.addEventListener('click', () => {
-		if (game) {
+		if (current) {
 			void launch(true);
 		}
+	});
+	galleryOpen?.addEventListener('click', () => {
+		void openGallery();
+	});
+	galleryAgain?.addEventListener('click', () => {
+		if (current) {
+			void launch(true);
+		}
+	});
+	galleryPrevious?.addEventListener('click', () => {
+		gallery?.previous();
+	});
+	galleryNext?.addEventListener('click', () => {
+		gallery?.next();
 	});
 	for (const type of [
 		'pointerdown',

@@ -689,6 +689,12 @@ export const TOMMY_BATTLESTATION: EasterEgg = {
 	id: 'tommy-battlestation',
 	clearingRadius: 13.5,
 	footprint: { halfWidth: 1.5, halfDepth: 0.9 },
+	gallery: {
+		name: 'Tommy',
+		caption: 'Working from the woods',
+		camera: [1.9, 1.9, 4],
+		target: [0, 0.8, -0.3],
+	},
 	create: () => {
 		const root = new Group();
 		const station = buildWorkstation(root);

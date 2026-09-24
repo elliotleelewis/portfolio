@@ -468,6 +468,12 @@ export const TYLER_CAMPFIRE: EasterEgg = {
 	id: 'tyler-campfire',
 	clearingRadius: 12,
 	footprint: { halfWidth: 0.9, halfDepth: 1.2 },
+	gallery: {
+		name: 'Tyler',
+		caption: 'Man make fire',
+		camera: [1.3, 1.8, 3.9],
+		target: [0, 0.8, -0.4],
+	},
 	create: () => {
 		const root = new Group();
 		const fire = buildFire(root);

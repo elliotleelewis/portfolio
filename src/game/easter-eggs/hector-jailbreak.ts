@@ -369,6 +369,12 @@ export const HECTOR_JAILBREAK: EasterEgg = {
 	id: 'hector-jailbreak',
 	clearingRadius: 12,
 	footprint: { halfWidth: circleRadius + 0.4, halfDepth: circleRadius + 0.4 },
+	gallery: {
+		name: 'Hector',
+		caption: 'Slipping the cuffs',
+		camera: [2.6, 3.2, 7.8],
+		target: [0, 0.9, 0],
+	},
 	create: () => {
 		const root = new Group();
 		const hector = buildHector(root);

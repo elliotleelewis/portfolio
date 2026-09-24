@@ -404,7 +404,7 @@ const buildAnthony = (parent: Object3D): Anthony => {
 
 export const ANTHONY_OUTHOUSE: EasterEgg = {
 	id: 'anthony-outhouse',
-	clearingRadius: 8,
+	clearingRadius: 12,
 	footprint: { halfWidth: halfSize + 0.2, halfDepth: halfSize + 0.2 },
 	create: () => {
 		const root = new Group();

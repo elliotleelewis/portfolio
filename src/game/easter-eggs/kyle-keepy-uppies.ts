@@ -304,7 +304,7 @@ const buildKyle = (parent: Object3D): Kyle => {
 
 export const KYLE_KEEPY_UPPIES: EasterEgg = {
 	id: 'kyle-keepy-uppies',
-	clearingRadius: 7,
+	clearingRadius: 10.5,
 	footprint: { halfWidth: 0.5, halfDepth: 0.5 },
 	create: () => {
 		const root = new Group();

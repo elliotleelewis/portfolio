@@ -384,7 +384,7 @@ interface Money {
 
 export const KEVIN_MONEY_RAIN: EasterEgg = {
 	id: 'kevin-money-rain',
-	clearingRadius: 7,
+	clearingRadius: 10.5,
 	footprint: { halfWidth: 0.5, halfDepth: 0.5 },
 	create: () => {
 		const root = new Group();

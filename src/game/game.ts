@@ -134,7 +134,7 @@ const treeBoundStates = new Set<BearState>(['clinging', 'alert', 'climbing']);
 const bearClimbSpeed = 3.4;
 const bearCatchRadius = 1.35;
 // Roughly how far apart the easter eggs are, in metres.
-const easterEggSpacing = 250;
+const easterEggSpacing = 150;
 // How long after being caught before the game-over screen shows.
 const gameOverDelay = 1.6;
 

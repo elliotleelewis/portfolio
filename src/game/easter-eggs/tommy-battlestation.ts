@@ -687,7 +687,7 @@ const buildTommy = (parent: Object3D): Tommy => {
 
 export const TOMMY_BATTLESTATION: EasterEgg = {
 	id: 'tommy-battlestation',
-	clearingRadius: 9,
+	clearingRadius: 13.5,
 	footprint: { halfWidth: 1.5, halfDepth: 0.9 },
 	create: () => {
 		const root = new Group();

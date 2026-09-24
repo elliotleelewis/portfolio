@@ -15,6 +15,17 @@ export interface EasterEggInstance {
 }
 
 /**
+ * How an easter egg is shown in the gallery. Positions are in its local
+ * space, where it faces +z.
+ */
+export interface EasterEggShowcase {
+	caption: string;
+	// Where the camera sits, and what it looks at.
+	camera: [number, number, number];
+	target: [number, number, number];
+}
+
+/**
  * A landmark from the stag do, dropped into a clearing down the mountain.
  *
  * To add one: write a module that exports an `EasterEgg`, then add it to the
@@ -26,5 +37,6 @@ export interface EasterEgg {
 	clearingRadius: number;
 	// Solid area I bounce off, as half-extents in local x and z.
 	footprint?: { halfWidth: number; halfDepth: number };
+	gallery: EasterEggShowcase;
 	create: () => EasterEggInstance;
 }

@@ -1,6 +1,6 @@
 import {
 	BoxGeometry,
-	CanvasTexture,
+	type CanvasTexture,
 	CapsuleGeometry,
 	CircleGeometry,
 	CylinderGeometry,
@@ -11,13 +11,12 @@ import {
 	type Object3D,
 	PlaneGeometry,
 	RepeatWrapping,
-	SRGBColorSpace,
 	SphereGeometry,
 	TorusGeometry,
 	Vector3,
 } from 'three';
 
-import { joint, part, standard } from './parts';
+import { canvasTexture, joint, part, standard } from './parts';
 import { type EasterEgg, type EasterEggFrame } from './types';
 
 // One dance beat, in seconds.
@@ -31,27 +30,10 @@ const coinCount = 10;
 // from the front, as on the flag.
 const flagSplit = 0.968;
 
-const canvas = (
-	width: number,
-	height: number,
-	draw: (context: CanvasRenderingContext2D) => void,
-): CanvasTexture => {
-	const element = document.createElement('canvas');
-	element.width = width;
-	element.height = height;
-	const context = element.getContext('2d');
-	if (context) {
-		draw(context);
-	}
-	const texture = new CanvasTexture(element);
-	texture.colorSpace = SRGBColorSpace;
-	return texture;
-};
-
 // The Portugal flag wrapped all the way round a shirt: green on his right,
 // red on his left, with the coat of arms on the join across his chest.
 const flagTexture = (hasArms: boolean): CanvasTexture => {
-	const texture = canvas(512, 256, (context) => {
+	const texture = canvasTexture(512, 256, (context) => {
 		const split = flagSplit * 512;
 		context.fillStyle = '#d8262e';
 		context.fillRect(0, 0, 512, 256);
@@ -112,7 +94,7 @@ const notes = [
 ] as const;
 
 const noteTexture = (value: string, color: string): CanvasTexture =>
-	canvas(128, 60, (context) => {
+	canvasTexture(128, 60, (context) => {
 		context.fillStyle = color;
 		context.fillRect(0, 0, 128, 60);
 		context.strokeStyle = 'rgba(255, 255, 255, 0.55)';

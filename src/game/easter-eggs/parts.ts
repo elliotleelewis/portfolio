@@ -1,11 +1,13 @@
 import {
 	type BufferGeometry,
+	CanvasTexture,
 	Group,
 	type Material,
 	Mesh,
 	MeshStandardMaterial,
 	type MeshStandardMaterialParameters,
 	type Object3D,
+	SRGBColorSpace,
 } from 'three';
 
 /**
@@ -77,4 +79,28 @@ export const disposeObject = (object: Object3D): void => {
 			m.dispose();
 		}
 	});
+};
+
+/**
+ * Draws a texture on a canvas.
+ * @param width - Canvas width, in pixels.
+ * @param height - Canvas height, in pixels.
+ * @param draw - Paints the canvas.
+ * @returns The texture.
+ */
+export const canvasTexture = (
+	width: number,
+	height: number,
+	draw: (context: CanvasRenderingContext2D) => void,
+): CanvasTexture => {
+	const element = document.createElement('canvas');
+	element.width = width;
+	element.height = height;
+	const context = element.getContext('2d');
+	if (context) {
+		draw(context);
+	}
+	const texture = new CanvasTexture(element);
+	texture.colorSpace = SRGBColorSpace;
+	return texture;
 };

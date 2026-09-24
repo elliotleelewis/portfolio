@@ -10,16 +10,17 @@ import { type EasterEgg } from './types';
 export { disposeObject } from './parts';
 export type { EasterEgg, EasterEggInstance, EasterEggShowcase } from './types';
 
-// Landmarks from the stag do, in gallery order. Add new ones here.
+// Landmarks from the stag do, alphabetically by name (the gallery's order).
+// Add new ones here.
 export const ALL_EASTER_EGGS: readonly EasterEgg[] = [
-	JAKE_TAHOE,
-	KYLE_KEEPY_UPPIES,
 	ANTHONY_OUTHOUSE,
-	KEVIN_MONEY_RAIN,
-	TOMMY_BATTLESTATION,
 	HECTOR_JAILBREAK,
+	JAKE_TAHOE,
+	KEVIN_MONEY_RAIN,
+	KYLE_KEEPY_UPPIES,
+	TOMMY_BATTLESTATION,
 	TYLER_CAMPFIRE,
-];
+].toSorted((a, b) => a.gallery.name.localeCompare(b.gallery.name));
 
 // Shuffled once per page load (Fisher–Yates), then placed down the mountain
 // in that order and round again, so every run in a visit shares the order.

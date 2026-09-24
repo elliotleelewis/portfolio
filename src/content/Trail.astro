@@ -1,0 +1,157 @@
+---
+import Role from '../components/Role.astro';
+import SectionHeading from '../components/SectionHeading.astro';
+import Waypoint from '../components/Waypoint.astro';
+import jabil from '../media/jabil.svg';
+import snap from '../media/snap.svg';
+import stubhub from '../media/stubhub.svg';
+---
+
+<!-- Experience, as waypoints down a trail. -->
+<section class="pt-28" aria-labelledby="trail-title">
+	<SectionHeading
+		id="trail-title"
+		marker="01"
+		kicker="The trail"
+		title="Where I’ve worked"
+	/>
+	<ol class="relative flex flex-col gap-16 border-l-2 border-dashed border-line pl-8 sm:pl-12">
+		<Waypoint
+			company="StubHub"
+			span="2024 – now"
+			logo={stubhub}
+			logoBackground="#46009b"
+		>
+			<Role
+				title="Staff Software Engineer"
+				from="Oct 2026"
+				place="Los Angeles, CA"
+			/>
+			<Role
+				title="Senior Software Engineer"
+				from="Apr 2024"
+				to="Sep 2026"
+				place="Los Angeles, CA"
+			/>
+		</Waypoint>
+
+		<Waypoint
+			company="Snap Inc"
+			span="2021 – 2024"
+			logo={snap}
+			logoBackground="#fffc00"
+		>
+			<Role
+				title="Software Engineer"
+				from="Aug 2021"
+				to="Feb 2024"
+				place="Los Angeles, CA"
+			>
+				<ul>
+					<li>
+						Led Event Insights end to end across three teams:{' '}
+						<strong>patented</strong> (
+						<a
+							class="underline decoration-line underline-offset-2 hover:decoration-accent"
+							href="https://patents.google.com/patent/US11894989B2/en"
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							US11894989B2
+						</a>
+						) and launched at Snap Partner Summit 2022, giving Lens
+						creators new metrics on their lenses.
+					</li>
+					<li>
+						Led a four-team effort to build an engagement-based
+						monthly payout program for Lens creators, driving Lens
+						submissions up <strong>300%</strong> in its first month.
+					</li>
+					<li>
+						Cut My Lenses load times by <strong>~40%</strong> and
+						grew end-to-end coverage of our P0 test cases from{' '}
+						<strong>20% to 75%</strong>, so we could release faster.
+					</li>
+				</ul>
+				<ul slot="more">
+					<li>
+						Built tooling in My Lenses for creators to manage their
+						digital goods, plus an internal payout system, letting
+						some creators earn thousands of dollars a month.
+					</li>
+					<li>
+						Set up real-time error reporting and alerting, bringing
+						mean time to resolve production issues under two hours.
+					</li>
+					<li>
+						Mentored junior engineers, including an apprentice
+						assigned to work on My Lenses.
+					</li>
+				</ul>
+			</Role>
+		</Waypoint>
+
+		<Waypoint
+			company="Jabil"
+			span="2017 – 2021"
+			logo={jabil}
+			logoBackground="#002b49"
+		>
+			<Role
+				title="Senior Software Engineer"
+				from="May 2019"
+				to="Aug 2021"
+				place="St Petersburg, FL"
+			>
+				<ul>
+					<li>
+						Became the de facto front-end architect for{' '}
+						<strong>10+ teams</strong>, merging a fleet of on-prem
+						front ends into a single regional cloud application.
+					</li>
+					<li>
+						Led a team of 7 engineers redesigning every screen of
+						our <strong>450k+ line</strong> flagship application.
+					</li>
+					<li>
+						Started Jabil’s first inner-source project: an Angular
+						component library for any team in the company.
+					</li>
+				</ul>
+				<ul slot="more">
+					<li>
+						Joined a sprint team on JEMSmm (part of the Factory of
+						the Future initiative) as a full-stack developer,
+						building Angular front ends and ASP.NET Core APIs.
+					</li>
+					<li>
+						Revived our UI/UX community group and became one of the
+						UI/UX leads for the whole Factory of the Future
+						initiative.
+					</li>
+					<li>
+						Recognised by Jabil’s CIO, May Yap, for technical
+						expertise.
+					</li>
+				</ul>
+			</Role>
+			<Role
+				title="Software Engineer"
+				from="May 2017"
+				to="Sep 2018"
+				place="Livingston, Scotland"
+			>
+				<ul>
+					<li>
+						Built an Angular UI package library that our team used
+						across every front end in iFactory.
+					</li>
+					<li>
+						Partnered with a Microsoft team, building an Angular
+						front end for the ASP.NET Core API they’d built.
+					</li>
+				</ul>
+			</Role>
+		</Waypoint>
+	</ol>
+</section>

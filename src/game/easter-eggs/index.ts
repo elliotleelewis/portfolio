@@ -1,4 +1,5 @@
 import { ANTHONY_OUTHOUSE } from './anthony-outhouse';
+import { HECTOR_JAILBREAK } from './hector-jailbreak';
 import { JAKE_TAHOE } from './jake-tahoe';
 import { KEVIN_MONEY_RAIN } from './kevin-money-rain';
 import { KYLE_KEEPY_UPPIES } from './kyle-keepy-uppies';
@@ -15,6 +16,7 @@ const allEasterEggs: EasterEgg[] = [
 	ANTHONY_OUTHOUSE,
 	KEVIN_MONEY_RAIN,
 	TOMMY_BATTLESTATION,
+	HECTOR_JAILBREAK,
 ];
 
 // Shuffled once per page load (Fisher–Yates), then placed down the mountain

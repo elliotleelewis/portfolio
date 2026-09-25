@@ -99,6 +99,29 @@ test.describe('gallery', () => {
 		await expect(caption).toHaveText(first ?? '');
 	});
 
+	test('follows a drag, then snaps to the next easter egg', async ({
+		page,
+	}) => {
+		const caption = page.locator('#hero-gallery-caption');
+		const first = await caption.textContent();
+		const box = await page.locator('#hero-stage').boundingBox();
+		if (!box) {
+			throw new Error('The stage has no size');
+		}
+		const y = box.y + box.height / 3;
+		await page.mouse.move(box.x + box.width * 0.8, y);
+		await page.mouse.down();
+		// Past halfway to the next one, so its caption shows before letting go.
+		await page.mouse.move(box.x + box.width * 0.4, y, { steps: 10 });
+		await expect(caption).not.toHaveText(first ?? '');
+		const second = await caption.textContent();
+		await page.mouse.up();
+		await expect(caption).toHaveText(second ?? '');
+		await expect(
+			page.getByRole('button', { name: /^Easter egg 2/ }),
+		).toHaveAttribute('aria-current', 'true');
+	});
+
 	test('counts my smashes, and hides the easter eggs I have not found yet', async ({
 		page,
 	}) => {

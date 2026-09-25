@@ -41,7 +41,8 @@ export const GalleryPanel = () => {
 						controller.previousEgg();
 					}}
 				>
-					←
+					{/* Pointing back along the row, whichever way the page reads. */}
+					<span className="inline-block rtl:-scale-x-100">←</span>
 				</button>
 				<div
 					className="flex-1 rounded-2xl bg-white/85 px-4 py-3 text-center text-slate-900 shadow-xl backdrop-blur-md"
@@ -69,7 +70,7 @@ export const GalleryPanel = () => {
 						controller.nextEgg();
 					}}
 				>
-					→
+					<span className="inline-block rtl:-scale-x-100">→</span>
 				</button>
 			</div>
 			<div id="hero-gallery-dots" className="flex gap-2">

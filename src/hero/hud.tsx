@@ -21,7 +21,7 @@ export const Hud = () => {
 			className="pointer-events-none absolute inset-0 opacity-0 transition-opacity delay-700 duration-700 group-data-[state=playing]:opacity-100"
 			aria-live="polite"
 		>
-			<div className="absolute top-4 left-4 flex gap-2 font-mono text-sm text-slate-900 group-data-[mode=gallery]:hidden sm:text-base">
+			<div className="absolute inset-s-4 top-4 flex gap-2 font-mono text-sm text-slate-900 group-data-[mode=gallery]:hidden sm:text-base">
 				<div className="rounded-lg bg-white/70 px-3 py-1.5 backdrop-blur-sm">
 					🌲 <span id="hero-score">{score}</span>
 				</div>
@@ -32,7 +32,7 @@ export const Hud = () => {
 			<button
 				id="hero-exit"
 				type="button"
-				className="pointer-events-auto absolute top-4 right-4 cursor-pointer rounded-lg bg-white/70 px-3 py-1.5 text-sm text-slate-900 backdrop-blur-sm group-data-[state=idle]:pointer-events-none hover:bg-white/90 focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none sm:text-base"
+				className="pointer-events-auto absolute inset-e-4 top-4 cursor-pointer rounded-lg bg-white/70 px-3 py-1.5 text-sm text-slate-900 backdrop-blur-sm group-data-[state=idle]:pointer-events-none hover:bg-white/90 focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none sm:text-base"
 				onClick={() => {
 					controller.stop();
 				}}

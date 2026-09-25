@@ -1,6 +1,6 @@
 import { MathUtils, type Object3D, PerspectiveCamera, Vector3 } from 'three';
 
-import { type Mirror } from './direction';
+import type { Mirror } from './direction';
 import { damp } from './easing';
 import { STAR_END } from './player';
 

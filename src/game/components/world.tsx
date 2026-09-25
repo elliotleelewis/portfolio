@@ -3,7 +3,7 @@ import { useEffect, useMemo } from 'react';
 import { type Mesh, MeshLambertMaterial, type Vector3 } from 'three';
 
 import { disposeObject } from '../easter-eggs';
-import { type Game } from '../game';
+import type { Game } from '../game';
 import { SYSTEM_ORDER } from '../systems';
 import {
 	CHUNK_LENGTH,

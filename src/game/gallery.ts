@@ -10,7 +10,7 @@ import {
 	disposeObject,
 } from './easter-eggs';
 import { MYSTERY_SHOWCASE, createMystery } from './mystery';
-import { type StageScene } from './stage-scene';
+import type { StageScene } from './stage-scene';
 import { SYSTEM_ORDER, Systems } from './systems';
 
 export interface GalleryCallbacks {

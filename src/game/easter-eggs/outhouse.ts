@@ -13,7 +13,7 @@ import {
 } from 'three';
 
 import { joint, part, standard } from './parts';
-import { type EasterEgg, type EasterEggFrame } from './types';
+import type { EasterEgg, EasterEggFrame } from './types';
 
 // The outhouse is 1.4m square; its door faces +z (uphill, towards me).
 const halfSize = 0.7;

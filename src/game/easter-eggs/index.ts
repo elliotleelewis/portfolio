@@ -6,7 +6,7 @@ import { KEEPY_UPPIES } from './keepy-uppies';
 import { MONEY_RAIN } from './money-rain';
 import { OUTHOUSE } from './outhouse';
 import { TAHOE_READER } from './tahoe-reader';
-import { type EasterEgg } from './types';
+import type { EasterEgg } from './types';
 import { WOOD_STOVE } from './wood-stove';
 
 export { disposeObject } from './parts';

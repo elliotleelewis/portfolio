@@ -1,10 +1,10 @@
 import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 
-import { type Gallery } from '../game/gallery';
-import { type Game } from '../game/game';
+import type { Gallery } from '../game/gallery';
+import type { Game } from '../game/game';
 
-import { type EasterEggHits } from './easter-egg-hits';
+import type { EasterEggHits } from './easter-egg-hits';
 
 export type Phase = 'idle' | 'loading' | 'playing';
 export type SceneKind = 'game' | 'gallery';

@@ -1,6 +1,6 @@
 import { createContext, use } from 'react';
 
-import { type HeroController } from './controller';
+import type { HeroController } from './controller';
 
 export const ControllerContext = createContext<HeroController | undefined>(
 	undefined,

@@ -17,7 +17,7 @@ import {
 } from 'three';
 
 import { canvasTexture, joint, part, standard } from './parts';
-import { type EasterEgg, type EasterEggFrame } from './types';
+import type { EasterEgg, EasterEggFrame } from './types';
 
 // One dance beat, in seconds.
 const beat = 0.42;

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { isBlockingChaseView, isInChaseCameraWay } from './view';
+import {
+	isBlockingChaseView,
+	isInChaseCameraWay,
+	pinToScreenEdge,
+} from './view';
 
 // The landscape chase camera sits behind and to the right of me (uphill is +z).
 const offset = { x: 6.5, z: 6.5 };
@@ -56,5 +60,41 @@ describe('isInChaseCameraWay', () => {
 		expect(isInChaseCameraWay({ x: 0, z: -10 }, player, offset)).toBe(
 			false,
 		);
+	});
+});
+
+describe('pinToScreenEdge', () => {
+	const inset = { x: 0.1, y: 0.1 };
+
+	it('leaves anything on screen where it is', () => {
+		expect(pinToScreenEdge(0.5, -0.2, false, inset)).toEqual({
+			x: 0.5,
+			y: -0.2,
+			isOffScreen: false,
+		});
+	});
+
+	it('pins anything off to one side just inside that edge', () => {
+		const pin = pinToScreenEdge(3, 0.6, false, inset);
+		expect(pin.isOffScreen).toBe(true);
+		expect(pin.x).toBeCloseTo(0.9);
+		// In the same direction from the middle.
+		expect(pin.y).toBeCloseTo(0.18);
+	});
+
+	it('pins anything behind the camera to the side it is on', () => {
+		// Behind and to the right projects to the left, flipped.
+		const pin = pinToScreenEdge(-0.2, 0.1, true, inset);
+		expect(pin.isOffScreen).toBe(true);
+		expect(pin.x).toBeCloseTo(0.9);
+		expect(pin.y).toBeCloseTo(-0.45);
+	});
+
+	it('pins anything dead behind to the bottom', () => {
+		expect(pinToScreenEdge(0, 0, true, inset)).toEqual({
+			x: 0,
+			y: -0.9,
+			isOffScreen: true,
+		});
 	});
 });

@@ -7,6 +7,7 @@ import { type StageScene } from '../game/stage-scene';
 import {
 	BEST_ATOM,
 	CALLOUT_ATOM,
+	FOUND_EASTER_EGGS_ATOM,
 	GALLERY_ATOM,
 	GAME_OVER_ATOM,
 	HINT_ATOM,
@@ -64,6 +65,11 @@ export class HeroController {
 					if (combo > 1) {
 						this.callout(`${String(combo)}× combo!`, 900);
 					}
+				},
+				onEasterEgg: (id) => {
+					store.set(FOUND_EASTER_EGGS_ATOM, (found) =>
+						found.includes(id) ? found : [...found, id],
+					);
 				},
 				onBearBlast: (bears, points) => {
 					this.callout(
@@ -203,15 +209,20 @@ export class HeroController {
 			return;
 		}
 		const galleryModule = await import('../game/gallery');
-		const next = new galleryModule.Gallery({
-			onSelect: (index, { caption }) => {
-				this._store.set(GALLERY_ATOM, (view) => ({
-					...view,
-					index,
-					caption,
-				}));
+		const found = this._store.get(FOUND_EASTER_EGGS_ATOM);
+		const next = new galleryModule.Gallery(
+			{
+				onSelect: (index, caption) => {
+					this._store.set(GALLERY_ATOM, (view) => ({
+						...view,
+						index,
+						caption,
+					}));
+				},
 			},
-		});
+			// Storage could hold anything.
+			Array.isArray(found) ? found : [],
+		);
 		this.show({ kind: 'gallery', scene: next });
 		this._gallery = next;
 		this._game = undefined;
@@ -219,10 +230,10 @@ export class HeroController {
 		this._store.set(GALLERY_ATOM, (view) => ({
 			...view,
 			count: next.count,
+			locked: next.locked,
 		}));
 		this._store.set(SCENE_ATOM, 'gallery');
 		this._store.set(MODE_ATOM, 'gallery');
-		next.select(0);
 	}
 
 	/**

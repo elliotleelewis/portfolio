@@ -26,6 +26,8 @@ export interface GameCallbacks {
 	// The intro is over and the player now has control.
 	onRolling: () => void;
 	onScore: (score: number, combo: number) => void;
+	// I've smashed an easter egg, so found it.
+	onEasterEgg: (id: string) => void;
 	// Smashing an easter egg sent bears flying, for bonus points.
 	onBearBlast: (bears: number, points: number) => void;
 	onDistance: (metres: number) => void;
@@ -164,6 +166,9 @@ export class Game implements StageScene {
 				this._caughtAt !== undefined,
 			);
 		});
+		this.systems.add(SYSTEM_ORDER.follow, () => {
+			this._bears.pinAlerts(this.camera);
+		});
 	}
 
 	/**
@@ -293,6 +298,7 @@ export class Game implements StageScene {
 			drift: { x: 0, z: -this._player.speed * 0.3 },
 		});
 		this._camera.shake(0.6);
+		this._callbacks.onEasterEgg(placed.egg.id);
 	}
 
 	/**
@@ -347,6 +353,11 @@ export class Game implements StageScene {
 	// The bears, to add to the slope.
 	public get bears(): Object3D {
 		return this._bears.group;
+	}
+
+	// Bears' "!"s pinned to the edge of the view, to add to the scene.
+	public get alertPins(): Object3D {
+		return this._bears.pins;
 	}
 
 	// The easter eggs, to add to the slope.

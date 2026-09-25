@@ -66,6 +66,14 @@ test('goes back to the photo', async ({ page }) => {
 
 test.describe('gallery', () => {
 	test.beforeEach(async ({ page }) => {
+		// I've found the first two easter eggs, but not the rest.
+		await page.evaluate(() => {
+			localStorage.setItem(
+				'hero-easter-eggs-found',
+				JSON.stringify(['outhouse', 'jailbreak']),
+			);
+		});
+		await page.reload();
 		await startRun(page);
 		await crash(page);
 		await page.getByRole('button', { name: 'See the easter eggs' }).click();
@@ -89,6 +97,20 @@ test.describe('gallery', () => {
 		await expect(caption).not.toHaveText(first ?? '');
 		await page.locator('#hero-gallery-prev').click();
 		await expect(caption).toHaveText(first ?? '');
+	});
+
+	test('hides the easter eggs I have not found yet', async ({ page }) => {
+		const caption = page.locator('#hero-gallery-caption');
+		const hint = page.locator('#hero-gallery-hint');
+		await expect(caption).not.toHaveText('?????');
+		await expect(hint).toBeHidden();
+
+		const third = page.getByRole('button', {
+			name: 'Easter egg 3, not found yet',
+		});
+		await third.click();
+		await expect(caption).toHaveText('?????');
+		await expect(hint).toBeVisible();
 	});
 
 	test('hides the game HUD, even while leaving', async ({ page }) => {

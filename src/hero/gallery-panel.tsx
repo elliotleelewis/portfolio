@@ -12,7 +12,8 @@ import { useController } from './context';
 export const GalleryPanel = () => {
 	const controller = useController();
 	const scene = useAtomValue(SCENE_ATOM);
-	const { index, caption, count } = useAtomValue(GALLERY_ATOM);
+	const { index, caption, count, locked } = useAtomValue(GALLERY_ATOM);
+	const isLocked = locked[index] ?? false;
 	const next = useRef<HTMLButtonElement>(null);
 
 	useEffect(() => {
@@ -48,6 +49,14 @@ export const GalleryPanel = () => {
 					<p id="hero-gallery-caption" className="text-lg font-bold">
 						{caption}
 					</p>
+					{isLocked && (
+						<p
+							id="hero-gallery-hint"
+							className="text-sm text-slate-600"
+						>
+							Barrel into it on the trail to find out
+						</p>
+					)}
 				</div>
 				<button
 					id="hero-gallery-next"
@@ -67,7 +76,9 @@ export const GalleryPanel = () => {
 					<button
 						key={i}
 						type="button"
-						aria-label={`Easter egg ${String(i + 1)}`}
+						aria-label={`Easter egg ${String(i + 1)}${
+							locked[i] ? ', not found yet' : ''
+						}`}
 						aria-current={i === index}
 						data-active={i === index ? '' : undefined}
 						className="size-2.5 cursor-pointer rounded-full bg-white/60 shadow-sm transition-all data-active:w-6 data-active:bg-white"

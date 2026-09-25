@@ -27,6 +27,8 @@ export interface GalleryView {
 	index: number;
 	caption: string;
 	count: number;
+	// Which easter eggs I've not found yet, in gallery order.
+	locked: readonly boolean[];
 }
 
 // The photo, the game loading, or a scene on screen.
@@ -61,8 +63,18 @@ export const BEST_ATOM = atomWithStorage('hero-best-trees', 0, undefined, {
 	getOnInit: true,
 });
 
+// The ids of the easter eggs smashed on this device, which the gallery then
+// shows. Read from storage as soon as it's first used, like the best score.
+export const FOUND_EASTER_EGGS_ATOM = atomWithStorage<string[]>(
+	'hero-easter-eggs-found',
+	[],
+	undefined,
+	{ getOnInit: true },
+);
+
 export const GALLERY_ATOM = atom<GalleryView>({
 	index: 0,
 	caption: '',
 	count: 0,
+	locked: [],
 });

@@ -8,16 +8,19 @@ import {
 	type EasterEggShowcase,
 	disposeObject,
 } from './easter-eggs';
+import { MYSTERY_SHOWCASE, createMystery } from './mystery';
 import { type StageScene } from './stage-scene';
 import { SYSTEM_ORDER, Systems } from './systems';
 
 export interface GalleryCallbacks {
-	// The camera is heading to a new easter egg.
-	onSelect: (index: number, showcase: EasterEggShowcase) => void;
+	// The camera is heading to a new easter egg (or one I've not found yet).
+	onSelect: (index: number, caption: string, isLocked: boolean) => void;
 }
 
 interface Station {
 	egg: EasterEgg;
+	// Not found yet, so hidden behind a mystery.
+	isLocked: boolean;
 	instance: EasterEggInstance;
 	position: Vector3;
 	// When the camera arrived, so the easter egg can replay from the start.
@@ -61,22 +64,35 @@ export class Gallery implements StageScene {
 	// The easter eggs, in their row.
 	public readonly easterEggs = new Group();
 
-	public constructor(callbacks: GalleryCallbacks) {
+	/**
+	 * @param callbacks - What to tell the hero as the gallery moves.
+	 * @param found - The ids of the easter eggs I've found (by smashing
+	 * them). The rest stay hidden.
+	 */
+	public constructor(callbacks: GalleryCallbacks, found: Iterable<string>) {
 		this._callbacks = callbacks;
 		this._scene.add(this.easterEggs);
 
+		const foundIds = new Set(found);
 		this._stations = ALL_EASTER_EGGS.map((egg, i) => {
 			const position = new Vector3(i * GALLERY_SPACING, 0, 0);
+			const isLocked = !foundIds.has(egg.id);
 			return {
 				egg,
-				instance: this.place(egg, position),
+				isLocked,
+				instance: this.place(egg, isLocked, position),
 				position,
 				arrivedAt: 0,
 			};
 		});
 
-		// Start at the first one, with no fly-in.
-		this.select(0);
+		// Start at the first one I've found, with no fly-in.
+		this.select(
+			Math.max(
+				0,
+				this._stations.findIndex((s) => !s.isLocked),
+			),
+		);
 		this._camera.position
 			.subVectors(this._cameraTarget, this._lookTarget)
 			.multiplyScalar(this._zoom)
@@ -92,8 +108,12 @@ export class Gallery implements StageScene {
 		});
 	}
 
-	private place(egg: EasterEgg, position: Vector3): EasterEggInstance {
-		const instance = egg.create();
+	private place(
+		egg: EasterEgg,
+		isLocked: boolean,
+		position: Vector3,
+	): EasterEggInstance {
+		const instance = isLocked ? createMystery() : egg.create();
 		instance.object.position.copy(position);
 		this.easterEggs.add(instance.object);
 		return instance;
@@ -150,6 +170,11 @@ export class Gallery implements StageScene {
 		return this._index;
 	}
 
+	// Which easter eggs are still hidden, in gallery order.
+	public get locked(): readonly boolean[] {
+		return this._stations.map(({ isLocked }) => isLocked);
+	}
+
 	// Where the camera is looking, in world space.
 	public get focus(): Readonly<Vector3> {
 		return this._look;
@@ -172,16 +197,27 @@ export class Gallery implements StageScene {
 		// Start its moment over, fresh.
 		station.instance.object.removeFromParent();
 		disposeObject(station.instance.object);
-		station.instance = this.place(station.egg, station.position);
+		station.instance = this.place(
+			station.egg,
+			station.isLocked,
+			station.position,
+		);
 		station.arrivedAt = this._time;
 
-		const { camera, target } = station.egg.gallery;
+		const showcase: EasterEggShowcase = station.isLocked
+			? MYSTERY_SHOWCASE
+			: station.egg.gallery;
+		const { camera, target } = showcase;
 		this._cameraTarget.fromArray(camera).add(station.position);
 		this._lookTarget.fromArray(target).add(station.position);
 		// Aim a little low, so the easter egg sits above the caption panel.
 		this._lookTarget.y -=
 			this._cameraTarget.distanceTo(this._lookTarget) * 0.14;
-		this._callbacks.onSelect(this._index, station.egg.gallery);
+		this._callbacks.onSelect(
+			this._index,
+			showcase.caption,
+			station.isLocked,
+		);
 	}
 
 	public get scene(): Scene {

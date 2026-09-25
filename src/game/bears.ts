@@ -1,4 +1,12 @@
-import { Group, type Material, MathUtils, Mesh, Vector3 } from 'three';
+import {
+	Group,
+	type Material,
+	MathUtils,
+	Mesh,
+	type PerspectiveCamera,
+	Sprite,
+	Vector3,
+} from 'three';
 
 import {
 	BEAR_STANDING_HEIGHT,
@@ -13,6 +21,7 @@ import { damp } from './easing';
 import { disposeObject } from './easter-eggs';
 import { type Tree } from './forest';
 import { type Player } from './player';
+import { pinToScreenEdge } from './view';
 import { terrainHeight } from './world';
 
 // Bears in the pool to start with, sent up trees as they're placed. More join
@@ -26,6 +35,11 @@ const catchRadius = 1.35;
 const giveUpDistance = 30;
 // How long a bear in the camera's way takes to fade out, in seconds.
 const fadeDuration = 0.3;
+// A pinned "!": its size (as a fraction of the view's height, roughly), how
+// far in from the edge of the view it sits, and how far from the camera.
+const pinSize = 0.07;
+const pinInset = 0.1;
+const pinDistance = 2;
 
 export type BearState =
 	| 'free'
@@ -60,6 +74,8 @@ export interface BearActor {
 	// Fading out of the camera's way, and how opaque it still is.
 	isFading: boolean;
 	opacity: number;
+	// Its "!" pinned to the edge of the view, when the bear is out of shot.
+	pin: Sprite;
 }
 
 export interface BearsHooks {
@@ -80,9 +96,13 @@ export class Bears {
 	private readonly _hooks: BearsHooks;
 	private readonly _parts: BearParts = createBearParts();
 	private readonly _actors: BearActor[] = [];
+	private readonly _point = new Vector3();
+	private readonly _eye = new Vector3();
 
 	// The bears, in the slope's space.
 	public readonly group = new Group();
+	// Their "!"s pinned to the edge of the view, in world space.
+	public readonly pins = new Group();
 
 	public constructor(player: Player, hooks: BearsHooks) {
 		this._player = player;
@@ -107,6 +127,11 @@ export class Bears {
 		const rig = createBear({ ...this._parts, ...own });
 		rig.root.visible = false;
 		this.group.add(rig.root);
+		const pin = new Sprite(this._parts.pin);
+		pin.scale.setScalar(pinSize);
+		pin.visible = false;
+		pin.renderOrder = 10;
+		this.pins.add(pin);
 		const bear: BearActor = {
 			rig,
 			state: 'free',
@@ -121,6 +146,7 @@ export class Bears {
 			materials: Object.values(own),
 			isFading: false,
 			opacity: 1,
+			pin,
 		};
 		this._actors.push(bear);
 		return bear;
@@ -405,6 +431,40 @@ export class Bears {
 				child.castShadow = isCasting;
 			}
 		});
+	}
+
+	/**
+	 * Pins the "!" of any bear coming down its tree out of shot to the edge
+	 * of the view, in its direction, so I know it's there.
+	 * @param camera - The camera, once it has moved for this step.
+	 */
+	public pinAlerts(camera: PerspectiveCamera): void {
+		camera.updateMatrixWorld();
+		const inset = { x: pinInset / camera.aspect, y: pinInset };
+		for (const { rig, pin } of this._actors) {
+			pin.visible = false;
+			if (!rig.root.visible || !rig.alert.visible) {
+				continue;
+			}
+			rig.alert.updateWorldMatrix(true, false);
+			const point = rig.alert.getWorldPosition(this._point);
+			const isBehind =
+				this._eye.copy(point).applyMatrix4(camera.matrixWorldInverse)
+					.z > 0;
+			point.project(camera);
+			const spot = pinToScreenEdge(point.x, point.y, isBehind, inset);
+			if (!spot.isOffScreen) {
+				continue;
+			}
+			// Along the ray through that spot, just in front of the camera.
+			pin.position
+				.set(spot.x, spot.y, 0.5)
+				.unproject(camera)
+				.sub(camera.position)
+				.setLength(pinDistance)
+				.add(camera.position);
+			pin.visible = true;
+		}
 	}
 
 	// Every bear in the pool, busy or not.

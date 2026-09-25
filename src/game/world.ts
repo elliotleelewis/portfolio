@@ -12,6 +12,9 @@ import {
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 // Half-width of the part of the slope the player can roll over.
+// The haze the mountainside fades into, and the sky behind it.
+export const FOG_COLOR = new Color('#dde3e5');
+
 export const LANE_HALF_WIDTH = 24;
 
 // Length of each recycled strip of ground.

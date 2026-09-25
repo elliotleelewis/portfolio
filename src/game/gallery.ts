@@ -23,7 +23,7 @@ import {
 	disposeObject,
 } from './easter-eggs';
 import { type StageScene } from './stage-scene';
-import { createMountains, createTreeGeometry } from './world';
+import { FOG_COLOR, createMountains, createTreeGeometry } from './world';
 
 export interface GalleryCallbacks {
 	// The camera is heading to a new easter egg.
@@ -38,7 +38,6 @@ interface Station {
 	arrivedAt: number;
 }
 
-const fogColor = new Color('#dde3e5');
 // Distance between easter eggs along the row.
 const spacing = 18;
 const fov = 40;
@@ -75,8 +74,8 @@ export class Gallery implements StageScene {
 	public constructor(callbacks: GalleryCallbacks) {
 		this._callbacks = callbacks;
 
-		this._scene.background = fogColor;
-		this._scene.fog = new Fog(fogColor, 30, 160);
+		this._scene.background = FOG_COLOR;
+		this._scene.fog = new Fog(FOG_COLOR, 30, 160);
 		this._scene.add(new HemisphereLight('#f4f7f9', '#4f5f3c', 2.1));
 		this._sun.castShadow = true;
 		this._sun.shadow.mapSize.set(2048, 2048);
@@ -89,7 +88,7 @@ export class Gallery implements StageScene {
 		this._sun.shadow.normalBias = 0.03;
 		this._scene.add(this._sun, this._sun.target);
 
-		this._mountains = createMountains(fogColor);
+		this._mountains = createMountains(FOG_COLOR);
 		this._scene.add(this._mountains);
 
 		this._stations = ALL_EASTER_EGGS.map((egg, i) => {

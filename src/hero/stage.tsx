@@ -62,7 +62,7 @@ export const Stage = () => {
 			{stageScene && (
 				<Suspense>
 					<SceneCanvas
-						scene={stageScene}
+						shown={stageScene}
 						onFirstFrame={(drawn) => {
 							controller.sceneReady(drawn);
 						}}

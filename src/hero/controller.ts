@@ -17,6 +17,7 @@ import {
 	SCENE_ATOM,
 	SCORE_ATOM,
 	STAGE_SCENE_ATOM,
+	type ShownScene,
 } from './atoms';
 
 type Store = ReturnType<typeof createStore>;
@@ -79,7 +80,7 @@ export class HeroController {
 			},
 			{ skipIntro: shouldSkipIntro },
 		);
-		this.show(next);
+		this.show({ kind: 'game', scene: next });
 		this._game = next;
 		this._gallery = undefined;
 		// A handle for the end-to-end tests, in development only.
@@ -93,14 +94,14 @@ export class HeroController {
 
 	/**
 	 * Puts a scene in the stage, retiring whatever was there.
-	 * @param scene - The new scene.
+	 * @param shown - The new scene.
 	 */
-	private show(scene: StageScene): void {
+	private show(shown: ShownScene): void {
 		if (this._scene) {
 			this._retiring.push(this._scene);
 		}
-		this._scene = scene;
-		this._store.set(STAGE_SCENE_ATOM, scene);
+		this._scene = shown.scene;
+		this._store.set(STAGE_SCENE_ATOM, shown);
 	}
 
 	private disposeRetired(): void {
@@ -211,7 +212,7 @@ export class HeroController {
 				}));
 			},
 		});
-		this.show(next);
+		this.show({ kind: 'gallery', scene: next });
 		this._gallery = next;
 		this._game = undefined;
 		this._store.set(GAME_OVER_ATOM, false);

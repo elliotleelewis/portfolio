@@ -12,14 +12,13 @@ import {
 	Mesh,
 	MeshBasicMaterial,
 	MeshLambertMaterial,
-	PCFShadowMap,
 	PerspectiveCamera,
 	Quaternion,
 	Scene,
 	SphereGeometry,
 	TetrahedronGeometry,
 	Vector3,
-	WebGLRenderer,
+	type WebGLRenderer,
 } from 'three';
 
 import {
@@ -39,6 +38,7 @@ import {
 	disposeObject,
 } from './easter-eggs';
 import { bearBlastPoints, nextCombo } from './scoring';
+import { type StageScene } from './stage-scene';
 import { isBlockingChaseView } from './view';
 import {
 	CHUNK_LENGTH,
@@ -51,8 +51,6 @@ import {
 } from './world';
 
 export interface GameCallbacks {
-	// The first frame has been drawn; safe to fade the canvas in.
-	onReady: () => void;
 	// The intro is over and the player now has control.
 	onRolling: () => void;
 	onScore: (score: number, combo: number) => void;
@@ -241,10 +239,8 @@ const lookAround = (t: number): [yaw: number, pitch: number] => {
  * A little mountain-rolling game: I look around, strike a star pose, then
  * cartwheel down the mountain flattening trees.
  */
-export class Game {
-	private readonly _host: HTMLElement;
+export class Game implements StageScene {
 	private readonly _callbacks: GameCallbacks;
-	private readonly _renderer: WebGLRenderer;
 	private readonly _scene = new Scene();
 	private readonly _camera = new PerspectiveCamera(fov, 1, 0.05, 1200);
 	private readonly _introCamera = new Vector3();
@@ -265,12 +261,9 @@ export class Game {
 	private readonly _shards: Shard[] = [];
 	private readonly _blast: Blast;
 	private _easterEggCount = 0;
-	private readonly _resizeObserver: ResizeObserver;
 	private readonly _reducedMotion: boolean;
 
 	private _time = 0;
-	private _last = 0;
-	private _ready = false;
 	private _rolling = false;
 	private _speed = 0;
 	private _lateral = 0;
@@ -300,12 +293,7 @@ export class Game {
 		throttle: 0,
 	};
 
-	public constructor(
-		host: HTMLElement,
-		callbacks: GameCallbacks,
-		options: GameOptions = {},
-	) {
-		this._host = host;
+	public constructor(callbacks: GameCallbacks, options: GameOptions = {}) {
 		this._callbacks = callbacks;
 		if (options.skipIntro) {
 			this._time = starEnd - 0.4;
@@ -313,17 +301,6 @@ export class Game {
 		this._reducedMotion = globalThis.matchMedia(
 			'(prefers-reduced-motion: reduce)',
 		).matches;
-
-		this._renderer = new WebGLRenderer({ antialias: true });
-		this._renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio, 2));
-		this._renderer.shadowMap.enabled = true;
-		this._renderer.shadowMap.type = PCFShadowMap;
-		this._renderer.domElement.classList.add(
-			'absolute',
-			'inset-0',
-			'size-full',
-		);
-		host.append(this._renderer.domElement);
 
 		this._scene.background = fogColor;
 		this._scene.fog = new Fog(fogColor, 35, 240);
@@ -438,12 +415,6 @@ export class Game {
 		this._blast.fire.visible = false;
 		this._blast.smoke.visible = false;
 		this._slope.add(this._blast.smoke, this._blast.fire);
-
-		this._resizeObserver = new ResizeObserver(() => {
-			this.resize();
-		});
-		this._resizeObserver.observe(host);
-		this.resize();
 	}
 
 	private createTrees(): void {
@@ -604,85 +575,6 @@ export class Game {
 		bear.tree = undefined;
 		bear.state = 'free';
 		bear.rig.root.visible = false;
-	}
-
-	private resize(): void {
-		const { clientWidth: width, clientHeight: height } = this._host;
-		if (width === 0 || height === 0) {
-			return;
-		}
-		this._renderer.setSize(width, height, false);
-		const aspect = width / height;
-		this._camera.aspect = aspect;
-		this._camera.updateProjectionMatrix();
-
-		// Frame the opening shot like the (object-cover) photo it fades from,
-		// so my face lands in the same spot at the same size.
-		let headFraction = photoHeadHeight;
-		let faceY = photoFaceY;
-		if (aspect > photoAspect) {
-			const visible = photoAspect / aspect;
-			const top = (1 - visible) * photoObjectPositionY;
-			headFraction = photoHeadHeight / visible;
-			faceY = (photoFaceY - top) / visible;
-		}
-		const tanHalfFov = Math.tan(MathUtils.degToRad(fov / 2));
-		const viewHeight = modelHeadHeight / headFraction;
-		const distance = viewHeight / (2 * tanHalfFov);
-		const cameraY = modelFaceY - (0.5 - faceY) * viewHeight;
-		this._introCamera.set(0, cameraY, distance);
-		this._introTarget.set(0, cameraY, 0);
-
-		const landscape = smooth(0.5, 1.3, aspect);
-		this._chaseOffset.lerpVectors(
-			portraitChaseOffset,
-			chaseOffset,
-			landscape,
-		);
-		this._chaseLookAhead.lerpVectors(
-			portraitChaseLookAhead,
-			chaseLookAhead,
-			landscape,
-		);
-	}
-
-	private frame(now: number): void {
-		// The browser's frame time can be a little earlier than when start()
-		// ran, so never step backwards; and cap long pauses (like a hidden tab).
-		const dt = MathUtils.clamp((now - this._last) / 1000, 0, 1 / 20);
-		this._last = now;
-		this.step(dt);
-		this._renderer.render(this._scene, this._camera);
-		if (this._ready) {
-			return;
-		}
-
-		this._ready = true;
-		this._callbacks.onReady();
-	}
-
-	private step(dt: number): void {
-		this._time += dt;
-
-		this.updateCharacter(dt);
-		this.updateTrees(dt);
-		this.updateBears(dt);
-		this.updateEasterEggs(dt);
-		this.updateDebris(dt);
-		this.updateShards(dt);
-		this.updateBlast(dt);
-		this.updateGround();
-		this.updateCamera(dt);
-
-		if (
-			this._caughtAt === undefined ||
-			this._isGameOverReported ||
-			this._time - this._caughtAt <= gameOverDelay
-		) {
-			return;
-		}
-		this._isGameOverReported = true;
-		this._callbacks.onGameOver(this._score, this._distance);
 	}
 
 	private updateCharacter(dt: number): void {
@@ -1562,9 +1454,17 @@ export class Game {
 		this._sun.position.copy(focus).add(this._v2.set(20, 40, 15));
 	}
 
+	public get scene(): Scene {
+		return this._scene;
+	}
+
+	public get camera(): PerspectiveCamera {
+		return this._camera;
+	}
+
 	/**
-	 * Runs the game forward without waiting for real time, then draws the
-	 * result. Lets tests skip the intro or play out a crash quickly.
+	 * Runs the game forward without waiting for real time. Lets tests skip
+	 * the intro or play out a crash quickly.
 	 * @param seconds - How much game time to simulate.
 	 */
 	public advance(seconds: number): void {
@@ -1572,7 +1472,6 @@ export class Game {
 		for (let i = 0; i < steps; i++) {
 			this.step(1 / 60);
 		}
-		this._renderer.render(this._scene, this._camera);
 	}
 
 	/**
@@ -1591,25 +1490,92 @@ export class Game {
 		this.caught(bear);
 	}
 
-	public start(): void {
-		// Compile the see-through tree shader up front, so the first tree to
-		// fade out doesn't stutter.
+	/**
+	 * Compiles the see-through tree shader up front, so the first tree to
+	 * fade out doesn't stutter.
+	 * @param renderer - The renderer that will draw the game.
+	 */
+	public prepare(renderer: WebGLRenderer): void {
 		const [tree] = this._trees;
 		tree.material.transparent = true;
 		tree.material.needsUpdate = true;
-		this._renderer.compile(this._scene, this._camera);
+		renderer.compile(this._scene, this._camera);
 		tree.material.transparent = false;
 		tree.material.needsUpdate = true;
+	}
 
-		this._last = performance.now();
-		this._renderer.setAnimationLoop((now: number) => {
-			this.frame(now);
-		});
+	/**
+	 * Fits the camera (and the intro's framing) to the stage's size.
+	 * @param width - Stage width, in CSS pixels.
+	 * @param height - Stage height, in CSS pixels.
+	 */
+	public resize(width: number, height: number): void {
+		if (width === 0 || height === 0) {
+			return;
+		}
+		const aspect = width / height;
+		this._camera.aspect = aspect;
+		this._camera.updateProjectionMatrix();
+
+		// Frame the opening shot like the (object-cover) photo it fades from,
+		// so my face lands in the same spot at the same size.
+		let headFraction = photoHeadHeight;
+		let faceY = photoFaceY;
+		if (aspect > photoAspect) {
+			const visible = photoAspect / aspect;
+			const top = (1 - visible) * photoObjectPositionY;
+			headFraction = photoHeadHeight / visible;
+			faceY = (photoFaceY - top) / visible;
+		}
+		const tanHalfFov = Math.tan(MathUtils.degToRad(fov / 2));
+		const viewHeight = modelHeadHeight / headFraction;
+		const distance = viewHeight / (2 * tanHalfFov);
+		const cameraY = modelFaceY - (0.5 - faceY) * viewHeight;
+		this._introCamera.set(0, cameraY, distance);
+		this._introTarget.set(0, cameraY, 0);
+
+		const landscape = smooth(0.5, 1.3, aspect);
+		this._chaseOffset.lerpVectors(
+			portraitChaseOffset,
+			chaseOffset,
+			landscape,
+		);
+		this._chaseLookAhead.lerpVectors(
+			portraitChaseLookAhead,
+			chaseLookAhead,
+			landscape,
+		);
+	}
+
+	/**
+	 * Moves the game on.
+	 * @param dt - Seconds since the last step.
+	 */
+	public step(dt: number): void {
+		this._time += dt;
+
+		this.updateCharacter(dt);
+		this.updateTrees(dt);
+		this.updateBears(dt);
+		this.updateEasterEggs(dt);
+		this.updateDebris(dt);
+		this.updateShards(dt);
+		this.updateBlast(dt);
+		this.updateGround();
+		this.updateCamera(dt);
+
+		if (
+			this._caughtAt === undefined ||
+			this._isGameOverReported ||
+			this._time - this._caughtAt <= gameOverDelay
+		) {
+			return;
+		}
+		this._isGameOverReported = true;
+		this._callbacks.onGameOver(this._score, this._distance);
 	}
 
 	public dispose(): void {
-		this._renderer.setAnimationLoop(null);
-		this._resizeObserver.disconnect();
 		const geometries = new Set<BufferGeometry>();
 		const materials = new Set<Material>();
 		this._scene.traverse((object) => {
@@ -1635,7 +1601,5 @@ export class Game {
 			disposeObject(shard.mesh);
 		}
 		disposeBearParts(this._bearParts);
-		this._renderer.dispose();
-		this._renderer.domElement.remove();
 	}
 }

@@ -1,4 +1,4 @@
-import { createPortal, useFrame } from '@react-three/fiber';
+import { createPortal } from '@react-three/fiber';
 import { useEffect, useMemo, useState } from 'react';
 import {
 	DirectionalLight,
@@ -8,8 +8,8 @@ import {
 } from 'three';
 
 import { disposeObject } from '../easter-eggs';
-import { FOLLOW_PRIORITY } from '../frame-order';
 import { type Game } from '../game';
+import { SYSTEM_ORDER } from '../systems';
 import {
 	CHUNK_LENGTH,
 	FOG_COLOR,
@@ -18,7 +18,8 @@ import {
 	shapeGroundChunk,
 } from '../world';
 
-import { GameContext, useGame } from './game-context';
+import { GameContext, useGame, useSystem } from './game-context';
+import { Trees } from './trees';
 
 // Where the sun sits relative to me.
 const sunOffset = new Vector3(20, 40, 15);
@@ -67,11 +68,11 @@ const Lighting = () => {
 		[sun],
 	);
 
-	useFrame(() => {
+	useSystem(SYSTEM_ORDER.follow, () => {
 		game.slope.localToWorld(focus.copy(game.player));
 		sun.target.position.copy(focus);
 		sun.position.copy(focus).add(sunOffset);
-	}, FOLLOW_PRIORITY);
+	});
 
 	return (
 		<>
@@ -97,9 +98,9 @@ const Mountains = () => {
 		[mountains],
 	);
 
-	useFrame(() => {
+	useSystem(SYSTEM_ORDER.follow, () => {
 		mountains.position.copy(game.camera.position);
-	}, FOLLOW_PRIORITY);
+	});
 
 	return <primitive object={mountains} />;
 };
@@ -142,7 +143,7 @@ const Ground = () => {
 		[ground],
 	);
 
-	useFrame(() => {
+	useSystem(SYSTEM_ORDER.follow, () => {
 		const playerZ = game.player.z;
 		for (const chunk of ground.chunks) {
 			// A loop, not an if, so it keeps up even after a big jump.
@@ -153,7 +154,7 @@ const Ground = () => {
 				shapeGroundChunk(chunk, chunk.position.z - CHUNK_LENGTH * 3);
 			}
 		}
-	}, FOLLOW_PRIORITY);
+	});
 
 	return (
 		<>
@@ -189,6 +190,7 @@ export const GameWorld = ({ game }: Props) => (
 				<Lighting />
 				<Mountains />
 				<Ground />
+				<Trees />
 			</>,
 			game.scene,
 		)}

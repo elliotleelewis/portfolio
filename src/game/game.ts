@@ -34,10 +34,17 @@ import {
 	type EasterEggInstance,
 	disposeObject,
 } from './easter-eggs';
+import {
+	type Forest,
+	type ForestHooks,
+	TREE_WINDOW,
+	type Tree,
+} from './forest';
 import { bearBlastPoints, nextCombo } from './scoring';
 import { type StageScene } from './stage-scene';
+import { SYSTEM_ORDER, Systems } from './systems';
 import { isBlockingChaseView } from './view';
-import { LANE_HALF_WIDTH, createTreeGeometry, terrainHeight } from './world';
+import { LANE_HALF_WIDTH, terrainHeight } from './world';
 
 export interface GameCallbacks {
 	// The intro is over and the player now has control.
@@ -80,7 +87,7 @@ type BearState =
 interface BearActor {
 	rig: Bear;
 	state: BearState;
-	tree: Tree | undefined;
+	tree: Tree<BearActor> | undefined;
 	timer: number;
 	// Height of the bear's middle above the ground.
 	height: number;
@@ -120,23 +127,6 @@ interface Blast {
 	age: number;
 }
 
-interface Tree {
-	mesh: Mesh;
-	// Its own copy, so it can fade out on its own.
-	material: MeshLambertMaterial;
-	// Fading out of the way of the camera, and how opaque it still is.
-	isFading: boolean;
-	opacity: number;
-	bear: BearActor | undefined;
-	state: 'standing' | 'falling';
-	yaw: number;
-	axis: Vector3;
-	angle: number;
-	angularVelocity: number;
-	velocity: Vector3;
-	hitRadius: number;
-}
-
 interface Debris {
 	position: Vector3;
 	velocity: Vector3;
@@ -147,12 +137,8 @@ interface Debris {
 
 // Steepness of the mountainside, in radians.
 const slopeAngle = 0.24;
-const treeCount = 170;
-const treeWindow = 230;
 const debrisCount = 320;
 const blastDuration = 0.7;
-// How long a tree in the camera's way takes to fade out, in seconds.
-const treeFadeDuration = 0.3;
 // How far past an easter egg's clearing a smash reaches bears.
 const blastReach = 12;
 const contactOffset = 0.05;
@@ -237,7 +223,7 @@ export class Game implements StageScene {
 	private readonly _chaseLookAhead = new Vector3();
 	private readonly _slope = new Group();
 	private readonly _character: Character;
-	private readonly _trees: Tree[] = [];
+	private _forest: Forest<BearActor> | undefined;
 	private readonly _debris: Debris[] = [];
 	private readonly _debrisMesh: InstancedMesh;
 	private readonly _bears: BearActor[] = [];
@@ -268,6 +254,18 @@ export class Game implements StageScene {
 	private readonly _q2 = new Quaternion();
 	private readonly _m = new Matrix4();
 	private readonly _up = new Vector3(0, 1, 0);
+
+	// Everything that moves on each step, in order.
+	public readonly systems = new Systems();
+
+	// How the trees ask the game where they can go.
+	public readonly forestHooks: ForestHooks<BearActor> = {
+		isInClearing: (x, z) => this.isInClearing(x, z),
+		isBlockingView: (x, z) => this.blocksView(x, z),
+		onPlace: (tree, isInLane) => {
+			this.placeBear(tree, isInLane);
+		},
+	};
 
 	public readonly input: GameInput = {
 		left: false,
@@ -311,9 +309,9 @@ export class Game implements StageScene {
 			});
 		}
 
-		// Plan the first easter egg before the trees, so they leave it a clearing.
+		// Plan the first easter egg before the trees are planted, so they
+		// leave it a clearing.
 		this.planEasterEgg(-easterEggSpacing + MathUtils.randFloatSpread(40));
-		this.createTrees();
 
 		this._character = createCharacter();
 		this._slope.add(this._character.root);
@@ -363,122 +361,37 @@ export class Game implements StageScene {
 		this._blast.fire.visible = false;
 		this._blast.smoke.visible = false;
 		this._slope.add(this._blast.smoke, this._blast.fire);
-	}
 
-	private createTrees(): void {
-		const geometries = [
-			createTreeGeometry(6, 8, 1.5),
-			createTreeGeometry(5, 6.5, 1.7),
-			createTreeGeometry(8, 11, 1.4),
-		];
-		const materials = ['#ffffff', '#dfe8d4', '#c9d6c2'].map(
-			(color) =>
-				new MeshLambertMaterial({
-					color,
-					vertexColors: true,
-					flatShading: true,
-				}),
-		);
-
-		for (let i = 0; i < treeCount; i++) {
-			const material = materials[i % materials.length].clone();
-			const mesh = new Mesh(geometries[i % geometries.length], material);
-			mesh.castShadow = true;
-			const tree: Tree = {
-				mesh,
-				material,
-				isFading: false,
-				opacity: 1,
-				bear: undefined,
-				state: 'standing',
-				yaw: 0,
-				axis: new Vector3(),
-				angle: 0,
-				angularVelocity: 0,
-				velocity: new Vector3(),
-				hitRadius: 1,
-			};
-			this.placeTree(tree, 20 - Math.random() * treeWindow, true);
-			this._slope.add(mesh);
-			this._trees.push(tree);
-		}
-
-		// Trees framing the opening shot, on the flat ledge.
-		const framing: [number, number, number][] = [
-			[-3.2, -1.5, 1.1],
-			[-5, 3, 1.3],
-			[-7.5, -4, 1.4],
-			[3.6, -2.5, 1.2],
-			[5.5, 2, 1],
-			[8, -6, 1.5],
-			[-11, 1, 1.2],
-			[11, 5, 1.3],
-			[-2, 12, 1.1],
-			[4, 16, 1],
-		];
-		for (const [index, [x, z, scale]] of framing.entries()) {
-			const mesh = new Mesh(
-				geometries[index % geometries.length],
-				materials[index % materials.length],
-			);
-			mesh.position.set(x, terrainHeight(x, z) - 0.1, z);
-			mesh.scale.setScalar(scale);
-			mesh.rotation.y = index;
-			mesh.castShadow = true;
-			this._scene.add(mesh);
-		}
+		this.systems.add(SYSTEM_ORDER.character, (dt) => {
+			this.updateCharacter(dt);
+		});
+		this.systems.add(SYSTEM_ORDER.bears, (dt) => {
+			this.updateBears(dt);
+		});
+		this.systems.add(SYSTEM_ORDER.easterEggs, (dt) => {
+			this.updateEasterEggs(dt);
+		});
+		this.systems.add(SYSTEM_ORDER.effects, (dt) => {
+			this.updateDebris(dt);
+			this.updateShards(dt);
+			this.updateBlast(dt);
+		});
+		this.systems.add(SYSTEM_ORDER.camera, (dt) => {
+			this.updateCamera(dt);
+		});
 	}
 
 	/**
-	 * Stands a tree back up at a random spot around `z`.
-	 * @param tree - The tree to place.
-	 * @param z - Where along the slope to place it.
-	 * @param isInitial - Whether this is the first placement.
+	 * Now and then, sends a bear up a newly placed tree: more of them further
+	 * down, and they lurk around the easter eggs.
+	 * @param tree - The tree that has just been placed.
+	 * @param isInLane - Whether it's in the lane I roll down.
 	 */
-	private placeTree(tree: Tree, z: number, isInitial = false): void {
-		const isInLane = Math.random() < 0.72;
-		const pickX = (): number =>
-			isInLane
-				? MathUtils.randFloatSpread(LANE_HALF_WIDTH * 2)
-				: Math.sign(Math.random() - 0.5) *
-					MathUtils.randFloat(LANE_HALF_WIDTH, 70);
-		let x = pickX();
-		// Keep the first stretch clear so the roll gets going.
-		if (isInitial && z > -14 && Math.abs(x) < 4) {
-			x += Math.sign(x || 1) * 5;
+	private placeBear(tree: Tree<BearActor>, isInLane: boolean): void {
+		if (tree.occupant) {
+			this.releaseBear(tree.occupant);
 		}
-		// Leave a clearing around each easter egg.
-		for (let i = 0; i < 6 && this.isInClearing(x, z); i++) {
-			x = pickX();
-		}
-		if (this.isInClearing(x, z)) {
-			x = Math.sign(x || 1) * (LANE_HALF_WIDTH + 8);
-		}
-		const scale = MathUtils.randFloat(0.75, 1.25);
-		tree.state = 'standing';
-		tree.mesh.visible = true;
-		tree.mesh.castShadow = true;
-		if (tree.isFading) {
-			tree.isFading = false;
-			tree.opacity = 1;
-			tree.material.opacity = 1;
-			tree.material.transparent = false;
-			tree.material.needsUpdate = true;
-		}
-		tree.yaw = Math.random() * Math.PI * 2;
-		tree.angle = 0;
-		tree.angularVelocity = 0;
-		tree.velocity.set(0, 0, 0);
-		tree.hitRadius = 1 + scale * 0.35;
-		tree.mesh.scale.setScalar(scale);
-		tree.mesh.position.set(x, terrainHeight(x, z) - 0.15, z);
-		tree.mesh.quaternion.setFromAxisAngle(this._up, tree.yaw);
-
-		if (tree.bear) {
-			this.releaseBear(tree.bear);
-		}
-		// Now and then, a bear is up the tree. More of them further down, and
-		// they lurk around the easter eggs.
+		const { x, z } = tree.mesh.position;
 		const bearChance = this.isNearClearing(x, z)
 			? 0.3
 			: Math.min(0.08, 0.025 + this._distance / 12_000);
@@ -493,7 +406,7 @@ export class Game implements StageScene {
 	 * @param bear - A free bear.
 	 * @param tree - The tree to climb.
 	 */
-	private attachBear(bear: BearActor, tree: Tree): void {
+	private attachBear(bear: BearActor, tree: Tree<BearActor>): void {
 		const { rig } = bear;
 		const scale = tree.mesh.scale.x;
 		bear.state = 'clinging';
@@ -501,7 +414,7 @@ export class Game implements StageScene {
 		bear.timer = 0;
 		bear.height = MathUtils.randFloat(2.6, 3.8) * scale;
 		bear.heading = Math.PI;
-		tree.bear = bear;
+		tree.occupant = bear;
 		const { x, y, z } = tree.mesh.position;
 		rig.root.visible = true;
 		rig.root.position.set(x, y + bear.height, z + BEAR_TRUNK_OFFSET);
@@ -518,7 +431,7 @@ export class Game implements StageScene {
 
 	private releaseBear(bear: BearActor): void {
 		if (bear.tree) {
-			bear.tree.bear = undefined;
+			bear.tree.occupant = undefined;
 		}
 		bear.tree = undefined;
 		bear.state = 'free';
@@ -647,22 +560,23 @@ export class Game implements StageScene {
 	}
 
 	private checkHits(): void {
+		const forest = this._forest;
+		if (!forest) {
+			return;
+		}
 		const player = this._character.root.position;
-		for (const tree of this._trees) {
-			if (tree.state !== 'standing') {
-				continue;
-			}
-			const dx = tree.mesh.position.x - player.x;
-			const dz = tree.mesh.position.z - player.z;
-			if (Math.abs(dz) < 1 && Math.abs(dx) < tree.hitRadius) {
-				this.topple(tree, dx);
-			}
+		for (const tree of forest.hits(player)) {
+			this.topple(forest, tree, tree.mesh.position.x - player.x);
 		}
 	}
 
-	private topple(tree: Tree, dx: number): void {
+	private topple(
+		forest: Forest<BearActor>,
+		tree: Tree<BearActor>,
+		dx: number,
+	): void {
 		// Knocking a bear out of its tree is a bad idea.
-		const { bear } = tree;
+		const { occupant: bear } = tree;
 		if (bear && treeBoundStates.has(bear.state)) {
 			this.caught(bear);
 		}
@@ -671,13 +585,7 @@ export class Game implements StageScene {
 		const direction = this._v
 			.set(side * (0.8 + Math.abs(dx)) + this._lateral * 0.08, 0, -1.4)
 			.normalize();
-		tree.state = 'falling';
-		tree.axis.crossVectors(this._up, direction).normalize();
-		tree.angularVelocity = MathUtils.randFloat(2.5, 4.5);
-		tree.velocity
-			.copy(direction)
-			.multiplyScalar(this._speed * 0.45 + 3)
-			.setY(MathUtils.randFloat(3, 7));
+		forest.fell(tree, direction, this._speed);
 
 		this._combo = nextCombo(this._combo, this._time - this._lastHit);
 		this._lastHit = this._time;
@@ -705,57 +613,6 @@ export class Game implements StageScene {
 				MathUtils.randFloatSpread(14),
 				MathUtils.randFloatSpread(14),
 			);
-		}
-	}
-
-	private updateTrees(dt: number): void {
-		const playerZ = this._character.root.position.z;
-		for (const tree of this._trees) {
-			const p = tree.mesh.position;
-			if (p.z > playerZ + 25) {
-				this.placeTree(tree, p.z - treeWindow);
-				continue;
-			}
-			// Once a tree is in the way it fades out and stays hidden until it's
-			// recycled, so it can't flicker in and out as the camera sways.
-			if (
-				tree.state === 'standing' &&
-				!tree.isFading &&
-				this.blocksView(p.x, p.z)
-			) {
-				tree.isFading = true;
-				tree.mesh.castShadow = false;
-				tree.material.transparent = true;
-				tree.material.needsUpdate = true;
-			}
-			if (tree.isFading && tree.mesh.visible) {
-				tree.opacity = Math.max(
-					0,
-					tree.opacity - dt / treeFadeDuration,
-				);
-				tree.material.opacity = tree.opacity;
-				tree.mesh.visible = tree.opacity > 0;
-			}
-			if (tree.state !== 'falling') {
-				continue;
-			}
-			// Topple over while being flung down the slope.
-			tree.angle = Math.min(
-				Math.PI / 2 - 0.05,
-				tree.angle + tree.angularVelocity * dt,
-			);
-			tree.angularVelocity += 7 * dt;
-			tree.velocity.y -= 22 * dt;
-			p.addScaledVector(tree.velocity, dt);
-			const ground = terrainHeight(p.x, p.z) - 0.15;
-			if (p.y < ground) {
-				p.y = ground;
-				tree.velocity.y = 0;
-				tree.velocity.multiplyScalar(Math.exp(-4 * dt));
-			}
-			this._q.setFromAxisAngle(tree.axis, tree.angle);
-			this._q2.setFromAxisAngle(this._up, tree.yaw);
-			tree.mesh.quaternion.multiplyQuaternions(this._q, this._q2);
 		}
 	}
 
@@ -819,7 +676,7 @@ export class Game implements StageScene {
 
 		// Always have the next one planned well ahead of the trees.
 		const last = this._easterEggs.at(-1);
-		if (!last || last.z > player.z - treeWindow - 60) {
+		if (!last || last.z > player.z - TREE_WINDOW - 60) {
 			this.planEasterEgg(
 				(last?.z ?? player.z) -
 					easterEggSpacing +
@@ -838,7 +695,7 @@ export class Game implements StageScene {
 		}
 
 		for (const placed of this._easterEggs) {
-			if (!placed.instance && placed.z > player.z - treeWindow) {
+			if (!placed.instance && placed.z > player.z - TREE_WINDOW) {
 				placed.instance = placed.egg.create();
 				const { object } = placed.instance;
 				object.position.set(
@@ -985,7 +842,7 @@ export class Game implements StageScene {
 			}
 			count++;
 			if (bear.tree) {
-				bear.tree.bear = undefined;
+				bear.tree.occupant = undefined;
 			}
 			bear.tree = undefined;
 			bear.state = 'blasted';
@@ -1202,7 +1059,7 @@ export class Game implements StageScene {
 		}
 		// Off the tree and after me.
 		if (tree) {
-			tree.bear = undefined;
+			tree.occupant = undefined;
 		}
 		bear.tree = undefined;
 		bear.state = 'charging';
@@ -1294,7 +1151,7 @@ export class Game implements StageScene {
 		const player = this._character.root.position;
 		const p = bear.rig.root.position;
 		if (bear.tree) {
-			bear.tree.bear = undefined;
+			bear.tree.occupant = undefined;
 		}
 		bear.tree = undefined;
 		bear.state = 'mauling';
@@ -1432,17 +1289,25 @@ export class Game implements StageScene {
 	}
 
 	/**
-	 * Compiles the see-through tree shader up front, so the first tree to
-	 * fade out doesn't stutter.
+	 * Hands the game its trees, and plants them for the start of the run.
+	 * @param forest - The trees.
+	 */
+	public attachForest(forest: Forest<BearActor>): void {
+		this._forest = forest;
+		forest.plant();
+	}
+
+	/**
+	 * Gets ready to be drawn: compiling shaders up front, so nothing
+	 * stutters the first time it's needed.
 	 * @param renderer - The renderer that will draw the game.
 	 */
 	public prepare(renderer: WebGLRenderer): void {
-		const [tree] = this._trees;
-		tree.material.transparent = true;
-		tree.material.needsUpdate = true;
-		renderer.compile(this._scene, this._camera);
-		tree.material.transparent = false;
-		tree.material.needsUpdate = true;
+		if (this._forest) {
+			this._forest.prepare(renderer, this._scene, this._camera);
+		} else {
+			renderer.compile(this._scene, this._camera);
+		}
 	}
 
 	/**
@@ -1494,15 +1359,7 @@ export class Game implements StageScene {
 	 */
 	public step(dt: number): void {
 		this._time += dt;
-
-		this.updateCharacter(dt);
-		this.updateTrees(dt);
-		this.updateBears(dt);
-		this.updateEasterEggs(dt);
-		this.updateDebris(dt);
-		this.updateShards(dt);
-		this.updateBlast(dt);
-		this.updateCamera(dt);
+		this.systems.run(dt);
 
 		if (
 			this._caughtAt === undefined ||

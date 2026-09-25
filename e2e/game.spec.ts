@@ -83,11 +83,24 @@ test.describe('gallery', () => {
 		const score = page.locator('#hero-score');
 		await expect(score).toBeHidden();
 		await page.locator('#hero-exit').click();
-		// Regression: the HUD used to flash back up during the fade out.
-		for (let i = 0; i < 10; i++) {
-			await expect(score).toBeHidden({ timeout: 0 });
-			await page.waitForTimeout(150);
-		}
+		// Regression: the HUD used to flash back up during the fade out. Watch
+		// it until the fade has finished, counting anything with an opacity of
+		// 0 (on it or around it) as unseen.
+		const wasSeen = await page.evaluate(async () => {
+			const element = globalThis.document.querySelector('#hero-score');
+			const start = performance.now();
+			let isSeen = false;
+			while (performance.now() - start < 2500) {
+				isSeen ||=
+					element?.checkVisibility({ opacityProperty: true }) ??
+					false;
+				await new Promise((resolve) =>
+					globalThis.requestAnimationFrame(resolve),
+				);
+			}
+			return isSeen;
+		});
+		expect(wasSeen).toBe(false);
 	});
 });
 

@@ -12,7 +12,7 @@ interface Point {
  * @param offset - Where the camera sits relative to me.
  * @returns True if it would block the view.
  */
-export const blocksChaseView = (
+export const isBlockingChaseView = (
 	point: Point,
 	player: Point,
 	offset: Point,

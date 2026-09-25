@@ -17,7 +17,8 @@ test('fades from the photo into a run down the mountain', async ({ page }) => {
 	await expect(page.locator('#hero-stage canvas')).toBeVisible();
 	await expect(page.locator('#hero-hint')).toHaveAttribute('data-show', '');
 	await advance(page, 3);
-	expect((await readHud(page)).metres).toBeGreaterThan(0);
+	const { metres } = await readHud(page);
+	expect(metres).toBeGreaterThan(0);
 });
 
 test('ends the run when a bear catches me', async ({ page }) => {
@@ -40,7 +41,8 @@ test('rolls again from the game-over card', async ({ page }) => {
 		'',
 	);
 	await advance(page, 4);
-	expect((await readHud(page)).metres).toBeGreaterThan(0);
+	const { metres } = await readHud(page);
+	expect(metres).toBeGreaterThan(0);
 });
 
 test('goes back to the photo', async ({ page }) => {
@@ -137,10 +139,14 @@ test.describe('on a phone', () => {
 		await startRun(page);
 		await page.evaluate(() => {
 			const prevented: boolean[] = [];
-			Object.assign(globalThis, { __prevented: prevented });
-			document.addEventListener('touchend', (event) => {
-				prevented.push(event.defaultPrevented);
-			});
+			Object.assign(globalThis, { touchendsPrevented: prevented });
+			globalThis.document.addEventListener(
+				'touchend',
+				(event) => {
+					prevented.push(event.defaultPrevented);
+				},
+				{ passive: true },
+			);
 		});
 		const box = await page.locator('#hero-stage').boundingBox();
 		if (!box) {
@@ -149,13 +155,15 @@ test.describe('on a phone', () => {
 		for (let i = 0; i < 2; i++) {
 			await page.touchscreen.tap(box.x + 40, box.y + box.height / 2);
 		}
-		expect(
-			await page.evaluate(
-				() =>
-					(globalThis as unknown as { __prevented: boolean[] })
-						.__prevented,
-			),
-		).toEqual([true, true]);
-		expect(await page.evaluate(() => visualViewport?.scale)).toBe(1);
+		const prevented = await page.evaluate(
+			() =>
+				(globalThis as unknown as { touchendsPrevented: boolean[] })
+					.touchendsPrevented,
+		);
+		expect(prevented).toEqual([true, true]);
+		const scale = await page.evaluate(
+			() => globalThis.visualViewport?.scale,
+		);
+		expect(scale).toBe(1);
 	});
 });

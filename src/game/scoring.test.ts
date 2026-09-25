@@ -16,7 +16,9 @@ describe('nextCombo', () => {
 
 describe('bearBlastPoints', () => {
 	it('multiplies the bonus by how many bears go at once', () => {
-		expect([1, 2, 3, 4].map(bearBlastPoints)).toEqual([5, 20, 45, 80]);
+		expect([1, 2, 3, 4].map((bears) => bearBlastPoints(bears))).toEqual([
+			5, 20, 45, 80,
+		]);
 	});
 
 	it('gives nothing when no bears are caught', () => {

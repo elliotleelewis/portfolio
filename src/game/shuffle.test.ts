@@ -7,7 +7,7 @@ describe('shuffle', () => {
 		const items = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
 		const shuffled = shuffle(items);
 		expect(shuffled).toHaveLength(items.length);
-		expect(shuffled.toSorted()).toEqual(items);
+		expect(shuffled.toSorted((a, b) => a.localeCompare(b))).toEqual(items);
 	});
 
 	it('leaves the original alone', () => {

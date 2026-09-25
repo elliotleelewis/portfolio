@@ -14,7 +14,7 @@
     "lint:fix": "pnpm run lint --fix",
     "format": "prettier --check \"**/*.{md,ts,js,cjs,mjs,scss,html,json,yml,astro}\" --ignore-path .gitignore",
     "format:fix": "pnpm run format --write",
-    "test": "vitest run",
+    "test": "vitest run --dir src",
     "test:e2e": "playwright test"
   },
   "dependencies": {

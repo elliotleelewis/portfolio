@@ -7,7 +7,7 @@ const isCi = Boolean(process.env.CI);
 const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
 const launchOptions = {
 	args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
-	...(executablePath ? { executablePath } : {}),
+	...(executablePath && { executablePath }),
 };
 
 export default defineConfig({
@@ -41,6 +41,9 @@ export default defineConfig({
 		// Astro backgrounds the dev server when it detects an AI agent, which
 		// Playwright would take as the server exiting. This keeps it in the
 		// foreground.
-		env: { ASTRO_DEV_BACKGROUND: '1' },
+		env: {
+			// eslint-disable-next-line @typescript-eslint/naming-convention -- Astro's own variable.
+			ASTRO_DEV_BACKGROUND: '1',
+		},
 	},
 });

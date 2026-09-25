@@ -521,7 +521,7 @@ import hero from '../media/hero.webp';
 		game = next;
 		// A handle for the end-to-end tests, in development only.
 		if (import.meta.env.DEV) {
-			Object.assign(globalThis, { __hero: { game: next } });
+			Object.assign(globalThis, { heroTest: { game: next } });
 		}
 		gallery = undefined;
 		setMode('game');

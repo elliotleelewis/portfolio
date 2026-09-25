@@ -39,7 +39,7 @@ import {
 	disposeObject,
 } from './easter-eggs';
 import { bearBlastPoints, nextCombo } from './scoring';
-import { blocksChaseView } from './view';
+import { isBlockingChaseView } from './view';
 import {
 	CHUNK_LENGTH,
 	LANE_HALF_WIDTH,
@@ -646,35 +646,6 @@ export class Game {
 		);
 	}
 
-	/**
-	 * Runs the game forward without waiting for real time, then draws the
-	 * result. Lets tests skip the intro or play out a crash quickly.
-	 * @param seconds - How much game time to simulate.
-	 */
-	public advance(seconds: number): void {
-		const steps = Math.ceil(seconds * 60);
-		for (let i = 0; i < steps; i++) {
-			this.step(1 / 60);
-		}
-		this._renderer.render(this._scene, this._camera);
-	}
-
-	/**
-	 * Ends the run as though a bear had got me.
-	 */
-	public catchPlayer(): void {
-		const bear =
-			this._bears.find(({ state }) => state === 'free') ?? this._bears[0];
-		const p = this._character.root.position;
-		bear.rig.root.visible = true;
-		bear.rig.root.position.set(
-			p.x,
-			terrainHeight(p.x, p.z) + BEAR_STANDING_HEIGHT,
-			p.z - 2,
-		);
-		this.caught(bear);
-	}
-
 	private frame(now: number): void {
 		// The browser's frame time can be a little earlier than when start()
 		// ran, so never step backwards; and cap long pauses (like a hidden tab).
@@ -704,13 +675,14 @@ export class Game {
 		this.updateCamera(dt);
 
 		if (
-			this._caughtAt !== undefined &&
-			!this._isGameOverReported &&
-			this._time - this._caughtAt > gameOverDelay
+			this._caughtAt === undefined ||
+			this._isGameOverReported ||
+			this._time - this._caughtAt <= gameOverDelay
 		) {
-			this._isGameOverReported = true;
-			this._callbacks.onGameOver(this._score, this._distance);
+			return;
 		}
+		this._isGameOverReported = true;
+		this._callbacks.onGameOver(this._score, this._distance);
 	}
 
 	private updateCharacter(dt: number): void {
@@ -956,7 +928,7 @@ export class Game {
 	private blocksView(x: number, z: number): boolean {
 		return (
 			this._rolling &&
-			blocksChaseView(
+			isBlockingChaseView(
 				{ x, z },
 				this._character.root.position,
 				this._chaseOffset,
@@ -1588,6 +1560,35 @@ export class Game {
 		const focus = this._slope.localToWorld(this._v.copy(player));
 		this._sun.target.position.copy(focus);
 		this._sun.position.copy(focus).add(this._v2.set(20, 40, 15));
+	}
+
+	/**
+	 * Runs the game forward without waiting for real time, then draws the
+	 * result. Lets tests skip the intro or play out a crash quickly.
+	 * @param seconds - How much game time to simulate.
+	 */
+	public advance(seconds: number): void {
+		const steps = Math.ceil(seconds * 60);
+		for (let i = 0; i < steps; i++) {
+			this.step(1 / 60);
+		}
+		this._renderer.render(this._scene, this._camera);
+	}
+
+	/**
+	 * Ends the run as though a bear had got me.
+	 */
+	public catchPlayer(): void {
+		const bear =
+			this._bears.find(({ state }) => state === 'free') ?? this._bears[0];
+		const p = this._character.root.position;
+		bear.rig.root.visible = true;
+		bear.rig.root.position.set(
+			p.x,
+			terrainHeight(p.x, p.z) + BEAR_STANDING_HEIGHT,
+			p.z - 2,
+		);
+		this.caught(bear);
 	}
 
 	public start(): void {

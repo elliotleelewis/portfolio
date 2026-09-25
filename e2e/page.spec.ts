@@ -20,7 +20,8 @@ test('opens social links in a new tab', async ({ page }) => {
 		.getByRole('list', { name: 'Find me elsewhere' })
 		.getByRole('link');
 	await expect(links).not.toHaveCount(0);
-	for (const link of await links.all()) {
+	const all = await links.all();
+	for (const link of all) {
 		await expect(link).toHaveAttribute('target', '_blank');
 		await expect(link).toHaveAttribute('rel', /noopener/);
 	}
@@ -34,7 +35,8 @@ test('has icons for tabs and home screens', async ({ page, request }) => {
 	]) {
 		const href = await page.locator(selector).getAttribute('href');
 		expect(href).toBeTruthy();
-		expect((await request.get(href ?? '')).ok()).toBe(true);
+		const response = await request.get(href ?? '');
+		expect(response.ok()).toBe(true);
 	}
 });
 

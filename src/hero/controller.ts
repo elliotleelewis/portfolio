@@ -274,6 +274,24 @@ export class HeroController {
 	}
 
 	/**
+	 * Pulls the gallery along with a finger.
+	 * @param across - How far the finger has moved towards the next easter
+	 * egg, as a share of the stage's width.
+	 */
+	public dragEgg(across: number): void {
+		this._gallery?.drag(across);
+	}
+
+	/**
+	 * Lets go of the gallery after a drag.
+	 * @param velocity - How fast the finger was moving towards the next
+	 * easter egg, in stage widths a second.
+	 */
+	public releaseEgg(velocity: number): void {
+		this._gallery?.release(velocity);
+	}
+
+	/**
 	 * Moves the gallery to one easter egg.
 	 * @param index - Which one.
 	 */

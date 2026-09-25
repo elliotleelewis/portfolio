@@ -1,110 +1,19 @@
 import { createPortal } from '@react-three/fiber';
-import { useEffect, useMemo, useState } from 'react';
-import {
-	DirectionalLight,
-	type Mesh,
-	MeshLambertMaterial,
-	Vector3,
-} from 'three';
+import { useEffect, useMemo } from 'react';
+import { type Mesh, MeshLambertMaterial, type Vector3 } from 'three';
 
 import { disposeObject } from '../easter-eggs';
 import { type Game } from '../game';
 import { SYSTEM_ORDER } from '../systems';
-import {
-	CHUNK_LENGTH,
-	FOG_COLOR,
-	createGroundChunk,
-	createMountains,
-	shapeGroundChunk,
-} from '../world';
+import { CHUNK_LENGTH, createGroundChunk, shapeGroundChunk } from '../world';
 
-import { GameContext, useGame, useSystem } from './game-context';
+import { GameContext, StageContext, useGame, useSystem } from './game-context';
 import { OnSlope } from './on-slope';
+import { Lighting, Mountains, Sky } from './scenery';
 import { Trees } from './trees';
-
-// Where the sun sits relative to me.
-const sunOffset = new Vector3(20, 40, 15);
 
 // Ground chunks leapfrog ahead once they're this far behind me.
 const groundRecycleDistance = 30;
-
-/**
- * The hazy sky, which the far slope fades into.
- * @returns The sky.
- */
-const Sky = () => (
-	<>
-		<color attach="background" args={[FOG_COLOR]} />
-		<fog attach="fog" args={[FOG_COLOR, 35, 240]} />
-	</>
-);
-
-/**
- * Soft, overcast mountain light, and a sun that follows me down the
- * mountain so its shadows stay sharp around me.
- * @returns The lights.
- */
-const Lighting = () => {
-	const game = useGame();
-	const [sun] = useState(() => {
-		const light = new DirectionalLight('#fff3df', 2.2);
-		light.position.copy(sunOffset);
-		light.castShadow = true;
-		light.shadow.mapSize.set(2048, 2048);
-		light.shadow.camera.left = -30;
-		light.shadow.camera.right = 30;
-		light.shadow.camera.top = 30;
-		light.shadow.camera.bottom = -30;
-		light.shadow.camera.far = 120;
-		light.shadow.bias = -0.0005;
-		light.shadow.normalBias = 0.03;
-		return light;
-	});
-	const [focus] = useState(() => new Vector3());
-
-	useEffect(
-		() => () => {
-			sun.dispose();
-		},
-		[sun],
-	);
-
-	useSystem(SYSTEM_ORDER.follow, () => {
-		game.slope.localToWorld(focus.copy(game.player));
-		sun.target.position.copy(focus);
-		sun.position.copy(focus).add(sunOffset);
-	});
-
-	return (
-		<>
-			<hemisphereLight args={['#f4f7f9', '#4f5f3c', 2.1]} />
-			<primitive object={sun} />
-			<primitive object={sun.target} />
-		</>
-	);
-};
-
-/**
- * A ring of distant peaks that stays on the horizon.
- * @returns The mountains.
- */
-const Mountains = () => {
-	const game = useGame();
-	const [mountains] = useState(() => createMountains(FOG_COLOR));
-
-	useEffect(
-		() => () => {
-			disposeObject(mountains);
-		},
-		[mountains],
-	);
-
-	useSystem(SYSTEM_ORDER.follow, () => {
-		mountains.position.copy(game.camera.position);
-	});
-
-	return <primitive object={mountains} />;
-};
 
 interface GroundPieces {
 	// The flat ledge I start on.
@@ -183,21 +92,28 @@ interface Props {
  * @param props.game - The game to build the world for.
  * @returns The world.
  */
-export const GameWorld = ({ game }: Props) => (
-	<GameContext value={game}>
-		{createPortal(
-			<>
-				<Sky />
-				<Lighting />
-				<Mountains />
-				<Ground />
-				<Trees />
-				<OnSlope object={game.character} />
-				<OnSlope object={game.bears} />
-				<OnSlope object={game.easterEggs} />
-				<OnSlope object={game.effects} />
-			</>,
-			game.scene,
-		)}
-	</GameContext>
-);
+export const GameWorld = ({ game }: Props) => {
+	// The sun follows me down the mountain.
+	const focus = (into: Vector3): Vector3 =>
+		game.slope.localToWorld(into.copy(game.player));
+	return (
+		<StageContext value={game}>
+			<GameContext value={game}>
+				{createPortal(
+					<>
+						<Sky near={35} far={240} />
+						<Lighting reach={30} depth={120} focus={focus} />
+						<Mountains />
+						<Ground />
+						<Trees />
+						<OnSlope object={game.character} />
+						<OnSlope object={game.bears} />
+						<OnSlope object={game.easterEggs} />
+						<OnSlope object={game.effects} />
+					</>,
+					game.scene,
+				)}
+			</GameContext>
+		</StageContext>
+	);
+};

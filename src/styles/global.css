@@ -4,6 +4,9 @@
  * A palette lifted from the mountain: misty fog, pine, slate rock and bark,
  * with the wood stove's amber glow as the one accent. Light mode is a misty
  * morning; dark mode is night on the mountain.
+ *
+ * In OKLCH so the amber can reach past sRGB into Display P3 on screens that
+ * show it (others map it back into gamut).
  */
 @theme inline {
 	--color-paper: var(--paper);
@@ -17,7 +20,7 @@
 	--color-ridge-mid: var(--ridge-mid);
 	--color-ridge-near: var(--ridge-near);
 	--color-on-accent: var(--on-accent);
-	--color-snow: #eef1ec;
+	--color-snow: oklch(95.4% 0.007 132.4);
 
 	--font-display: 'Fraunces Variable', 'Iowan Old Style', Georgia, serif;
 	--font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
@@ -27,32 +30,32 @@
 :root {
 	color-scheme: light dark;
 
-	--paper: #eef1ec;
-	--surface: #f8faf6;
-	--ink: #1c2620;
-	--muted: #56625a;
-	--line: #c7d0c6;
-	--accent: #b45309;
-	--pine: #2f4a33;
-	--ridge-far: #bcc6c6;
-	--ridge-mid: #7f8d8b;
-	--ridge-near: #2f4a33;
-	--on-accent: #ffffff;
+	--paper: oklch(95.4% 0.007 132.4);
+	--surface: oklch(98.2% 0.006 128.5);
+	--ink: oklch(25.7% 0.018 158.5);
+	--muted: oklch(48.3% 0.019 156.4);
+	--line: oklch(84.8% 0.017 142.5);
+	--accent: oklch(54% 0.165 49);
+	--pine: oklch(38% 0.051 148.3);
+	--ridge-far: oklch(81.9% 0.011 196.9);
+	--ridge-mid: oklch(63.1% 0.017 186.4);
+	--ridge-near: oklch(38% 0.051 148.3);
+	--on-accent: oklch(100% 0 0);
 }
 
 @media (prefers-color-scheme: dark) {
 	:root {
-		--paper: #0e1512;
-		--surface: #151f1a;
-		--ink: #e3eae4;
-		--muted: #9aa89e;
-		--line: #2a3830;
-		--accent: #f5a524;
-		--pine: #8fb996;
-		--ridge-far: #1d2b27;
-		--ridge-mid: #15211c;
-		--ridge-near: #0c1310;
-		--on-accent: #1a1206;
+		--paper: oklch(18.7% 0.012 167);
+		--surface: oklch(22.8% 0.017 163);
+		--ink: oklch(93% 0.011 149.9);
+		--muted: oklch(71.8% 0.021 154.7);
+		--line: oklch(32.5% 0.023 159.7);
+		--accent: oklch(78.2% 0.19 72.3);
+		--pine: oklch(74.6% 0.067 149.5);
+		--ridge-far: oklch(27.5% 0.02 175.2);
+		--ridge-mid: oklch(23.5% 0.019 167);
+		--ridge-near: oklch(17.8% 0.012 166.9);
+		--on-accent: oklch(18.9% 0.026 77.5);
 	}
 }
 

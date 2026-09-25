@@ -428,6 +428,17 @@ import hero from '../media/hero.webp';
 						}, 900);
 					}
 				},
+				onBearBlast: (bears, points) => {
+					if (!combo) {
+						return;
+					}
+					combo.textContent = `${'🐻'.repeat(bears)} ×${String(bears)} +${String(points)}!`;
+					combo.dataset.show = '';
+					clearTimeout(comboTimeout);
+					comboTimeout = globalThis.setTimeout(() => {
+						delete combo.dataset.show;
+					}, 1600);
+				},
 				onDistance: (metres) => {
 					if (distance) {
 						distance.textContent = String(Math.floor(metres));

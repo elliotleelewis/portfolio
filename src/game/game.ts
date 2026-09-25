@@ -54,6 +54,8 @@ export interface GameCallbacks {
 	// The intro is over and the player now has control.
 	onRolling: () => void;
 	onScore: (score: number, combo: number) => void;
+	// Smashing an easter egg sent bears flying, for bonus points.
+	onBearBlast: (bears: number, points: number) => void;
 	onDistance: (metres: number) => void;
 	// A bear got me.
 	onGameOver: (score: number, metres: number) => void;
@@ -79,7 +81,8 @@ type BearState =
 	| 'dismounting'
 	| 'charging'
 	| 'leaving'
-	| 'mauling';
+	| 'mauling'
+	| 'blasted';
 
 interface BearActor {
 	rig: Bear;
@@ -92,6 +95,9 @@ interface BearActor {
 	gait: number;
 	// Where the bear stands relative to me once it has caught me.
 	offset: Vector3;
+	// How it flies (and tumbles) once blasted.
+	velocity: Vector3;
+	spin: Vector3;
 }
 
 interface PlacedEasterEgg {
@@ -148,6 +154,10 @@ const treeCount = 170;
 const treeWindow = 230;
 const debrisCount = 320;
 const blastDuration = 0.7;
+// How far past an easter egg's clearing a smash reaches bears.
+const blastReach = 12;
+// Points for each bear blasted, multiplied again by how many went at once.
+const bearBlastPoints = 5;
 const contactOffset = 0.05;
 const bearCount = 8;
 // States in which a bear is still up (or on) its tree.
@@ -358,6 +368,8 @@ export class Game {
 				heading: 0,
 				gait: Math.random() * 10,
 				offset: new Vector3(),
+				velocity: new Vector3(),
+				spin: new Vector3(),
 			});
 		}
 
@@ -524,8 +536,11 @@ export class Game {
 		if (tree.bear) {
 			this.releaseBear(tree.bear);
 		}
-		// Now and then, a bear is up the tree. More of them further down.
-		const bearChance = Math.min(0.08, 0.025 + this._distance / 12_000);
+		// Now and then, a bear is up the tree. More of them further down, and
+		// they lurk around the easter eggs.
+		const bearChance = this.isNearClearing(x, z)
+			? 0.3
+			: Math.min(0.08, 0.025 + this._distance / 12_000);
 		const bear = this._bears.find(({ state }) => state === 'free');
 		if (bear && isInLane && z < -70 && Math.random() < bearChance) {
 			this.attachBear(bear, tree);
@@ -913,6 +928,14 @@ export class Game {
 		);
 	}
 
+	private isNearClearing(x: number, z: number): boolean {
+		return this._easterEggs.some(
+			(placed) =>
+				(x - placed.x) ** 2 + (z - placed.z) ** 2 <
+				(placed.egg.clearingRadius + blastReach) ** 2,
+		);
+	}
+
 	private updateEasterEggs(dt: number): void {
 		const player = this._character.root.position;
 
@@ -1037,6 +1060,7 @@ export class Game {
 		fire.position.copy(centre);
 		smoke.position.copy(centre);
 		this._blast.age = 0;
+		this.blastBears(placed);
 
 		// Plus a spray of dirt and needles.
 		for (let i = 0; i < 40; i++) {
@@ -1058,6 +1082,57 @@ export class Game {
 		if (!this._reducedMotion) {
 			this._shake = 0.6;
 		}
+	}
+
+	/**
+	 * Sends any bears around a smashed easter egg flying, for bonus points:
+	 * the more at once, the bigger the multiplier.
+	 * @param placed - The smashed easter egg.
+	 */
+	private blastBears(placed: PlacedEasterEgg): void {
+		const reach = placed.egg.clearingRadius + blastReach;
+		let count = 0;
+		for (const bear of this._bears) {
+			const p = bear.rig.root.position;
+			const dx = p.x - placed.x;
+			const dz = p.z - placed.z;
+			const distance = Math.hypot(dx, dz);
+			if (
+				bear.state === 'free' ||
+				bear.state === 'blasted' ||
+				bear.state === 'mauling' ||
+				distance > reach
+			) {
+				continue;
+			}
+			count++;
+			if (bear.tree) {
+				bear.tree.bear = undefined;
+			}
+			bear.tree = undefined;
+			bear.state = 'blasted';
+			bear.timer = 0;
+			bear.rig.alert.visible = false;
+			// Harder the closer it was.
+			const force = MathUtils.mapLinear(distance, 0, reach, 16, 8);
+			bear.velocity.set(
+				(dx / (distance || 1)) * force,
+				MathUtils.randFloat(9, 14),
+				(dz / (distance || 1)) * force - this._speed * 0.3,
+			);
+			bear.spin.set(
+				MathUtils.randFloatSpread(12),
+				MathUtils.randFloatSpread(6),
+				MathUtils.randFloatSpread(12),
+			);
+		}
+		if (count === 0) {
+			return;
+		}
+		const points = bearBlastPoints * count * count;
+		this._score += points;
+		this._callbacks.onScore(this._score, this._combo);
+		this._callbacks.onBearBlast(count, points);
 	}
 
 	private updateShards(dt: number): void {
@@ -1154,6 +1229,43 @@ export class Game {
 				this.updateMauling(bear, dt);
 				break;
 			}
+			case 'blasted': {
+				this.updateBlasted(bear, dt);
+				break;
+			}
+		}
+	}
+
+	private updateBlasted(bear: BearActor, dt: number): void {
+		const { rig, velocity, spin } = bear;
+		if (velocity.lengthSq() === 0) {
+			return;
+		}
+		const p = rig.root.position;
+		// Tumble through the air...
+		velocity.y -= 22 * dt;
+		p.addScaledVector(velocity, dt);
+		rig.root.rotation.x += spin.x * dt;
+		rig.root.rotation.y += spin.y * dt;
+		rig.root.rotation.z += spin.z * dt;
+		for (const [i, leg] of rig.legs.entries()) {
+			leg.rotation.x = Math.sin(bear.timer * 20 + i) * 0.9;
+		}
+		const ground = terrainHeight(p.x, p.z);
+		if (p.y > ground + 0.6 || velocity.y > 0) {
+			return;
+		}
+		// ...then land, out cold on its side.
+		velocity.set(0, 0, 0);
+		p.y = ground + 0.6;
+		rig.root.rotation.set(
+			0,
+			rig.root.rotation.y,
+			Math.sign(spin.z || 1) * (Math.PI / 2),
+		);
+		rig.pose.rotation.set(0, 0, 0);
+		for (const leg of rig.legs) {
+			leg.rotation.set(0.4, 0, 0);
 		}
 	}
 

@@ -18,9 +18,8 @@ import {
 	shapeGroundChunk,
 } from '../world';
 
-import { Bears } from './bears';
-import { Character } from './character';
 import { GameContext, useGame, useSystem } from './game-context';
+import { OnSlope } from './on-slope';
 import { Trees } from './trees';
 
 // Where the sun sits relative to me.
@@ -193,8 +192,10 @@ export const GameWorld = ({ game }: Props) => (
 				<Mountains />
 				<Ground />
 				<Trees />
-				<Character />
-				<Bears />
+				<OnSlope object={game.character} />
+				<OnSlope object={game.bears} />
+				<OnSlope object={game.easterEggs} />
+				<OnSlope object={game.effects} />
 			</>,
 			game.scene,
 		)}

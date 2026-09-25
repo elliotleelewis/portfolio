@@ -71,6 +71,10 @@ export interface GameInput {
 	right: boolean;
 	faster: boolean;
 	slower: boolean;
+	// The on-screen joystick: -1 (left) to 1 (right), and -1 (slower) to 1
+	// (faster).
+	steer: number;
+	throttle: number;
 }
 
 type BearState =
@@ -292,6 +296,8 @@ export class Game {
 		right: false,
 		faster: false,
 		slower: false,
+		steer: 0,
+		throttle: 0,
 	};
 
 	public constructor(
@@ -752,22 +758,26 @@ export class Game {
 
 	private roll(dt: number): void {
 		const c = this._character;
-		const { left, right, faster, slower } = this.input;
+		const { left, right, faster, slower, steer, throttle } = this.input;
 
 		let target = MathUtils.clamp(10 + this._distance / 40, 10, 28);
-		if (faster) {
-			target *= 1.35;
-		}
-		if (slower) {
-			target *= 0.55;
-		}
+		const push = MathUtils.clamp(
+			throttle + Number(faster) - Number(slower),
+			-1,
+			1,
+		);
+		target *= 1 + push * (push > 0 ? 0.35 : 0.45);
 		this._speed = MathUtils.lerp(this._speed, target, damp(0.8, dt));
 
-		const steer = Number(right) - Number(left);
+		const turn = MathUtils.clamp(
+			steer + Number(right) - Number(left),
+			-1,
+			1,
+		);
 		const maxLateral = 7 + this._speed * 0.3;
 		this._lateral = MathUtils.lerp(
 			this._lateral,
-			steer * maxLateral,
+			turn * maxLateral,
 			damp(5, dt),
 		);
 

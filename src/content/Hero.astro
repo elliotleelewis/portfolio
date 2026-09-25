@@ -70,16 +70,29 @@ import hero from '../media/hero.webp';
 		></div>
 		<p
 			id="hero-hint"
-			class="absolute inset-x-0 bottom-6 text-center text-sm font-semibold text-slate-900 opacity-0 transition-opacity duration-500 group-data-[mode=gallery]:hidden data-show:opacity-100 sm:text-base"
+			class="absolute inset-x-0 bottom-6 text-center text-sm font-semibold text-slate-900 opacity-0 transition-opacity duration-500 group-data-[mode=gallery]:hidden data-show:opacity-100 sm:text-base pointer-coarse:bottom-38"
 		>
-			<span class="hidden rounded-full bg-white/70 px-4 py-2 backdrop-blur-sm sm:inline">
+			<span class="rounded-full bg-white/70 px-4 py-2 backdrop-blur-sm pointer-coarse:hidden">
 				Use ← → to flatten trees · ↑ ↓ for speed · watch out for bears
 				🐻
 			</span>
-			<span class="rounded-full bg-white/70 px-4 py-2 backdrop-blur-sm sm:hidden">
-				Hold left or right to steer · dodge the bears 🐻
+			<span class="hidden rounded-full bg-white/70 px-4 py-2 backdrop-blur-sm pointer-coarse:inline">
+				Steer and speed up with the stick · dodge the bears 🐻
 			</span>
 		</p>
+		<!-- A thumbstick for touch screens: left/right steers, up/down sets the pace. -->
+		<div class="hidden pointer-coarse:block">
+			<div
+				id="hero-stick"
+				class="absolute bottom-6 left-1/2 size-28 -translate-x-1/2 touch-none rounded-full border-2 border-white/60 bg-white/25 shadow-lg backdrop-blur-sm group-data-[mode=gallery]:hidden group-data-[state=playing]:pointer-events-auto"
+				aria-hidden="true"
+			>
+				<div
+					id="hero-stick-knob"
+					class="absolute top-1/2 left-1/2 size-12 -translate-1/2 rounded-full bg-white/90 shadow-md transition-transform duration-150 data-active:transition-none"
+				></div>
+			</div>
+		</div>
 	</div>
 
 	<!-- Game over -->
@@ -131,7 +144,7 @@ import hero from '../media/hero.webp';
 	<!-- Easter egg gallery -->
 	<div
 		id="hero-gallery"
-		class="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 px-4 pb-6 opacity-0 transition-opacity duration-500 group-data-[mode=gallery]:pointer-events-auto group-data-[mode=gallery]:opacity-100"
+		class="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 px-4 pb-6 opacity-0 transition-opacity duration-500 group-data-[mode=gallery]:group-data-[state=playing]:pointer-events-auto group-data-[mode=gallery]:group-data-[state=playing]:opacity-100"
 		role="region"
 		aria-label="Easter egg gallery"
 		aria-roledescription="carousel"
@@ -183,6 +196,8 @@ import hero from '../media/hero.webp';
 	const distance = document.querySelector<HTMLElement>('#hero-distance');
 	const combo = document.querySelector<HTMLElement>('#hero-combo');
 	const hint = document.querySelector<HTMLElement>('#hero-hint');
+	const stick = document.querySelector<HTMLElement>('#hero-stick');
+	const stickKnob = document.querySelector<HTMLElement>('#hero-stick-knob');
 	const over = document.querySelector<HTMLElement>('#hero-over');
 	const overScore = document.querySelector<HTMLElement>('#hero-over-score');
 	const overDistance = document.querySelector<HTMLElement>(
@@ -210,7 +225,10 @@ import hero from '../media/hero.webp';
 
 	const BEST_KEY = 'hero-best-trees';
 
-	const KEYS: Record<string, keyof Game['input'] | undefined> = {
+	const KEYS: Record<
+		string,
+		Exclude<keyof Game['input'], 'steer' | 'throttle'> | undefined
+	> = {
 		ArrowLeft: 'left',
 		KeyA: 'left',
 		ArrowRight: 'right',
@@ -228,6 +246,7 @@ import hero from '../media/hero.webp';
 	let swipeStart: number | undefined;
 	let comboTimeout: ReturnType<typeof setTimeout> | undefined;
 	let isGameOver = false;
+	let stickPointer: number | undefined;
 
 	const readBest = (): number => {
 		try {
@@ -325,6 +344,53 @@ import hero from '../media/hero.webp';
 		}
 	};
 
+	// Small nudges of the stick do nothing.
+	const STICK_DEAD_ZONE = 0.15;
+
+	const setStick = (x: number, y: number): void => {
+		if (stickKnob) {
+			stickKnob.style.transform =
+				x === 0 && y === 0
+					? ''
+					: `translate(${String(x)}px, ${String(y)}px)`;
+		}
+		if (!game || !stick) {
+			return;
+		}
+		const reach = stick.clientWidth / 2 - 12;
+		const shape = (value: number): number =>
+			Math.abs(value) < STICK_DEAD_ZONE ? 0 : value;
+		game.input.steer = shape(x / reach);
+		game.input.throttle = shape(-y / reach);
+	};
+
+	const onStick = (event: PointerEvent): void => {
+		if (!stick || !stickKnob) {
+			return;
+		}
+		if (event.type === 'pointerdown') {
+			stickPointer = event.pointerId;
+			stick.setPointerCapture(event.pointerId);
+			stickKnob.dataset.active = '';
+			delete hint?.dataset.show;
+		} else if (event.pointerId !== stickPointer) {
+			return;
+		}
+		if (event.type === 'pointerup' || event.type === 'pointercancel') {
+			stickPointer = undefined;
+			delete stickKnob.dataset.active;
+			setStick(0, 0);
+			return;
+		}
+		// Follow the finger, but keep the knob inside the ring.
+		const { left, top, width, height } = stick.getBoundingClientRect();
+		const dx = event.clientX - (left + width / 2);
+		const dy = event.clientY - (top + height / 2);
+		const reach = stick.clientWidth / 2 - 12;
+		const scale = Math.min(1, reach / (Math.hypot(dx, dy) || 1));
+		setStick(dx * scale, dy * scale);
+	};
+
 	const stop = (): void => {
 		const scene = current;
 		if (!scene) {
@@ -333,9 +399,6 @@ import hero from '../media/hero.webp';
 		current = undefined;
 		game = undefined;
 		gallery = undefined;
-		if (hero) {
-			delete hero.dataset.mode;
-		}
 		isGameOver = false;
 		setState('idle');
 		delete hint?.dataset.show;
@@ -346,6 +409,14 @@ import hero from '../media/hero.webp';
 		setTimeout(() => {
 			scene.dispose();
 		}, 1500);
+		// Keep the mode until the HUD has faded out too (it waits 700ms, then
+		// fades for 700ms), so the game's HUD doesn't flash up over the
+		// gallery as it goes.
+		setTimeout(() => {
+			if (hero && !current) {
+				delete hero.dataset.mode;
+			}
+		}, 2000);
 		play?.focus();
 	};
 
@@ -566,4 +637,36 @@ import hero from '../media/hero.webp';
 	] as const) {
 		stage?.addEventListener(type, onPointer);
 	}
+	for (const type of [
+		'pointerdown',
+		'pointermove',
+		'pointerup',
+		'pointercancel',
+	] as const) {
+		stick?.addEventListener(type, onStick);
+	}
+
+	// Tapping away at the stage shouldn't double-tap or pinch the page into a
+	// zoom. Buttons still get their taps.
+	const isOnButton = (event: TouchEvent): boolean =>
+		event.target instanceof Element &&
+		event.target.closest('button, a') !== null;
+	hero?.addEventListener(
+		'touchstart',
+		(event) => {
+			if (current && event.touches.length > 1) {
+				event.preventDefault();
+			}
+		},
+		{ passive: false },
+	);
+	hero?.addEventListener(
+		'touchend',
+		(event) => {
+			if (current && !isOnButton(event)) {
+				event.preventDefault();
+			}
+		},
+		{ passive: false },
+	);
 </script>

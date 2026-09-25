@@ -849,8 +849,15 @@ export class Game {
 				this.placeTree(tree, p.z - treeWindow);
 				continue;
 			}
-			tree.mesh.visible =
-				tree.state === 'falling' || !this.blocksView(p.x, p.z);
+			// Once a tree is in the way it stays hidden until it's recycled, so
+			// it can't flicker in and out as the camera sways.
+			if (
+				tree.state === 'standing' &&
+				tree.mesh.visible &&
+				this.blocksView(p.x, p.z)
+			) {
+				tree.mesh.visible = false;
+			}
 			if (tree.state !== 'falling') {
 				continue;
 			}
@@ -876,6 +883,7 @@ export class Game {
 
 	/**
 	 * Whether a tree at (x, z) would sit between the chase camera and me.
+	 * Only trees I've already passed count, never ones I'm about to hit.
 	 * @param x - Tree position across the slope.
 	 * @param z - Tree position down the slope.
 	 * @returns True if the tree would block the view.
@@ -886,16 +894,18 @@ export class Game {
 		}
 		const player = this._character.root.position;
 		const { x: offsetX, z: offsetZ } = this._chaseOffset;
-		// Closest point on the camera→player segment, in the slope plane.
-		const t = MathUtils.clamp(
-			((x - player.x) * offsetX + (z - player.z) * offsetZ) /
-				(offsetX * offsetX + offsetZ * offsetZ),
-			0,
-			1.2,
-		);
+		const lengthSq = offsetX * offsetX + offsetZ * offsetZ;
+		// How far along the player→camera segment the tree is, in the slope
+		// plane: 0 at me, 1 at the camera.
+		const t =
+			((x - player.x) * offsetX + (z - player.z) * offsetZ) / lengthSq;
+		// Leave anything within 1.5m of me (or ahead of me) alone.
+		if (t < 1.5 / Math.sqrt(lengthSq) || t > 1.2) {
+			return false;
+		}
 		const dx = x - (player.x + offsetX * t);
 		const dz = z - (player.z + offsetZ * t);
-		return dx * dx + dz * dz < 2.5 * 2.5 && z > player.z - 1.5;
+		return dx * dx + dz * dz < 2.5 * 2.5;
 	}
 
 	/**

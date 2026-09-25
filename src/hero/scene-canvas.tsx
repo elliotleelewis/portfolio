@@ -1,6 +1,7 @@
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useRef } from 'react';
 
+import { GalleryWorld } from '../game/components/gallery-world';
 import { GameWorld } from '../game/components/world';
 import { RENDER_PRIORITY, STEP_PRIORITY } from '../game/frame-order';
 import { type StageScene } from '../game/stage-scene';
@@ -66,9 +67,11 @@ export const SceneCanvas = ({ shown, onFirstFrame }: Props) => (
 	// PCF shadow map, so the scenes look as they were designed.
 	<Canvas flat shadows="percentage" dpr={[1, 2]}>
 		<Frame scene={shown.scene} onFirstFrame={onFirstFrame} />
-		{shown.kind === 'game' && (
-			// A fresh world for each run.
+		{/* A fresh world for each scene. */}
+		{shown.kind === 'game' ? (
 			<GameWorld key={shown.scene.scene.uuid} game={shown.scene} />
+		) : (
+			<GalleryWorld key={shown.scene.scene.uuid} gallery={shown.scene} />
 		)}
 	</Canvas>
 );

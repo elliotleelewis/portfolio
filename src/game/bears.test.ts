@@ -50,7 +50,7 @@ const rollingPlayer = (): { player: Player; time: number } => {
 	return { player, time };
 };
 
-const setup = () => {
+const setup = (isInTheWay: (x: number, z: number) => boolean = () => false) => {
 	const { player, time } = rollingPlayer();
 	const catches: BearActor[] = [];
 	const bears = new Bears(player, {
@@ -58,6 +58,7 @@ const setup = () => {
 		onCatch: (bear) => {
 			catches.push(bear);
 		},
+		isInTheWay,
 	});
 	const run = (seconds: number): void => {
 		for (let i = 0; i < Math.round(seconds / dt); i++) {
@@ -119,6 +120,52 @@ describe('Bears', () => {
 		run(dt);
 		expect(bear?.state).toBe('free');
 		expect(bear?.rig.root.visible).toBe(false);
+	});
+
+	it('carries on past me once it has missed, rather than turning away', () => {
+		const { player, bears, run } = setup();
+		const bear = climbOrFail(bears, treeAt(0, player.position.z - 100));
+		bear.state = 'charging';
+		bear.heading = 0.3;
+		bear.rig.root.position.set(0, 0, player.position.z + 4);
+		run(dt);
+		expect(bear.state).toBe('leaving');
+		expect(bear.heading).toBe(0.3);
+	});
+
+	it("fades out a bear in the camera's way, then brings it back solid", () => {
+		let isInTheWay = false;
+		const { player, bears, run } = setup(() => isInTheWay);
+		const bear = climbOrFail(bears, treeAt(0, player.position.z - 100));
+		bear.state = 'leaving';
+		bear.rig.root.position.set(0, 0, player.position.z + 4);
+		run(0.1);
+		expect(bear.isFading).toBe(false);
+
+		isInTheWay = true;
+		run(0.1);
+		expect(bear.isFading).toBe(true);
+		expect(bear.opacity).toBeLessThan(1);
+		expect(bear.materials.every(({ transparent }) => transparent)).toBe(
+			true,
+		);
+		run(0.3);
+		expect(bear.state).toBe('free');
+
+		const again = climbOrFail(bears, treeAt(0, player.position.z - 100));
+		expect(again).toBe(bear);
+		expect(again.opacity).toBe(1);
+		expect(again.materials.every(({ transparent }) => !transparent)).toBe(
+			true,
+		);
+	});
+
+	it('never fades a bear that is still after me', () => {
+		const { player, bears, run } = setup(() => true);
+		const bear = climbOrFail(bears, treeAt(0, player.position.z - 100));
+		run(0.5);
+		expect(bear.state).toBe('clinging');
+		expect(bear.isFading).toBe(false);
 	});
 
 	it('sends the bears near a blast flying, and lands them out cold', () => {

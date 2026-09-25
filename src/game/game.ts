@@ -19,7 +19,7 @@ import { Player, type PlayerControls, STAR_END } from './player';
 import { bearBlastPoints, nextCombo } from './scoring';
 import { type StageScene } from './stage-scene';
 import { SYSTEM_ORDER, Systems } from './systems';
-import { isBlockingChaseView } from './view';
+import { isBlockingChaseView, isInChaseCameraWay } from './view';
 import { SLOPE_ANGLE, terrainHeight } from './world';
 
 export interface GameCallbacks {
@@ -136,6 +136,12 @@ export class Game implements StageScene {
 			onCatch: (bear) => {
 				this.caught(bear);
 			},
+			isInTheWay: (x, z) =>
+				isInChaseCameraWay(
+					{ x, z },
+					this._player.position,
+					this._camera.offset,
+				),
 		});
 
 		this.systems.add(SYSTEM_ORDER.character, (dt) => {

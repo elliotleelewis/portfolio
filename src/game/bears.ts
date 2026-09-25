@@ -1,4 +1,4 @@
-import { Group, MathUtils, Vector3 } from 'three';
+import { Group, type Material, MathUtils, Mesh, Vector3 } from 'three';
 
 import {
 	BEAR_STANDING_HEIGHT,
@@ -24,6 +24,8 @@ const climbSpeed = 3.4;
 const catchRadius = 1.35;
 // How far behind me a bear goes before it gives up.
 const giveUpDistance = 30;
+// How long a bear in the camera's way takes to fade out, in seconds.
+const fadeDuration = 0.3;
 
 export type BearState =
 	| 'free'
@@ -53,6 +55,11 @@ export interface BearActor {
 	// How it flies (and tumbles) once blasted.
 	velocity: Vector3;
 	spin: Vector3;
+	// Its own copies of the bear materials, so it can fade out on its own.
+	materials: Material[];
+	// Fading out of the camera's way, and how opaque it still is.
+	isFading: boolean;
+	opacity: number;
 }
 
 export interface BearsHooks {
@@ -60,6 +67,8 @@ export interface BearsHooks {
 	isCaught: () => boolean;
 	// A charging bear has reached me.
 	onCatch: (bear: BearActor) => void;
+	// Whether something at (x, z) is in the camera's way.
+	isInTheWay: (x: number, z: number) => boolean;
 }
 
 /**
@@ -88,7 +97,14 @@ export class Bears {
 	 * @returns The new bear, free to go up a tree.
 	 */
 	private add(): BearActor {
-		const rig = createBear(this._parts);
+		const { fur, muzzle, nose, glint } = this._parts;
+		const own = {
+			fur: fur.clone(),
+			muzzle: muzzle.clone(),
+			nose: nose.clone(),
+			glint: glint.clone(),
+		};
+		const rig = createBear({ ...this._parts, ...own });
 		rig.root.visible = false;
 		this.group.add(rig.root);
 		const bear: BearActor = {
@@ -102,6 +118,9 @@ export class Bears {
 			offset: new Vector3(),
 			velocity: new Vector3(),
 			spin: new Vector3(),
+			materials: Object.values(own),
+			isFading: false,
+			opacity: 1,
 		};
 		this._actors.push(bear);
 		return bear;
@@ -262,10 +281,9 @@ export class Bears {
 		const player = this._player.position;
 		if (bear.state === 'charging') {
 			if (p.z > player.z + 3 || this._hooks.isCaught()) {
-				// Missed me (or someone else got me): wander off sideways.
+				// Missed me (or someone else got me): carry on past, fading out
+				// if it gets in the camera's way.
 				bear.state = 'leaving';
-				bear.heading = (Math.sign(p.x - player.x) || 1) * (Math.PI / 2);
-				rig.root.rotation.y = bear.heading;
 			} else {
 				this.turnTowardsMe(bear, dt, 3.5);
 			}
@@ -336,6 +354,59 @@ export class Bears {
 		bear.tree = undefined;
 	}
 
+	/**
+	 * Fades a bear that's left me out of the camera's way, like the trees.
+	 * @param bear - The bear.
+	 * @param dt - Seconds since the last step.
+	 */
+	private fade(bear: BearActor, dt: number): void {
+		const p = bear.rig.root.position;
+		if (!bear.isFading) {
+			if (bear.state !== 'leaving' || !this._hooks.isInTheWay(p.x, p.z)) {
+				return;
+			}
+			bear.isFading = true;
+			this.setShadows(bear, false);
+			for (const material of bear.materials) {
+				material.transparent = true;
+				material.needsUpdate = true;
+			}
+		}
+		bear.opacity = Math.max(0, bear.opacity - dt / fadeDuration);
+		for (const material of bear.materials) {
+			material.opacity = bear.opacity;
+		}
+		if (bear.opacity === 0) {
+			this.release(bear);
+		}
+	}
+
+	/**
+	 * Brings a faded bear back to solid, for its next outing.
+	 * @param bear - The bear.
+	 */
+	private unfade(bear: BearActor): void {
+		if (!bear.isFading) {
+			return;
+		}
+		bear.isFading = false;
+		bear.opacity = 1;
+		this.setShadows(bear, true);
+		for (const material of bear.materials) {
+			material.opacity = 1;
+			material.transparent = false;
+			material.needsUpdate = true;
+		}
+	}
+
+	private setShadows(bear: BearActor, isCasting: boolean): void {
+		bear.rig.root.traverse((child) => {
+			if (child instanceof Mesh) {
+				child.castShadow = isCasting;
+			}
+		});
+	}
+
 	// Every bear in the pool, busy or not.
 	public get actors(): readonly BearActor[] {
 		return this._actors;
@@ -382,6 +453,7 @@ export class Bears {
 		this.leaveTree(bear);
 		bear.state = 'free';
 		bear.rig.root.visible = false;
+		this.unfade(bear);
 	}
 
 	/**
@@ -494,6 +566,7 @@ export class Bears {
 			}
 			bear.timer += dt;
 			this.updateBear(bear, dt, time);
+			this.fade(bear, dt);
 		}
 	}
 

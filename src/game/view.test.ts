@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isBlockingChaseView } from './view';
+import { isBlockingChaseView, isInChaseCameraWay } from './view';
 
 // The landscape chase camera sits behind and to the right of me (uphill is +z).
 const offset = { x: 6.5, z: 6.5 };
@@ -32,6 +32,28 @@ describe('isBlockingChaseView', () => {
 
 	it('leaves trees well behind the camera alone', () => {
 		expect(isBlockingChaseView({ x: 12, z: 12 }, player, offset)).toBe(
+			false,
+		);
+	});
+});
+
+describe('isInChaseCameraWay', () => {
+	const player = { x: 0, z: 0 };
+	const offset = { x: 6.5, z: 6.5 };
+
+	it('counts anything blocking the view of me', () => {
+		expect(isInChaseCameraWay({ x: 3.25, z: 3.25 }, player, offset)).toBe(
+			true,
+		);
+	});
+
+	it('counts anything right up by the camera, even off to one side', () => {
+		expect(isInChaseCameraWay({ x: 9, z: 5 }, player, offset)).toBe(true);
+	});
+
+	it('leaves alone anything well clear of the camera', () => {
+		expect(isInChaseCameraWay({ x: -6, z: 6 }, player, offset)).toBe(false);
+		expect(isInChaseCameraWay({ x: 0, z: -10 }, player, offset)).toBe(
 			false,
 		);
 	});

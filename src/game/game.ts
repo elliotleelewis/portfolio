@@ -28,7 +28,7 @@ import {
 	createBearParts,
 	disposeBearParts,
 } from './bear';
-import { damp, smooth } from './easing';
+import { damp } from './easing';
 import {
 	EASTER_EGGS,
 	type EasterEgg,
@@ -921,7 +921,7 @@ export class Game implements StageScene {
 	private updateDismounting(bear: BearActor, dt: number): void {
 		const { rig, tree } = bear;
 		const p = rig.root.position;
-		const k = smooth(0, 0.3, bear.timer);
+		const k = MathUtils.smootherstep(bear.timer, 0, 0.3);
 		rig.pose.rotation.x = MathUtils.lerp(-Math.PI / 2, 0, k);
 		p.z += dt * 2;
 		p.y =
@@ -991,7 +991,7 @@ export class Game implements StageScene {
 		// Stand over me, up on hind legs, waving.
 		p.x = MathUtils.lerp(p.x, player.x + bear.offset.x, damp(8, dt));
 		p.z = MathUtils.lerp(p.z, player.z + bear.offset.z, damp(8, dt));
-		const rear = smooth(0.2, 0.7, bear.timer);
+		const rear = MathUtils.smootherstep(bear.timer, 0.2, 0.7);
 		p.y = terrainHeight(p.x, p.z) + BEAR_STANDING_HEIGHT + rear * 0.45;
 		rig.pose.rotation.x = -1.05 * rear;
 		rig.head.rotation.x = 0.6 * rear;
@@ -1094,7 +1094,11 @@ export class Game implements StageScene {
 			this._v2.copy(player).add(this._chaseLookAhead),
 		);
 
-		const swing = smooth(STAR_END, cameraSwingEnd, this._time);
+		const swing = MathUtils.smootherstep(
+			this._time,
+			STAR_END,
+			cameraSwingEnd,
+		);
 		const position = chase.lerp(this._introCamera, 1 - swing);
 		const target = chaseTarget.lerp(this._introTarget, 1 - swing);
 		const cameraFov = MathUtils.lerp(fov, chaseFov, swing);
@@ -1219,7 +1223,7 @@ export class Game implements StageScene {
 		this._introCamera.set(0, cameraY, distance);
 		this._introTarget.set(0, cameraY, 0);
 
-		const landscape = smooth(0.5, 1.3, aspect);
+		const landscape = MathUtils.smootherstep(aspect, 0.5, 1.3);
 		this._chaseOffset.lerpVectors(
 			portraitChaseOffset,
 			chaseOffset,

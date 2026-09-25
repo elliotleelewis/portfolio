@@ -1,7 +1,7 @@
 import { MathUtils, type Object3D, Vector3 } from 'three';
 
 import { type Character, createCharacter } from './character';
-import { damp, smooth } from './easing';
+import { damp } from './easing';
 import { disposeObject } from './easter-eggs';
 import { LANE_HALF_WIDTH, terrainHeight } from './world';
 
@@ -32,7 +32,7 @@ const lookAround = (t: number): [yaw: number, pitch: number] => {
 		const [t1, yaw1, pitch1] = lookKeys[i] ?? [0, 0, 0];
 		if (t <= t1) {
 			const [t0, yaw0, pitch0] = lookKeys[i - 1] ?? [0, 0, 0];
-			const k = smooth(t0, t1, t);
+			const k = MathUtils.smootherstep(t, t0, t1);
 			return [
 				MathUtils.lerp(yaw0, yaw1, k),
 				MathUtils.lerp(pitch0, pitch1, k),
@@ -189,14 +189,15 @@ export class Player {
 		c.body.rotation.y = yaw * 0.15;
 
 		// Hands up in the air, legs out: a star.
-		const star = smooth(starStart, STAR_END, t);
+		const star = MathUtils.smootherstep(t, starStart, STAR_END);
 		c.leftArm.rotation.z = MathUtils.lerp(0.08, 2.35, star);
 		c.rightArm.rotation.z = -c.leftArm.rotation.z;
 		c.leftLeg.rotation.z = MathUtils.lerp(0, 0.5, star);
 		c.rightLeg.rotation.z = -c.leftLeg.rotation.z;
 
 		// Turn side-on, ready to cartwheel.
-		c.facing.rotation.y = smooth(STAR_END, TURN_END, t) * (Math.PI / 2);
+		c.facing.rotation.y =
+			MathUtils.smootherstep(t, STAR_END, TURN_END) * (Math.PI / 2);
 
 		if (t >= TURN_END) {
 			if (!this._isRolling) {

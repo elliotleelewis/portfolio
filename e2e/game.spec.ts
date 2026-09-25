@@ -182,7 +182,7 @@ test.describe('on a phone', () => {
 		expect(await readInput(page, 'throttle')).toBe(0);
 	});
 
-	test('does not zoom the page when tapping to steer', async ({ page }) => {
+	test('does not zoom the page when tapping the game', async ({ page }) => {
 		await startRun(page);
 		await page.evaluate(() => {
 			const prevented: boolean[] = [];
@@ -212,5 +212,50 @@ test.describe('on a phone', () => {
 			() => globalThis.visualViewport?.scale,
 		);
 		expect(scale).toBe(1);
+	});
+
+	test('lets the page scroll when dragging on the hero before playing', async ({
+		page,
+	}) => {
+		// Whether anything under a spot in the hero stops a drag there from
+		// scrolling the page.
+		const blocksScrolling = async (): Promise<boolean[]> =>
+			page.evaluate(() => {
+				const hero = globalThis.document.querySelector('#hero');
+				if (!hero) {
+					throw new Error('No hero');
+				}
+				const { left, top, width, height } =
+					hero.getBoundingClientRect();
+				const blocked: boolean[] = [];
+				for (const fx of [0.1, 0.5, 0.9]) {
+					for (const fy of [0.1, 0.5, 0.9]) {
+						let element = globalThis.document.elementFromPoint(
+							left + width * fx,
+							top + height * fy,
+						);
+						let isBlocked = false;
+						while (element) {
+							isBlocked ||=
+								globalThis.getComputedStyle(element)
+									.touchAction === 'none';
+							element = element.parentElement;
+						}
+						blocked.push(isBlocked);
+					}
+				}
+				return blocked;
+			});
+
+		expect(await blocksScrolling()).not.toContain(true);
+		await startRun(page);
+		// The game itself doesn't scroll away while I'm playing.
+		expect(await blocksScrolling()).toContain(true);
+		await page.locator('#hero-exit').click();
+		await expect(page.locator('#hero')).toHaveAttribute(
+			'data-state',
+			'idle',
+		);
+		expect(await blocksScrolling()).not.toContain(true);
 	});
 });

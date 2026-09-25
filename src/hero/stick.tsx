@@ -43,7 +43,7 @@ export const Stick = () => {
 	const isMoved = knob !== undefined && (knob.x !== 0 || knob.y !== 0);
 
 	return (
-		<div className="hidden pointer-coarse:block">
+		<div className="hidden any-pointer-coarse:block">
 			<div
 				id="hero-stick"
 				className="absolute bottom-6 left-1/2 size-28 -translate-x-1/2 touch-none rounded-full border-2 border-white/60 bg-white/25 shadow-lg backdrop-blur-sm group-data-[mode=gallery]:hidden group-data-[state=playing]:pointer-events-auto"

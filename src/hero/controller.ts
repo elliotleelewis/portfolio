@@ -297,22 +297,6 @@ export class HeroController {
 	}
 
 	/**
-	 * Steers towards whichever half of the stage is being pressed.
-	 * @param isDown - Whether the stage is being pressed.
-	 * @param isLeft - Whether it's the left half.
-	 */
-	public steerByTap(isDown: boolean, isLeft: boolean): void {
-		if (!this._game) {
-			return;
-		}
-		this._game.input.left = isDown && isLeft;
-		this._game.input.right = isDown && !isLeft;
-		if (isDown) {
-			this.hideHint();
-		}
-	}
-
-	/**
 	 * Sets the analog stick's input.
 	 * @param steer - -1 (left) to 1 (right).
 	 * @param throttle - -1 (slower) to 1 (faster).

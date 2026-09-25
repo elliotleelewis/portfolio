@@ -1,0 +1,115 @@
+---
+import { SOCIALS } from './socials';
+
+// A low-poly mountain skyline like the game's backdrop, with a treeline in
+// front. Deterministic, so it's the same on every build.
+const width = 1440;
+const height = 260;
+let seed = 7;
+const random = (): number => {
+	seed = (seed * 16_807) % 2_147_483_647;
+	return (seed - 1) / 2_147_483_646;
+};
+
+const ridge = (base: number, peak: number, step: number): string => {
+	const points = [`0,${String(height)}`];
+	for (let x = 0; x <= width + step; x += step) {
+		const y = base - random() * peak;
+		points.push(`${String(Math.min(x, width))},${y.toFixed(0)}`);
+	}
+	points.push(`${String(width)},${String(height)}`);
+	return points.join(' ');
+};
+
+const far = ridge(150, 120, 90);
+const mid = ridge(195, 90, 70);
+
+// A row of conifers along the bottom.
+const trees: string[] = [];
+for (let x = -10; x < width + 20; x += 14 + random() * 22) {
+	const tall = 45 + random() * 55;
+	const wide = tall * 0.32;
+	const base = height - 18 + random() * 8;
+	trees.push(
+		`${(x - wide).toFixed(0)},${base.toFixed(0)} ${x.toFixed(0)},${(base - tall).toFixed(0)} ${(x + wide).toFixed(0)},${base.toFixed(0)}`,
+	);
+}
+
+const year = new Date().getFullYear();
+---
+
+<footer class="relative mt-8 text-snow" aria-labelledby="footer-title">
+	<svg
+		class="block h-40 w-full sm:h-56"
+		viewBox={`0 0 ${String(width)} ${String(height)}`}
+		preserveAspectRatio="none"
+		aria-hidden="true"
+	>
+		<polygon points={far} class="fill-ridge-far"></polygon>
+		<polygon points={mid} class="fill-ridge-mid"></polygon>
+		<rect
+			x="0"
+			y={height - 20}
+			width={width}
+			height="20"
+			class="fill-ridge-near"
+		></rect>
+		{trees.map((points) => (
+			<polygon points={points} class="fill-ridge-near" />
+		))}
+	</svg>
+	<div class="bg-ridge-near">
+		<div class="mx-auto flex max-w-3xl flex-col items-center gap-8 px-5 pt-6 pb-12 text-center sm:px-8">
+			<h2 id="footer-title" class="font-display text-3xl font-semibold">
+				End of the trail.
+			</h2>
+			<button
+				id="footer-play"
+				type="button"
+				class="cursor-pointer rounded-full bg-accent px-6 py-3 font-semibold text-on-accent transition hover:brightness-110 focus-visible:ring-4 focus-visible:ring-snow/60 focus-visible:outline-none"
+			>
+				Take the quick way down again ⛰️
+			</button>
+			<ul class="flex gap-6" aria-label="Find me elsewhere">
+				{SOCIALS.map(({ label, href, viewBox, path }) => (
+					<li>
+						<a
+							href={href}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="block text-snow/70 transition hover:text-accent focus-visible:text-accent focus-visible:outline-none"
+						>
+							<svg
+								class="size-6"
+								viewBox={viewBox}
+								fill="currentColor"
+								aria-hidden="true"
+							>
+								<path d={path} />
+							</svg>
+							<span class="sr-only">
+								{label} (opens in a new tab)
+							</span>
+						</a>
+					</li>
+				))}
+			</ul>
+			<p class="font-mono text-xs tracking-widest text-snow/60 uppercase">
+				© <span id="footer-year">{year}</span> Elliot Lewis
+			</p>
+		</div>
+	</div>
+</footer>
+
+<script>
+	// Keep the year current between builds.
+	const year = document.querySelector('#footer-year');
+	if (year) {
+		year.textContent = String(new Date().getFullYear());
+	}
+
+	// Back up to the top of the mountain, and off we go.
+	document.querySelector('#footer-play')?.addEventListener('click', () => {
+		document.querySelector<HTMLButtonElement>('#hero-play')?.click();
+	});
+</script>

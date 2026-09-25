@@ -1,6 +1,11 @@
 ---
+import '@fontsource-variable/fraunces/standard.css';
+import '@fontsource-variable/fraunces/standard-italic.css';
+import '@fontsource-variable/inter';
+import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/jetbrains-mono/500.css';
+
 import Analytics from './Analytics.astro';
-import Background from './Background.astro';
 
 interface Props {
 	title: string;
@@ -10,25 +15,50 @@ const { title } = Astro.props;
 ---
 
 <!doctype html>
-<html
-	lang="en"
-	dir="ltr"
-	class="bg-stone-950 bg-linear-to-tr from-blue-200 to-cyan-200 font-sans text-slate-950/75 dark:from-blue-800 dark:to-cyan-800 dark:text-slate-50/75"
->
+<html lang="en" dir="ltr">
 	<head>
 		<meta charset="utf8" />
 		<meta
 			name="description"
-			content="Front-end Engineer. Los Angeles, CA."
+			content="Elliot Lewis: Staff Software Engineer, front-end. Los Angeles, CA."
 		/>
 		<meta name="viewport" content="width=device-width" />
+		<meta
+			name="theme-color"
+			content="#eef1ec"
+			media="(prefers-color-scheme: light)"
+		/>
+		<meta
+			name="theme-color"
+			content="#0e1512"
+			media="(prefers-color-scheme: dark)"
+		/>
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="canonical" href="https://elliotleelewis.com" />
 		<title>{title}</title>
+		<script is:inline>
+			document.documentElement.classList.add('js');
+		</script>
 	</head>
 	<body>
-		<Background />
 		<slot />
+		<script>
+			// Fade sections in as they scroll into view.
+			const observer = new IntersectionObserver(
+				(entries) => {
+					for (const entry of entries) {
+						if (entry.isIntersecting) {
+							entry.target.setAttribute('data-visible', '');
+							observer.unobserve(entry.target);
+						}
+					}
+				},
+				{ rootMargin: '0px 0px -10% 0px' },
+			);
+			for (const element of document.querySelectorAll('[data-reveal]')) {
+				observer.observe(element);
+			}
+		</script>
 		{import.meta.env.PROD && <Analytics />}
 	</body>
 </html>

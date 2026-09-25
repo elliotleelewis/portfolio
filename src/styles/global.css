@@ -1,1 +1,91 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+
+/*
+ * A palette lifted from the mountain: misty fog, pine, slate rock and bark,
+ * with the wood stove's amber glow as the one accent. Light mode is a misty
+ * morning; dark mode is night on the mountain.
+ */
+@theme inline {
+	--color-paper: var(--paper);
+	--color-surface: var(--surface);
+	--color-ink: var(--ink);
+	--color-muted: var(--muted);
+	--color-line: var(--line);
+	--color-accent: var(--accent);
+	--color-pine: var(--pine);
+	--color-ridge-far: var(--ridge-far);
+	--color-ridge-mid: var(--ridge-mid);
+	--color-ridge-near: var(--ridge-near);
+	--color-on-accent: var(--on-accent);
+	--color-snow: #eef1ec;
+
+	--font-display: 'Fraunces Variable', 'Iowan Old Style', Georgia, serif;
+	--font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+	--font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
+}
+
+:root {
+	color-scheme: light dark;
+
+	--paper: #eef1ec;
+	--surface: #f8faf6;
+	--ink: #1c2620;
+	--muted: #56625a;
+	--line: #c7d0c6;
+	--accent: #b45309;
+	--pine: #2f4a33;
+	--ridge-far: #bcc6c6;
+	--ridge-mid: #7f8d8b;
+	--ridge-near: #2f4a33;
+	--on-accent: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--paper: #0e1512;
+		--surface: #151f1a;
+		--ink: #e3eae4;
+		--muted: #9aa89e;
+		--line: #2a3830;
+		--accent: #f5a524;
+		--pine: #8fb996;
+		--ridge-far: #1d2b27;
+		--ridge-mid: #15211c;
+		--ridge-near: #0c1310;
+		--on-accent: #1a1206;
+	}
+}
+
+@layer base {
+	body {
+		@apply bg-paper font-sans text-ink antialiased;
+	}
+
+	/* Faint contour lines, like a trail map, behind everything. */
+	body::before {
+		@apply pointer-events-none fixed inset-0 -z-10 bg-line opacity-60;
+
+		content: '';
+		mask-image: url('/topo.svg');
+		mask-size: 640px 640px;
+		mask-repeat: repeat;
+	}
+
+	::selection {
+		@apply bg-accent text-on-accent;
+	}
+}
+
+/* Sections fade up as they come into view (only with JS and motion). */
+@media (prefers-reduced-motion: no-preference) {
+	.js [data-reveal] {
+		transition:
+			opacity 700ms ease-out,
+			translate 700ms ease-out;
+	}
+
+	.js [data-reveal]:not([data-visible]) {
+		opacity: 0;
+		translate: 0 1.5rem;
+	}
+}

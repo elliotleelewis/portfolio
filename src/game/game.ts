@@ -148,10 +148,10 @@ const cameraSwingEnd = 8;
 const fov = 38;
 
 // Where my face sits in the hero photo, as fractions of the image.
-const photoAspect = 1717 / 2576;
-const photoObjectPositionY = 0.55;
-const photoFaceY = 0.535;
-const photoHeadHeight = 0.2;
+const photoAspect = 1280 / 1392;
+const photoObjectPositionY = 0.45;
+const photoFaceY = 0.453;
+const photoHeadHeight = 0.277;
 
 // ...and in the 3D model.
 const modelFaceY = 1.72;

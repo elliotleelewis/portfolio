@@ -1,0 +1,38 @@
+---
+import TrailSign from '../components/TrailSign.astro';
+
+import { SOCIALS } from './socials';
+---
+
+<section class="pt-16 sm:pt-24" aria-labelledby="intro-title" data-reveal>
+	<p class="font-mono text-xs tracking-[0.25em] text-accent uppercase">
+		Los Angeles, California
+	</p>
+	<h1
+		id="intro-title"
+		class="mt-4 font-display text-6xl font-semibold tracking-tight sm:text-8xl"
+	>
+		Elliot Lewis<span class="text-accent">.</span>
+	</h1>
+	<p class="mt-4 font-display text-2xl text-muted italic sm:text-3xl">
+		Staff Software Engineer at StubHub
+	</p>
+	<p class="mt-8 max-w-2xl text-lg/relaxed text-ink/85">
+		I’m a front-end engineer with nearly a decade of building enterprise and
+		consumer web apps, from factory-floor systems at Jabil to Lens creator
+		tools at Snap. I like leading projects and teams, launching products
+		people actually use, and leaving codebases easier to work in than I
+		found them.
+	</p>
+	<ul class="mt-8 flex flex-wrap gap-3" aria-label="Find me elsewhere">
+		{SOCIALS.map(({ label, href, viewBox, path }) => (
+			<li>
+				<TrailSign href={href} label={label}>
+					<svg viewBox={viewBox} fill="currentColor">
+						<path d={path} />
+					</svg>
+				</TrailSign>
+			</li>
+		))}
+	</ul>
+</section>

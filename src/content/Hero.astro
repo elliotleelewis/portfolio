@@ -1,7 +1,7 @@
 ---
 import { Image } from 'astro:assets';
 
-import hero from '../media/hero.jpg';
+import hero from '../media/hero.webp';
 ---
 
 <section
@@ -13,8 +13,8 @@ import hero from '../media/hero.jpg';
 	<Image
 		src={hero}
 		alt="Elliot smiling on a hiking trail, with pine trees and mountains behind him"
-		class="absolute inset-0 size-full object-cover object-[50%_55%] transition-opacity duration-1500 ease-in-out group-data-[state=playing]:opacity-0"
-		widths={[640, 960, 1280, 1717]}
+		class="absolute inset-0 size-full object-cover object-[50%_45%] transition-opacity duration-1500 ease-in-out group-data-[state=playing]:opacity-0"
+		widths={[640, 960, 1280]}
 		sizes="(min-width: 1536px) 1408px, (min-width: 1280px) 1152px, 100vw"
 		loading="eager"
 		fetchpriority="high"

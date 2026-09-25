@@ -18,6 +18,7 @@ import {
 	shapeGroundChunk,
 } from '../world';
 
+import { Character } from './character';
 import { GameContext, useGame, useSystem } from './game-context';
 import { Trees } from './trees';
 
@@ -191,6 +192,7 @@ export const GameWorld = ({ game }: Props) => (
 				<Mountains />
 				<Ground />
 				<Trees />
+				<Character />
 			</>,
 			game.scene,
 		)}

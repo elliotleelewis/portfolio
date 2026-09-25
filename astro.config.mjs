@@ -17,7 +17,7 @@ export default defineConfig({
 				forward: ['dataLayer.push'],
 			},
 		}),
-		react(),
+		react({ compiler: true }),
 		robotsTxt(),
 		sitemap(),
 	],

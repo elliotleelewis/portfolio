@@ -38,6 +38,8 @@ import {
 	type EasterEggInstance,
 	disposeObject,
 } from './easter-eggs';
+import { bearBlastPoints, nextCombo } from './scoring';
+import { isBlockingChaseView } from './view';
 import {
 	CHUNK_LENGTH,
 	LANE_HALF_WIDTH,
@@ -167,8 +169,6 @@ const blastDuration = 0.7;
 const treeFadeDuration = 0.3;
 // How far past an easter egg's clearing a smash reaches bears.
 const blastReach = 12;
-// Points for each bear blasted, multiplied again by how many went at once.
-const bearBlastPoints = 5;
 const contactOffset = 0.05;
 const bearCount = 8;
 // States in which a bear is still up (or on) its tree.
@@ -647,8 +647,21 @@ export class Game {
 	}
 
 	private frame(now: number): void {
-		const dt = Math.min((now - this._last) / 1000, 1 / 20);
+		// The browser's frame time can be a little earlier than when start()
+		// ran, so never step backwards; and cap long pauses (like a hidden tab).
+		const dt = MathUtils.clamp((now - this._last) / 1000, 0, 1 / 20);
 		this._last = now;
+		this.step(dt);
+		this._renderer.render(this._scene, this._camera);
+		if (this._ready) {
+			return;
+		}
+
+		this._ready = true;
+		this._callbacks.onReady();
+	}
+
+	private step(dt: number): void {
 		this._time += dt;
 
 		this.updateCharacter(dt);
@@ -661,23 +674,15 @@ export class Game {
 		this.updateGround();
 		this.updateCamera(dt);
 
-		this._renderer.render(this._scene, this._camera);
-
 		if (
-			this._caughtAt !== undefined &&
-			!this._isGameOverReported &&
-			this._time - this._caughtAt > gameOverDelay
+			this._caughtAt === undefined ||
+			this._isGameOverReported ||
+			this._time - this._caughtAt <= gameOverDelay
 		) {
-			this._isGameOverReported = true;
-			this._callbacks.onGameOver(this._score, this._distance);
-		}
-
-		if (this._ready) {
 			return;
 		}
-
-		this._ready = true;
-		this._callbacks.onReady();
+		this._isGameOverReported = true;
+		this._callbacks.onGameOver(this._score, this._distance);
 	}
 
 	private updateCharacter(dt: number): void {
@@ -834,11 +839,7 @@ export class Game {
 			.multiplyScalar(this._speed * 0.45 + 3)
 			.setY(MathUtils.randFloat(3, 7));
 
-		if (this._time - this._lastHit < 1.5) {
-			this._combo++;
-		} else {
-			this._combo = 1;
-		}
+		this._combo = nextCombo(this._combo, this._time - this._lastHit);
 		this._lastHit = this._time;
 		this._score += this._combo;
 		this._callbacks.onScore(this._score, this._combo);
@@ -920,29 +921,19 @@ export class Game {
 
 	/**
 	 * Whether a tree at (x, z) would sit between the chase camera and me.
-	 * Only trees I've already passed count, never ones I'm about to hit.
 	 * @param x - Tree position across the slope.
 	 * @param z - Tree position down the slope.
 	 * @returns True if the tree would block the view.
 	 */
 	private blocksView(x: number, z: number): boolean {
-		if (!this._rolling) {
-			return false;
-		}
-		const player = this._character.root.position;
-		const { x: offsetX, z: offsetZ } = this._chaseOffset;
-		const lengthSq = offsetX * offsetX + offsetZ * offsetZ;
-		// How far along the player→camera segment the tree is, in the slope
-		// plane: 0 at me, 1 at the camera.
-		const t =
-			((x - player.x) * offsetX + (z - player.z) * offsetZ) / lengthSq;
-		// Leave anything within 1.5m of me (or ahead of me) alone.
-		if (t < 1.5 / Math.sqrt(lengthSq) || t > 1.2) {
-			return false;
-		}
-		const dx = x - (player.x + offsetX * t);
-		const dz = z - (player.z + offsetZ * t);
-		return dx * dx + dz * dz < 2.5 * 2.5;
+		return (
+			this._rolling &&
+			isBlockingChaseView(
+				{ x, z },
+				this._character.root.position,
+				this._chaseOffset,
+			)
+		);
 	}
 
 	/**
@@ -1176,7 +1167,7 @@ export class Game {
 		if (count === 0) {
 			return;
 		}
-		const points = bearBlastPoints * count * count;
+		const points = bearBlastPoints(count);
 		this._score += points;
 		this._callbacks.onScore(this._score, this._combo);
 		this._callbacks.onBearBlast(count, points);
@@ -1569,6 +1560,35 @@ export class Game {
 		const focus = this._slope.localToWorld(this._v.copy(player));
 		this._sun.target.position.copy(focus);
 		this._sun.position.copy(focus).add(this._v2.set(20, 40, 15));
+	}
+
+	/**
+	 * Runs the game forward without waiting for real time, then draws the
+	 * result. Lets tests skip the intro or play out a crash quickly.
+	 * @param seconds - How much game time to simulate.
+	 */
+	public advance(seconds: number): void {
+		const steps = Math.ceil(seconds * 60);
+		for (let i = 0; i < steps; i++) {
+			this.step(1 / 60);
+		}
+		this._renderer.render(this._scene, this._camera);
+	}
+
+	/**
+	 * Ends the run as though a bear had got me.
+	 */
+	public catchPlayer(): void {
+		const bear =
+			this._bears.find(({ state }) => state === 'free') ?? this._bears[0];
+		const p = this._character.root.position;
+		bear.rig.root.visible = true;
+		bear.rig.root.position.set(
+			p.x,
+			terrainHeight(p.x, p.z) + BEAR_STANDING_HEIGHT,
+			p.z - 2,
+		);
+		this.caught(bear);
 	}
 
 	public start(): void {

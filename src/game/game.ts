@@ -10,11 +10,13 @@ import {
 	MathUtils,
 	Matrix4,
 	Mesh,
+	MeshBasicMaterial,
 	MeshLambertMaterial,
 	PCFShadowMap,
 	PerspectiveCamera,
 	Quaternion,
 	Scene,
+	SphereGeometry,
 	TetrahedronGeometry,
 	Vector3,
 	WebGLRenderer,
@@ -99,6 +101,24 @@ interface PlacedEasterEgg {
 	yaw: number;
 	// Created once it's close enough to matter.
 	instance: EasterEggInstance | undefined;
+	// Whether I've barrelled through it.
+	isSmashed: boolean;
+}
+
+// A piece of a smashed easter egg, flying off.
+interface Shard {
+	mesh: Mesh;
+	velocity: Vector3;
+	spin: Vector3;
+	scale: Vector3;
+	life: number;
+}
+
+// The fireball and smoke from smashing an easter egg.
+interface Blast {
+	fire: Mesh<SphereGeometry, MeshBasicMaterial>;
+	smoke: Mesh<SphereGeometry, MeshBasicMaterial>;
+	age: number;
 }
 
 interface Tree {
@@ -127,6 +147,7 @@ const fogColor = new Color('#dde3e5');
 const treeCount = 170;
 const treeWindow = 230;
 const debrisCount = 320;
+const blastDuration = 0.7;
 const contactOffset = 0.05;
 const bearCount = 8;
 // States in which a bear is still up (or on) its tree.
@@ -220,6 +241,8 @@ export class Game {
 	private readonly _bears: BearActor[] = [];
 	private readonly _bearParts: BearParts;
 	private readonly _easterEggs: PlacedEasterEgg[] = [];
+	private readonly _shards: Shard[] = [];
+	private readonly _blast: Blast;
 	private _easterEggCount = 0;
 	private readonly _resizeObserver: ResizeObserver;
 	private readonly _reducedMotion: boolean;
@@ -366,6 +389,30 @@ export class Game {
 			this._debrisMesh.setMatrixAt(i, this._m.makeScale(0, 0, 0));
 		}
 		this._slope.add(this._debrisMesh);
+
+		this._blast = {
+			fire: new Mesh(
+				new SphereGeometry(1, 16, 12),
+				new MeshBasicMaterial({
+					color: '#ffb347',
+					transparent: true,
+					depthWrite: false,
+					fog: false,
+				}),
+			),
+			smoke: new Mesh(
+				new SphereGeometry(1, 12, 8),
+				new MeshBasicMaterial({
+					color: '#8a8f8c',
+					transparent: true,
+					depthWrite: false,
+				}),
+			),
+			age: blastDuration,
+		};
+		this._blast.fire.visible = false;
+		this._blast.smoke.visible = false;
+		this._slope.add(this._blast.smoke, this._blast.fire);
 
 		this._resizeObserver = new ResizeObserver(() => {
 			this.resize();
@@ -572,6 +619,8 @@ export class Game {
 		this.updateBears(dt);
 		this.updateEasterEggs(dt);
 		this.updateDebris(dt);
+		this.updateShards(dt);
+		this.updateBlast(dt);
 		this.updateGround();
 		this.updateCamera(dt);
 
@@ -852,6 +901,7 @@ export class Game {
 			z,
 			yaw: MathUtils.randFloatSpread(0.6),
 			instance: undefined,
+			isSmashed: false,
 		});
 	}
 
@@ -910,6 +960,9 @@ export class Game {
 		instance: EasterEggInstance,
 		dt: number,
 	): void {
+		if (placed.isSmashed) {
+			return;
+		}
 		const { object } = instance;
 		const root = this._character.root.position;
 		object.updateMatrixWorld();
@@ -919,7 +972,7 @@ export class Game {
 		);
 		instance.update?.({ time: this._time, dt, player: local });
 
-		// Bounce off anything solid.
+		// Barrel straight through anything solid.
 		const { footprint } = placed.egg;
 		if (!footprint || !this._rolling || this._caughtAt !== undefined) {
 			return;
@@ -931,15 +984,127 @@ export class Game {
 		) {
 			return;
 		}
-		const side = Math.sign(local.x) || 1;
-		local.x = side * (footprint.halfWidth + reach);
-		const pushed = this._slope.worldToLocal(object.localToWorld(local));
-		const away = Math.sign(pushed.x - placed.x) || side;
-		root.x = pushed.x;
-		this._lateral = away * Math.max(8, Math.abs(this._lateral));
-		if (!this._reducedMotion) {
-			this._shake = Math.min(0.4, this._shake + 0.2);
+		this.smash(placed, instance);
+	}
+
+	/**
+	 * Blows an easter egg apart as I roll through it.
+	 * @param placed - The easter egg.
+	 * @param instance - Its scene objects.
+	 */
+	private smash(placed: PlacedEasterEgg, instance: EasterEggInstance): void {
+		placed.isSmashed = true;
+		const { object } = instance;
+		const centre = this._v2.set(
+			placed.x,
+			terrainHeight(placed.x, placed.z) + 1,
+			placed.z,
+		);
+
+		// Fling every piece outwards, keeping where it was in the world.
+		const meshes: Mesh[] = [];
+		object.traverse((child) => {
+			if (child instanceof Mesh) {
+				meshes.push(child as Mesh);
+			}
+		});
+		for (const mesh of meshes) {
+			this._slope.attach(mesh);
+			const outwards = this._v
+				.subVectors(mesh.position, centre)
+				.setY(0)
+				.normalize()
+				.multiplyScalar(MathUtils.randFloat(4, 11));
+			this._shards.push({
+				mesh,
+				velocity: new Vector3(
+					outwards.x + MathUtils.randFloatSpread(3),
+					MathUtils.randFloat(5, 12),
+					outwards.z - this._speed * 0.4,
+				),
+				spin: new Vector3(
+					MathUtils.randFloatSpread(10),
+					MathUtils.randFloatSpread(10),
+					MathUtils.randFloatSpread(10),
+				),
+				scale: mesh.scale.clone(),
+				life: MathUtils.randFloat(1.4, 2.4),
+			});
 		}
+		object.removeFromParent();
+
+		const { fire, smoke } = this._blast;
+		fire.position.copy(centre);
+		smoke.position.copy(centre);
+		this._blast.age = 0;
+
+		// Plus a spray of dirt and needles.
+		for (let i = 0; i < 40; i++) {
+			const d = this._debris[this._debrisCursor];
+			this._debrisCursor = (this._debrisCursor + 1) % debrisCount;
+			d.life = MathUtils.randFloat(0.8, 1.6);
+			d.position.copy(centre);
+			d.velocity.set(
+				MathUtils.randFloatSpread(14),
+				MathUtils.randFloat(4, 12),
+				MathUtils.randFloatSpread(14) - this._speed * 0.3,
+			);
+			d.spin.set(
+				MathUtils.randFloatSpread(14),
+				MathUtils.randFloatSpread(14),
+				MathUtils.randFloatSpread(14),
+			);
+		}
+		if (!this._reducedMotion) {
+			this._shake = 0.6;
+		}
+	}
+
+	private updateShards(dt: number): void {
+		for (let i = this._shards.length - 1; i >= 0; i--) {
+			const shard = this._shards[i];
+			const { mesh, velocity } = shard;
+			shard.life -= dt;
+			if (shard.life <= 0) {
+				mesh.removeFromParent();
+				disposeObject(mesh);
+				this._shards.splice(i, 1);
+				continue;
+			}
+			velocity.y -= 22 * dt;
+			mesh.position.addScaledVector(velocity, dt);
+			const ground = terrainHeight(mesh.position.x, mesh.position.z);
+			if (mesh.position.y < ground) {
+				mesh.position.y = ground;
+				velocity.multiplyScalar(0.5);
+				velocity.y = Math.abs(velocity.y) * 0.6;
+			}
+			mesh.rotation.x += shard.spin.x * dt;
+			mesh.rotation.y += shard.spin.y * dt;
+			mesh.rotation.z += shard.spin.z * dt;
+			// Shrink away at the end.
+			mesh.scale
+				.copy(shard.scale)
+				.multiplyScalar(Math.min(1, shard.life * 2.5));
+		}
+	}
+
+	private updateBlast(dt: number): void {
+		const { fire, smoke } = this._blast;
+		const isActive = this._blast.age < blastDuration;
+		fire.visible = isActive;
+		smoke.visible = isActive;
+		if (!isActive) {
+			return;
+		}
+		this._blast.age += dt;
+		const t = Math.min(1, this._blast.age / blastDuration);
+		// A quick flash of fire, then a slower, wider puff of smoke.
+		fire.scale.setScalar(0.4 + Math.sqrt(t) * 2.4);
+		fire.material.opacity = (1 - t) ** 2;
+		smoke.scale.setScalar(0.8 + t * 3.5);
+		smoke.position.y += dt * 2;
+		smoke.material.opacity = 0.55 * (1 - t);
 	}
 
 	private updateBears(dt: number): void {
@@ -1278,6 +1443,9 @@ export class Game {
 			material.dispose();
 		}
 		this._debrisMesh.dispose();
+		for (const shard of this._shards) {
+			disposeObject(shard.mesh);
+		}
 		disposeBearParts(this._bearParts);
 		this._renderer.dispose();
 		this._renderer.domElement.remove();

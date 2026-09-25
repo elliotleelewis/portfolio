@@ -1,10 +1,7 @@
 import {
 	type BufferGeometry,
 	Color,
-	DirectionalLight,
-	Fog,
 	Group,
-	HemisphereLight,
 	InstancedMesh,
 	type Material,
 	MathUtils,
@@ -40,15 +37,7 @@ import {
 import { bearBlastPoints, nextCombo } from './scoring';
 import { type StageScene } from './stage-scene';
 import { isBlockingChaseView } from './view';
-import {
-	CHUNK_LENGTH,
-	LANE_HALF_WIDTH,
-	createGroundChunk,
-	createMountains,
-	createTreeGeometry,
-	shapeGroundChunk,
-	terrainHeight,
-} from './world';
+import { LANE_HALF_WIDTH, createTreeGeometry, terrainHeight } from './world';
 
 export interface GameCallbacks {
 	// The intro is over and the player now has control.
@@ -158,7 +147,6 @@ interface Debris {
 
 // Steepness of the mountainside, in radians.
 const slopeAngle = 0.24;
-const fogColor = new Color('#dde3e5');
 const treeCount = 170;
 const treeWindow = 230;
 const debrisCount = 320;
@@ -248,10 +236,7 @@ export class Game implements StageScene {
 	private readonly _chaseOffset = new Vector3();
 	private readonly _chaseLookAhead = new Vector3();
 	private readonly _slope = new Group();
-	private readonly _sun = new DirectionalLight('#fff3df', 2.2);
-	private readonly _mountains: Group;
 	private readonly _character: Character;
-	private readonly _ground: Mesh[] = [];
 	private readonly _trees: Tree[] = [];
 	private readonly _debris: Debris[] = [];
 	private readonly _debrisMesh: InstancedMesh;
@@ -302,47 +287,10 @@ export class Game implements StageScene {
 			'(prefers-reduced-motion: reduce)',
 		).matches;
 
-		this._scene.background = fogColor;
-		this._scene.fog = new Fog(fogColor, 35, 240);
-
-		// Lighting: soft, overcast mountain light.
-		this._scene.add(new HemisphereLight('#f4f7f9', '#4f5f3c', 2.1));
-		this._sun.position.set(20, 40, 15);
-		this._sun.castShadow = true;
-		this._sun.shadow.mapSize.set(2048, 2048);
-		this._sun.shadow.camera.left = -30;
-		this._sun.shadow.camera.right = 30;
-		this._sun.shadow.camera.top = 30;
-		this._sun.shadow.camera.bottom = -30;
-		this._sun.shadow.camera.far = 120;
-		this._sun.shadow.bias = -0.0005;
-		this._sun.shadow.normalBias = 0.03;
-		this._scene.add(this._sun, this._sun.target);
-
-		this._mountains = createMountains(fogColor);
-		this._scene.add(this._mountains);
-
+		// The sky, light, mountains and ground are components (see
+		// ./components/world.tsx); everything else lives on the slope.
 		this._slope.rotation.x = -slopeAngle;
 		this._scene.add(this._slope);
-
-		const groundMaterial = new MeshLambertMaterial({
-			vertexColors: true,
-			flatShading: true,
-		});
-
-		// The flat ledge I'm standing on at the start.
-		const ledge = createGroundChunk(groundMaterial, 60);
-		shapeGroundChunk(ledge, 30);
-		this._scene.add(ledge);
-		this._ground.push(ledge);
-
-		// Chunks of mountainside that leapfrog each other as I roll.
-		for (let i = 0; i < 3; i++) {
-			const chunk = createGroundChunk(groundMaterial);
-			shapeGroundChunk(chunk, -CHUNK_LENGTH / 2 - i * CHUNK_LENGTH);
-			this._slope.add(chunk);
-			this._ground.push(chunk);
-		}
 
 		this._bearParts = createBearParts();
 		for (let i = 0; i < bearCount; i++) {
@@ -1394,15 +1342,6 @@ export class Game implements StageScene {
 		}
 	}
 
-	private updateGround(): void {
-		const playerZ = this._character.root.position.z;
-		for (const chunk of this._ground.slice(1)) {
-			if (chunk.position.z - CHUNK_LENGTH / 2 > playerZ + 30) {
-				shapeGroundChunk(chunk, chunk.position.z - CHUNK_LENGTH * 3);
-			}
-		}
-	}
-
 	private updateCamera(dt: number): void {
 		const player = this._character.root.position;
 
@@ -1444,18 +1383,20 @@ export class Game implements StageScene {
 			this._camera.position.y += MathUtils.randFloatSpread(this._shake);
 		}
 		this._camera.lookAt(target);
-
-		// Distant peaks stay on the horizon.
-		this._mountains.position.copy(this._camera.position);
-
-		// The sun (and its shadow) follow me down the mountain.
-		const focus = this._slope.localToWorld(this._v.copy(player));
-		this._sun.target.position.copy(focus);
-		this._sun.position.copy(focus).add(this._v2.set(20, 40, 15));
 	}
 
 	public get scene(): Scene {
 		return this._scene;
+	}
+
+	// The mountainside everything rolls down, tilted to the slope's angle.
+	public get slope(): Group {
+		return this._slope;
+	}
+
+	// Where I am, in the slope's space.
+	public get player(): Vector3 {
+		return this._character.root.position;
 	}
 
 	public get camera(): PerspectiveCamera {
@@ -1561,7 +1502,6 @@ export class Game implements StageScene {
 		this.updateDebris(dt);
 		this.updateShards(dt);
 		this.updateBlast(dt);
-		this.updateGround();
 		this.updateCamera(dt);
 
 		if (

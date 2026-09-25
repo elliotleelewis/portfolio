@@ -1,10 +1,15 @@
 import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 
-import { type StageScene } from '../game/stage-scene';
+import { type Gallery } from '../game/gallery';
+import { type Game } from '../game/game';
 
 export type Phase = 'idle' | 'loading' | 'playing';
 export type SceneKind = 'game' | 'gallery';
+
+// A scene on the stage, and which kind it is.
+export type ShownScene =
+	{ kind: 'game'; scene: Game } | { kind: 'gallery'; scene: Gallery };
 
 export interface Callout {
 	text: string;
@@ -29,7 +34,7 @@ export const PHASE_ATOM = atom<Phase>('idle');
 
 // The scene the stage is drawing. It outlives SCENE_ATOM by the fade back to
 // the photo, then clears so the canvas can go.
-export const STAGE_SCENE_ATOM = atom<StageScene | undefined>(undefined);
+export const STAGE_SCENE_ATOM = atom<ShownScene | undefined>(undefined);
 
 // Which scene is live in the stage, if any.
 export const SCENE_ATOM = atom<SceneKind | undefined>(undefined);

@@ -18,7 +18,7 @@ import {
 } from 'three';
 
 import { canvasTexture, joint, part, standard } from './parts';
-import { type EasterEgg, type EasterEggFrame } from './types';
+import type { EasterEgg, EasterEggFrame } from './types';
 
 // The worker sits at z = sitZ facing -z, at a low table whose top is at
 // tableHeight. His screens face him, and so face me (+z) as I roll up.

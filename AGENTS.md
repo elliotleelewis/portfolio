@@ -37,6 +37,8 @@ ESLint enforces most of this, with strict TypeScript, unicorn, jsdoc, jsx-a11y a
 
 Imports go in groups separated by a blank line: packages first, then parent paths (`../`), then siblings (`./`). Within each group they're sorted by path, character by character, so `./difficulty` comes before `./direction` and `./controller` before `./direction`. Get this wrong and the lint run crashes (see above).
 
+Import types with `import type { … }`, not `import { type … }`. With `verbatimModuleSyntax` on, the second form still loads the module when the page runs. For example, `src/hero/` importing a type from `src/game/` that way pulled all of three.js into the first page load. The `@typescript-eslint/no-import-type-side-effects` rule catches it.
+
 ## How the code fits together
 
 - **Page:** `src/pages/index.astro` puts the sections from `src/content/` together. Everything is static Astro, except for the hero.

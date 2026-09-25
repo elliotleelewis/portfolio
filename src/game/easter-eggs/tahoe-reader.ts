@@ -14,7 +14,7 @@ import {
 } from 'three';
 
 import { joint, part, standard } from './parts';
-import { type EasterEgg, type EasterEggFrame } from './types';
+import type { EasterEgg, EasterEggFrame } from './types';
 
 // The reader: long wavy brown hair, round glasses, stubble, a stonewashed denim
 // jacket over a white band tee, and his nose in a book.

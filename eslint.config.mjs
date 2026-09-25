@@ -119,11 +119,12 @@ export default tseslint.config(
 				...namingConvention,
 			],
 			'@typescript-eslint/no-extraneous-class': 'off',
+			// With verbatimModuleSyntax, `import { type X } from 'y'` still
+			// loads 'y' for its side effects; `import type { X }` doesn't.
+			// That matters for code that should only load on demand, like the
+			// game.
+			'@typescript-eslint/no-import-type-side-effects': 'error',
 			'better-tailwindcss/enforce-consistent-line-wrapping': 'off',
-			'import/consistent-type-specifier-style': [
-				'error',
-				'prefer-inline',
-			],
 			'import/first': 'error',
 			'import/no-duplicates': [
 				'error',

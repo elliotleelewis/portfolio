@@ -4,7 +4,7 @@ import { Mesh, PerspectiveCamera, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 
 import { type BearActor, Bears, MAX_BEARS } from './bears';
-import { type Tree } from './forest';
+import type { Tree } from './forest';
 import { Player, TURN_END } from './player';
 import { terrainHeight } from './world';
 

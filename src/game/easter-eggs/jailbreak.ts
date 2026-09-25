@@ -15,7 +15,7 @@ import {
 } from 'three';
 
 import { canvasTexture, joint, part, standard } from './parts';
-import { type EasterEgg, type EasterEggFrame } from './types';
+import type { EasterEgg, EasterEggFrame } from './types';
 
 // How close I get before the prisoner makes his break.
 const triggerDistance = 50;

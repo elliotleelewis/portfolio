@@ -1,8 +1,8 @@
-import { type createStore } from 'jotai';
+import type { createStore } from 'jotai';
 
-import { type Gallery } from '../game/gallery';
-import { type Game, type GameInput } from '../game/game';
-import { type StageScene } from '../game/stage-scene';
+import type { Gallery } from '../game/gallery';
+import type { Game, GameInput } from '../game/game';
+import type { StageScene } from '../game/stage-scene';
 
 import {
 	BEST_ATOM,

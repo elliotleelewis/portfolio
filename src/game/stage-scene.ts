@@ -1,4 +1,4 @@
-import { type Camera, type Scene, type WebGLRenderer } from 'three';
+import type { Camera, Scene, WebGLRenderer } from 'three';
 
 /**
  * Something the hero's stage draws: the game or the easter egg gallery. The

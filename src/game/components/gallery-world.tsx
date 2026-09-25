@@ -1,10 +1,10 @@
 import { createPortal } from '@react-three/fiber';
 import { useEffect, useMemo } from 'react';
-import { type Object3D, type Vector3 } from 'three';
+import type { Object3D, Vector3 } from 'three';
 
-import { type Mirror } from '../direction';
+import type { Mirror } from '../direction';
 import { disposeObject } from '../easter-eggs';
-import { type Gallery } from '../gallery';
+import type { Gallery } from '../gallery';
 import { createGalleryGround, createGalleryTrees } from '../gallery-scenery';
 
 import { StageContext } from './game-context';

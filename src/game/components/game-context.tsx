@@ -1,8 +1,8 @@
 import { createContext, use, useLayoutEffect, useRef } from 'react';
-import { type Camera } from 'three';
+import type { Camera } from 'three';
 
-import { type Game } from '../game';
-import { type SystemUpdate, type Systems } from '../systems';
+import type { Game } from '../game';
+import type { SystemUpdate, Systems } from '../systems';
 
 /**
  * A scene whose world is built from components: the game or the gallery.

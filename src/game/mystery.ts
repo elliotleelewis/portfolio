@@ -8,7 +8,7 @@ import {
 	TorusGeometry,
 } from 'three';
 
-import { type EasterEggInstance, type EasterEggShowcase } from './easter-eggs';
+import type { EasterEggInstance, EasterEggShowcase } from './easter-eggs';
 
 // The caption for an easter egg I've not found yet.
 export const MYSTERY_CAPTION = '?????';

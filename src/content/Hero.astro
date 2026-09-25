@@ -187,6 +187,7 @@ import hero from '../media/hero.webp';
 <script>
 	import type { Game } from '../game/game';
 	import type { Gallery } from '../game/gallery';
+	import { readStick } from '../game/stick';
 
 	const hero = document.querySelector<HTMLElement>('#hero');
 	const stage = document.querySelector<HTMLElement>('#hero-stage');
@@ -344,24 +345,23 @@ import hero from '../media/hero.webp';
 		}
 	};
 
-	// Small nudges of the stick do nothing.
-	const STICK_DEAD_ZONE = 0.15;
-
-	const setStick = (x: number, y: number): void => {
-		if (stickKnob) {
-			stickKnob.style.transform =
-				x === 0 && y === 0
-					? ''
-					: `translate(${String(x)}px, ${String(y)}px)`;
-		}
-		if (!game || !stick) {
+	const setStick = (dx: number, dy: number): void => {
+		if (!stick || !stickKnob) {
 			return;
 		}
-		const reach = stick.clientWidth / 2 - 12;
-		const shape = (value: number): number =>
-			Math.abs(value) < STICK_DEAD_ZONE ? 0 : value;
-		game.input.steer = shape(x / reach);
-		game.input.throttle = shape(-y / reach);
+		const { knobX, knobY, steer, throttle } = readStick(
+			dx,
+			dy,
+			stick.clientWidth / 2 - 12,
+		);
+		stickKnob.style.transform =
+			knobX === 0 && knobY === 0
+				? ''
+				: `translate(${String(knobX)}px, ${String(knobY)}px)`;
+		if (game) {
+			game.input.steer = steer;
+			game.input.throttle = throttle;
+		}
 	};
 
 	const onStick = (event: PointerEvent): void => {
@@ -386,9 +386,7 @@ import hero from '../media/hero.webp';
 		const { left, top, width, height } = stick.getBoundingClientRect();
 		const dx = event.clientX - (left + width / 2);
 		const dy = event.clientY - (top + height / 2);
-		const reach = stick.clientWidth / 2 - 12;
-		const scale = Math.min(1, reach / (Math.hypot(dx, dy) || 1));
-		setStick(dx * scale, dy * scale);
+		setStick(dx, dy);
 	};
 
 	const stop = (): void => {
@@ -521,6 +519,10 @@ import hero from '../media/hero.webp';
 		);
 		current = next;
 		game = next;
+		// A handle for the end-to-end tests, in development only.
+		if (import.meta.env.DEV) {
+			Object.assign(globalThis, { __hero: { game: next } });
+		}
 		gallery = undefined;
 		setMode('game');
 		resetHud();

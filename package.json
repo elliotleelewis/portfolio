@@ -13,7 +13,9 @@
     "lint": "eslint \"**/*.{ts,js,cjs,mjs,html,astro}\"",
     "lint:fix": "pnpm run lint --fix",
     "format": "prettier --check \"**/*.{md,ts,js,cjs,mjs,scss,html,json,yml,astro}\" --ignore-path .gitignore",
-    "format:fix": "pnpm run format --write"
+    "format:fix": "pnpm run format --write",
+    "test": "vitest run",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@astrojs/partytown": "^2.0.0",
@@ -35,6 +37,7 @@
     "@eslint/eslintrc": "^3.0.0",
     "@eslint/js": "^10.0.0",
     "@eslint-community/eslint-plugin-eslint-comments": "^4.0.0",
+    "@playwright/test": "^1.0.0",
     "@tailwindcss/vite": "^4.0.0",
     "@types/node": "^24.0.0",
     "@types/three": "^0.186.0",
@@ -51,6 +54,7 @@
     "prettier": "~3.9.0",
     "prettier-plugin-astro": "^1.0.0",
     "typescript": "~6.0.0",
-    "typescript-eslint": "^8.0.0"
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^5.0.0"
   }
 }

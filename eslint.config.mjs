@@ -9,6 +9,8 @@ import configPrettier from 'eslint-config-prettier';
 import astro from 'eslint-plugin-astro';
 import tailwind from 'eslint-plugin-better-tailwindcss';
 import jsdoc from 'eslint-plugin-jsdoc';
+import jsxA11y from 'eslint-plugin-jsx-a11y';
+import reactHooks from 'eslint-plugin-react-hooks';
 import unicorn from 'eslint-plugin-unicorn';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -19,6 +21,53 @@ const compat = new FlatCompat({
 	baseDirectory: __dirname,
 	recommendedConfig: eslint.configs.recommended,
 });
+
+const namingConvention = [
+	{
+		selector: 'default',
+		format: ['camelCase'],
+		leadingUnderscore: 'forbid',
+		trailingUnderscore: 'forbid',
+	},
+	{
+		selector: 'typeLike',
+		format: ['PascalCase'],
+		leadingUnderscore: 'forbid',
+		trailingUnderscore: 'forbid',
+	},
+	{
+		selector: 'enumMember',
+		format: ['PascalCase'],
+	},
+	{
+		selector: 'parameter',
+		modifiers: ['unused'],
+		format: ['camelCase'],
+		leadingUnderscore: 'require',
+	},
+	{
+		selector: 'property',
+		modifiers: ['readonly', 'static'],
+		format: ['UPPER_CASE'],
+	},
+	{
+		selector: 'property',
+		modifiers: ['private'],
+		format: ['camelCase'],
+		leadingUnderscore: 'require',
+	},
+	{
+		selector: 'variable',
+		modifiers: ['const', 'exported'],
+		format: ['UPPER_CASE'],
+	},
+	{
+		selector: 'variable',
+		modifiers: ['const', 'exported'],
+		types: ['function'],
+		format: ['camelCase'],
+	},
+];
 
 export default tseslint.config(
 	includeIgnoreFile(path.resolve(__dirname, '.gitignore')),
@@ -31,7 +80,7 @@ export default tseslint.config(
 		},
 	},
 	{
-		files: ['**/*.ts'],
+		files: ['**/*.ts', '**/*.tsx'],
 		extends: [
 			eslint.configs.recommended,
 			...tseslint.configs.strictTypeChecked,
@@ -67,50 +116,7 @@ export default tseslint.config(
 			'@angular-eslint/prefer-standalone-component': 'off',
 			'@typescript-eslint/naming-convention': [
 				'error',
-				{
-					selector: 'default',
-					format: ['camelCase'],
-					leadingUnderscore: 'forbid',
-					trailingUnderscore: 'forbid',
-				},
-				{
-					selector: 'typeLike',
-					format: ['PascalCase'],
-					leadingUnderscore: 'forbid',
-					trailingUnderscore: 'forbid',
-				},
-				{
-					selector: 'enumMember',
-					format: ['PascalCase'],
-				},
-				{
-					selector: 'parameter',
-					modifiers: ['unused'],
-					format: ['camelCase'],
-					leadingUnderscore: 'require',
-				},
-				{
-					selector: 'property',
-					modifiers: ['readonly', 'static'],
-					format: ['UPPER_CASE'],
-				},
-				{
-					selector: 'property',
-					modifiers: ['private'],
-					format: ['camelCase'],
-					leadingUnderscore: 'require',
-				},
-				{
-					selector: 'variable',
-					modifiers: ['const', 'exported'],
-					format: ['UPPER_CASE'],
-				},
-				{
-					selector: 'variable',
-					modifiers: ['const', 'exported'],
-					types: ['function'],
-					format: ['camelCase'],
-				},
+				...namingConvention,
 			],
 			'@typescript-eslint/no-extraneous-class': 'off',
 			'better-tailwindcss/enforce-consistent-line-wrapping': 'off',
@@ -177,6 +183,30 @@ export default tseslint.config(
 			'import/newline-after-import': 'off',
 			'import/no-named-as-default': 'off',
 			'import/no-named-as-default-member': 'off',
+		},
+	},
+	{
+		files: ['**/*.tsx'],
+		extends: [
+			reactHooks.configs.flat['recommended-latest'],
+			jsxA11y.flatConfigs.strict,
+		],
+		rules: {
+			// Components are PascalCase.
+			'@typescript-eslint/naming-convention': [
+				'error',
+				...namingConvention.map((option) =>
+					option.types?.includes('function')
+						? { ...option, format: ['camelCase', 'PascalCase'] }
+						: option,
+				),
+				{
+					selector: 'variable',
+					modifiers: ['const'],
+					types: ['function'],
+					format: ['camelCase', 'PascalCase'],
+				},
+			],
 		},
 	},
 	...astro.configs.recommended,

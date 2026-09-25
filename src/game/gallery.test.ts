@@ -93,4 +93,13 @@ describe('Gallery', () => {
 		run(gallery, 1);
 		gallery.dispose();
 	});
+
+	it('runs the row right to left for right-to-left pages', () => {
+		const gallery = new Gallery({ onSelect: vi.fn() }, all, 'rtl');
+		gallery.resize(1600, 900);
+		gallery.select(1);
+		run(gallery, 4);
+		expect(gallery.focus.x).toBeLessThan(-GALLERY_SPACING / 2);
+		gallery.dispose();
+	});
 });

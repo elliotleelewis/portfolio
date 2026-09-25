@@ -3,6 +3,7 @@ import { type PointerEvent, Suspense, lazy, useRef } from 'react';
 
 import { SCENE_ATOM, STAGE_SCENE_ATOM } from './atoms';
 import { useController } from './context';
+import { readingDirection } from './direction';
 
 // How far a swipe must go, in pixels, to change easter egg.
 const swipeDistance = 40;
@@ -34,7 +35,11 @@ export const Stage = () => {
 			event.type === 'pointerup' &&
 			swipeStart.current !== undefined
 		) {
-			const swipe = event.clientX - swipeStart.current;
+			// Swiping against the way the page reads goes on to the next
+			// easter egg; swiping with it goes back.
+			const swipe =
+				(event.clientX - swipeStart.current) *
+				(readingDirection() === 'rtl' ? -1 : 1);
 			swipeStart.current = undefined;
 			if (swipe < -swipeDistance) {
 				controller.nextEgg();

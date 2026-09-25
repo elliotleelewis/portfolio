@@ -1,5 +1,6 @@
 import { Group, PerspectiveCamera, Scene, Vector3 } from 'three';
 
+import { type Mirror, type ReadingDirection, mirrorFor } from './direction';
 import { damp } from './easing';
 import {
 	ALL_EASTER_EGGS,
@@ -65,21 +66,31 @@ export class Gallery implements StageScene {
 	public readonly systems = new Systems();
 	// The easter eggs, in their row.
 	public readonly easterEggs = new Group();
+	// Whether the row runs right to left, for a right-to-left page.
+	public readonly mirror: Mirror;
 
 	/**
 	 * @param callbacks - What to tell the hero as the gallery moves.
 	 * @param hits - How many times I've smashed each easter egg, by id. Any
 	 * I've not smashed yet stay hidden.
+	 * @param direction - Which way the page reads, which way the row runs.
 	 */
 	public constructor(
 		callbacks: GalleryCallbacks,
 		hits: Readonly<Record<string, number>>,
+		direction: ReadingDirection = 'ltr',
 	) {
 		this._callbacks = callbacks;
+		this.mirror = mirrorFor(direction);
 		this._scene.add(this.easterEggs);
 
 		this._stations = ALL_EASTER_EGGS.map((egg, i) => {
-			const position = new Vector3(i * GALLERY_SPACING, 0, 0);
+			// Running the way the page reads, so the next is always ahead.
+			const position = new Vector3(
+				i * GALLERY_SPACING * this.mirror,
+				0,
+				0,
+			);
 			const count = hits[egg.id] ?? 0;
 			const isLocked = count <= 0;
 			return {

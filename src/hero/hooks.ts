@@ -4,6 +4,7 @@ import { type RefObject, useEffect } from 'react';
 import { SCENE_ATOM } from './atoms';
 import { useController } from './context';
 import { type HeldInput } from './controller';
+import { readingDirection } from './direction';
 
 // Which key (by `KeyboardEvent.code`) holds which input.
 const keys = new Map<string, HeldInput>([
@@ -35,18 +36,20 @@ export const useKeyboardControls = (): void => {
 				return;
 			}
 			if (scene === 'gallery') {
-				const isPrevious =
+				const isLeft =
 					event.code === 'ArrowLeft' || event.code === 'KeyA';
-				const isNext =
+				const isRight =
 					event.code === 'ArrowRight' || event.code === 'KeyD';
-				if (!isPrevious && !isNext) {
+				if (!isLeft && !isRight) {
 					return;
 				}
 				event.preventDefault();
 				if (event.type !== 'keydown') {
 					return;
 				}
-				if (isNext) {
+				// The row runs the way the page reads, so on a right-to-left
+				// page the next easter egg is to the left.
+				if (isRight === (readingDirection() === 'ltr')) {
 					controller.nextEgg();
 				} else {
 					controller.previousEgg();

@@ -1,5 +1,6 @@
 import { MathUtils, type Object3D, PerspectiveCamera, Vector3 } from 'three';
 
+import { type Mirror } from './direction';
 import { damp } from './easing';
 import { STAR_END } from './player';
 
@@ -32,6 +33,7 @@ const portraitChaseLookAhead = new Vector3(0, 0.5, -8);
 export class ChaseCamera {
 	private readonly _slope: Object3D;
 	private readonly _isShakeless: boolean;
+	private readonly _mirror: Mirror;
 	private readonly _introCamera = new Vector3();
 	private readonly _introTarget = new Vector3();
 	private readonly _offset = new Vector3().copy(chaseOffset);
@@ -46,10 +48,19 @@ export class ChaseCamera {
 	/**
 	 * @param slope - The mountainside I roll down, whose space I'm chased in.
 	 * @param isShakeless - Keep the camera steady (for reduced motion).
+	 * @param mirror - -1 to chase from the other side, so I roll right to left
+	 * across the screen.
 	 */
-	public constructor(slope: Object3D, isShakeless = false) {
+	public constructor(
+		slope: Object3D,
+		isShakeless = false,
+		mirror: Mirror = 1,
+	) {
 		this._slope = slope;
 		this._isShakeless = isShakeless;
+		this._mirror = mirror;
+		this._offset.x *= mirror;
+		this._lookAhead.x *= mirror;
 	}
 
 	// Where the chase camera sits relative to me, in the slope's space.
@@ -110,6 +121,10 @@ export class ChaseCamera {
 			chaseLookAhead,
 			landscape,
 		);
+		// From behind and to one side, so I roll across the screen the way the
+		// page reads.
+		this._offset.x *= this._mirror;
+		this._lookAhead.x *= this._mirror;
 	}
 
 	/**

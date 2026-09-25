@@ -70,7 +70,7 @@ test.describe('gallery', () => {
 		await page.evaluate(() => {
 			localStorage.setItem(
 				'hero-easter-egg-hits',
-				JSON.stringify({ outhouse: 3, jailbreak: 1 }),
+				JSON.stringify({ outhouse: 1234, jailbreak: 1 }),
 			);
 		});
 		await page.reload();
@@ -105,7 +105,7 @@ test.describe('gallery', () => {
 		const caption = page.locator('#hero-gallery-caption');
 		const hint = page.locator('#hero-gallery-hint');
 		await expect(caption).not.toHaveText('?????');
-		await expect(hint).toHaveText('Smashed 3 times');
+		await expect(hint).toHaveText('Smashed 1,234 times');
 
 		const third = page.getByRole('button', {
 			name: 'Easter egg 3, not found yet',

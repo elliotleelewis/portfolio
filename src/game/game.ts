@@ -11,6 +11,7 @@ import {
 import { type BearActor, Bears } from './bears';
 import { ChaseCamera } from './chase-camera';
 import { bearChance } from './difficulty';
+import { type Mirror, type ReadingDirection, mirrorFor } from './direction';
 import { EasterEggTrail, type PlacedEasterEgg } from './easter-egg-trail';
 import { type EasterEggInstance } from './easter-eggs';
 import { Effects } from './effects';
@@ -38,6 +39,8 @@ export interface GameCallbacks {
 export interface GameOptions {
 	// Skip straight to the star pose, for a quick restart.
 	skipIntro?: boolean;
+	// Which way the page reads, which way I roll across the screen.
+	direction?: ReadingDirection;
 }
 
 export interface GameInput {
@@ -83,6 +86,8 @@ export class Game implements StageScene {
 
 	// Everything that moves on each step, in order.
 	public readonly systems = new Systems();
+	// Whether the scene is mirrored for a right-to-left page.
+	public readonly mirror: Mirror;
 
 	// How the trees ask the game where they can go.
 	public readonly forestHooks: ForestHooks<BearActor> = {
@@ -112,9 +117,11 @@ export class Game implements StageScene {
 		// ./components/world.tsx); everything else lives on the slope.
 		this._slope.rotation.x = -SLOPE_ANGLE;
 		this._scene.add(this._slope);
+		this.mirror = mirrorFor(options.direction ?? 'ltr');
 		this._camera = new ChaseCamera(
 			this._slope,
 			globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches,
+			this.mirror,
 		);
 
 		this._player = new Player({

@@ -78,4 +78,18 @@ describe('ChaseCamera', () => {
 		chase.shake(0.6);
 		expect(chase.shakiness).toBe(0);
 	});
+
+	it('chases from the other side when mirrored, for right-to-left pages', () => {
+		const chase = setUp();
+		const mirrored = new ChaseCamera(new Group(), false, -1);
+		mirrored.resize(1600, 900);
+		expect(mirrored.offset.x).toBeCloseTo(-chase.offset.x);
+		expect(mirrored.offset.z).toBeCloseTo(chase.offset.z);
+
+		const player = new Vector3(3, 0, -40);
+		for (let i = 0; i < 120; i++) {
+			mirrored.update(dt, CAMERA_SWING_END + 1, player, false);
+		}
+		expect(mirrored.camera.position.x).toBeLessThan(player.x);
+	});
 });

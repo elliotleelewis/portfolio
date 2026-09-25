@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { addHit, hitsMessage, readHits } from './easter-egg-hits';
+import {
+	MAX_COUNTED_HITS,
+	addHit,
+	hitsMessage,
+	readHits,
+} from './easter-egg-hits';
 
 describe('readHits', () => {
 	it('keeps sensible counts', () => {
@@ -45,5 +50,15 @@ describe('hitsMessage', () => {
 	it('says how many times', () => {
 		expect(hitsMessage(1)).toBe('Smashed once');
 		expect(hitsMessage(4)).toBe('Smashed 4 times');
+	});
+
+	it('separates the thousands with commas', () => {
+		expect(hitsMessage(1234)).toBe('Smashed 1,234 times');
+		expect(hitsMessage(MAX_COUNTED_HITS)).toBe('Smashed 9,999 times');
+	});
+
+	it('stops counting past the limit', () => {
+		expect(hitsMessage(MAX_COUNTED_HITS + 1)).toBe('Smashed many times');
+		expect(hitsMessage(1_000_000)).toBe('Smashed many times');
 	});
 });

@@ -77,7 +77,11 @@ import hero from '../media/hero.webp';
 				🐻
 			</span>
 			<span class="rounded-full bg-white/70 px-4 py-2 backdrop-blur-sm sm:hidden">
-				Hold left or right to steer · dodge the bears 🐻
+				Hold left or right to steer
+				<span id="hero-hint-tilt" hidden>
+					· tilt to speed up
+				</span>{' '}
+				· dodge the bears 🐻
 			</span>
 		</p>
 	</div>
@@ -174,6 +178,7 @@ import hero from '../media/hero.webp';
 <script>
 	import type { Game } from '../game/game';
 	import type { Gallery } from '../game/gallery';
+	import { type Tilt, canUseTilt, followTilt } from '../game/tilt';
 
 	const hero = document.querySelector<HTMLElement>('#hero');
 	const stage = document.querySelector<HTMLElement>('#hero-stage');
@@ -183,6 +188,7 @@ import hero from '../media/hero.webp';
 	const distance = document.querySelector<HTMLElement>('#hero-distance');
 	const combo = document.querySelector<HTMLElement>('#hero-combo');
 	const hint = document.querySelector<HTMLElement>('#hero-hint');
+	const hintTilt = document.querySelector<HTMLElement>('#hero-hint-tilt');
 	const over = document.querySelector<HTMLElement>('#hero-over');
 	const overScore = document.querySelector<HTMLElement>('#hero-over-score');
 	const overDistance = document.querySelector<HTMLElement>(
@@ -210,7 +216,10 @@ import hero from '../media/hero.webp';
 
 	const BEST_KEY = 'hero-best-trees';
 
-	const KEYS: Record<string, keyof Game['input'] | undefined> = {
+	const KEYS: Record<
+		string,
+		Exclude<keyof Game['input'], 'tilt'> | undefined
+	> = {
 		ArrowLeft: 'left',
 		KeyA: 'left',
 		ArrowRight: 'right',
@@ -228,6 +237,7 @@ import hero from '../media/hero.webp';
 	let swipeStart: number | undefined;
 	let comboTimeout: ReturnType<typeof setTimeout> | undefined;
 	let isGameOver = false;
+	let tilt: Tilt | undefined;
 
 	const readBest = (): number => {
 		try {
@@ -342,6 +352,8 @@ import hero from '../media/hero.webp';
 		delete over?.dataset.show;
 		globalThis.removeEventListener('keydown', onKey);
 		globalThis.removeEventListener('keyup', onKey);
+		tilt?.stop();
+		tilt = undefined;
 		// Let the photo fade back in before tearing the scene down.
 		setTimeout(() => {
 			scene.dispose();
@@ -516,7 +528,11 @@ import hero from '../media/hero.webp';
 		galleryNext?.focus();
 	};
 
-	const start = async (): Promise<void> => {
+	/**
+	 * Starts a run.
+	 * @param canTilt - Whether the phone's tilt can control the speed.
+	 */
+	const start = async (canTilt: Promise<boolean>): Promise<void> => {
 		if (!stage || game || hero?.dataset.state === 'loading') {
 			return;
 		}
@@ -527,6 +543,17 @@ import hero from '../media/hero.webp';
 			await launch(false);
 			globalThis.addEventListener('keydown', onKey);
 			globalThis.addEventListener('keyup', onKey);
+			if (await canTilt) {
+				tilt?.stop();
+				tilt = followTilt((value) => {
+					if (game) {
+						game.input.tilt = value;
+					}
+				});
+				if (hintTilt) {
+					hintTilt.hidden = false;
+				}
+			}
 		} catch (error) {
 			console.error(error);
 			setState('idle');
@@ -534,12 +561,14 @@ import hero from '../media/hero.webp';
 	};
 
 	play?.addEventListener('click', () => {
-		void start();
+		// iOS only allows asking for the tilt straight from a tap.
+		void start(canUseTilt());
 	});
 	exit?.addEventListener('click', stop);
 	overExit?.addEventListener('click', stop);
 	again?.addEventListener('click', () => {
 		if (current) {
+			tilt?.recalibrate();
 			void launch(true);
 		}
 	});
@@ -548,6 +577,7 @@ import hero from '../media/hero.webp';
 	});
 	galleryAgain?.addEventListener('click', () => {
 		if (current) {
+			tilt?.recalibrate();
 			void launch(true);
 		}
 	});
@@ -566,4 +596,28 @@ import hero from '../media/hero.webp';
 	] as const) {
 		stage?.addEventListener(type, onPointer);
 	}
+
+	// Tapping away at the stage shouldn't double-tap or pinch the page into a
+	// zoom. Buttons still get their taps.
+	const isOnButton = (event: TouchEvent): boolean =>
+		event.target instanceof Element &&
+		event.target.closest('button, a') !== null;
+	hero?.addEventListener(
+		'touchstart',
+		(event) => {
+			if (current && event.touches.length > 1) {
+				event.preventDefault();
+			}
+		},
+		{ passive: false },
+	);
+	hero?.addEventListener(
+		'touchend',
+		(event) => {
+			if (current && !isOnButton(event)) {
+				event.preventDefault();
+			}
+		},
+		{ passive: false },
+	);
 </script>

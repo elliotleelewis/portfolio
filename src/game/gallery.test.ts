@@ -7,7 +7,7 @@ import { GALLERY_SPACING, Gallery } from './gallery';
 import { MYSTERY_CAPTION } from './mystery';
 
 // Every easter egg, found.
-const all = ALL_EASTER_EGGS.map(({ id }) => id);
+const all = Object.fromEntries(ALL_EASTER_EGGS.map(({ id }) => [id, 1]));
 
 /**
  * Runs the gallery for a while.
@@ -63,9 +63,9 @@ describe('Gallery', () => {
 	it('hides the easter eggs I have not found behind a mystery', () => {
 		const onSelect = vi.fn();
 		const [first, second] = ALL_EASTER_EGGS;
-		const gallery = new Gallery({ onSelect }, [second.id]);
-		expect(gallery.locked).toEqual(
-			ALL_EASTER_EGGS.map(({ id }) => id !== second.id),
+		const gallery = new Gallery({ onSelect }, { [second.id]: 3 });
+		expect(gallery.hits).toEqual(
+			ALL_EASTER_EGGS.map(({ id }) => (id === second.id ? 3 : 0)),
 		);
 		// Starts at the one I've found.
 		expect(gallery.index).toBe(1);
@@ -86,8 +86,8 @@ describe('Gallery', () => {
 
 	it('starts at the first easter egg when none are found yet', () => {
 		const onSelect = vi.fn();
-		const gallery = new Gallery({ onSelect }, []);
-		expect(gallery.locked.every(Boolean)).toBe(true);
+		const gallery = new Gallery({ onSelect }, {});
+		expect(gallery.hits.every((hits) => hits === 0)).toBe(true);
 		expect(gallery.index).toBe(0);
 		expect(onSelect).toHaveBeenCalledWith(0, MYSTERY_CAPTION, true);
 		run(gallery, 1);

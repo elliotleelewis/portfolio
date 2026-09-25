@@ -7,7 +7,7 @@ import { type StageScene } from '../game/stage-scene';
 import {
 	BEST_ATOM,
 	CALLOUT_ATOM,
-	FOUND_EASTER_EGGS_ATOM,
+	EASTER_EGG_HITS_ATOM,
 	GALLERY_ATOM,
 	GAME_OVER_ATOM,
 	HINT_ATOM,
@@ -20,6 +20,7 @@ import {
 	STAGE_SCENE_ATOM,
 	type ShownScene,
 } from './atoms';
+import { addHit, readHits } from './easter-egg-hits';
 
 type Store = ReturnType<typeof createStore>;
 
@@ -67,9 +68,7 @@ export class HeroController {
 					}
 				},
 				onEasterEgg: (id) => {
-					store.set(FOUND_EASTER_EGGS_ATOM, (found) =>
-						found.includes(id) ? found : [...found, id],
-					);
+					store.set(EASTER_EGG_HITS_ATOM, (hits) => addHit(hits, id));
 				},
 				onBearBlast: (bears, points) => {
 					this.callout(
@@ -209,7 +208,6 @@ export class HeroController {
 			return;
 		}
 		const galleryModule = await import('../game/gallery');
-		const found = this._store.get(FOUND_EASTER_EGGS_ATOM);
 		const next = new galleryModule.Gallery(
 			{
 				onSelect: (index, caption) => {
@@ -221,7 +219,7 @@ export class HeroController {
 				},
 			},
 			// Storage could hold anything.
-			Array.isArray(found) ? found : [],
+			readHits(this._store.get(EASTER_EGG_HITS_ATOM)),
 		);
 		this.show({ kind: 'gallery', scene: next });
 		this._gallery = next;
@@ -230,7 +228,7 @@ export class HeroController {
 		this._store.set(GALLERY_ATOM, (view) => ({
 			...view,
 			count: next.count,
-			locked: next.locked,
+			hits: next.hits,
 		}));
 		this._store.set(SCENE_ATOM, 'gallery');
 		this._store.set(MODE_ATOM, 'gallery');

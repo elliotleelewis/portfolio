@@ -19,6 +19,8 @@ export interface GalleryCallbacks {
 
 interface Station {
 	egg: EasterEgg;
+	// How many times I've smashed it.
+	hits: number;
 	// Not found yet, so hidden behind a mystery.
 	isLocked: boolean;
 	instance: EasterEggInstance;
@@ -66,19 +68,23 @@ export class Gallery implements StageScene {
 
 	/**
 	 * @param callbacks - What to tell the hero as the gallery moves.
-	 * @param found - The ids of the easter eggs I've found (by smashing
-	 * them). The rest stay hidden.
+	 * @param hits - How many times I've smashed each easter egg, by id. Any
+	 * I've not smashed yet stay hidden.
 	 */
-	public constructor(callbacks: GalleryCallbacks, found: Iterable<string>) {
+	public constructor(
+		callbacks: GalleryCallbacks,
+		hits: Readonly<Record<string, number>>,
+	) {
 		this._callbacks = callbacks;
 		this._scene.add(this.easterEggs);
 
-		const foundIds = new Set(found);
 		this._stations = ALL_EASTER_EGGS.map((egg, i) => {
 			const position = new Vector3(i * GALLERY_SPACING, 0, 0);
-			const isLocked = !foundIds.has(egg.id);
+			const count = hits[egg.id] ?? 0;
+			const isLocked = count <= 0;
 			return {
 				egg,
+				hits: count,
 				isLocked,
 				instance: this.place(egg, isLocked, position),
 				position,
@@ -170,9 +176,10 @@ export class Gallery implements StageScene {
 		return this._index;
 	}
 
-	// Which easter eggs are still hidden, in gallery order.
-	public get locked(): readonly boolean[] {
-		return this._stations.map(({ isLocked }) => isLocked);
+	// How many times I've smashed each easter egg, in gallery order. Those
+	// on 0 are still hidden.
+	public get hits(): readonly number[] {
+		return this._stations.map(({ hits }) => hits);
 	}
 
 	// Where the camera is looking, in world space.

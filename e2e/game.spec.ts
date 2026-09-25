@@ -69,8 +69,8 @@ test.describe('gallery', () => {
 		// I've found the first two easter eggs, but not the rest.
 		await page.evaluate(() => {
 			localStorage.setItem(
-				'hero-easter-eggs-found',
-				JSON.stringify(['outhouse', 'jailbreak']),
+				'hero-easter-egg-hits',
+				JSON.stringify({ outhouse: 3, jailbreak: 1 }),
 			);
 		});
 		await page.reload();
@@ -99,18 +99,22 @@ test.describe('gallery', () => {
 		await expect(caption).toHaveText(first ?? '');
 	});
 
-	test('hides the easter eggs I have not found yet', async ({ page }) => {
+	test('counts my smashes, and hides the easter eggs I have not found yet', async ({
+		page,
+	}) => {
 		const caption = page.locator('#hero-gallery-caption');
 		const hint = page.locator('#hero-gallery-hint');
 		await expect(caption).not.toHaveText('?????');
-		await expect(hint).toBeHidden();
+		await expect(hint).toHaveText('Smashed 3 times');
 
 		const third = page.getByRole('button', {
 			name: 'Easter egg 3, not found yet',
 		});
 		await third.click();
 		await expect(caption).toHaveText('?????');
-		await expect(hint).toBeVisible();
+		await expect(hint).toHaveText(
+			'Barrel into it on the trail to find out',
+		);
 	});
 
 	test('hides the game HUD, even while leaving', async ({ page }) => {

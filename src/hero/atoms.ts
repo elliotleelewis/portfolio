@@ -4,6 +4,8 @@ import { atomWithStorage } from 'jotai/utils';
 import { type Gallery } from '../game/gallery';
 import { type Game } from '../game/game';
 
+import { type EasterEggHits } from './easter-egg-hits';
+
 export type Phase = 'idle' | 'loading' | 'playing';
 export type SceneKind = 'game' | 'gallery';
 
@@ -27,8 +29,9 @@ export interface GalleryView {
 	index: number;
 	caption: string;
 	count: number;
-	// Which easter eggs I've not found yet, in gallery order.
-	locked: readonly boolean[];
+	// How many times I've smashed each easter egg, in gallery order. Those
+	// on 0 are still hidden.
+	hits: readonly number[];
 }
 
 // The photo, the game loading, or a scene on screen.
@@ -63,11 +66,12 @@ export const BEST_ATOM = atomWithStorage('hero-best-trees', 0, undefined, {
 	getOnInit: true,
 });
 
-// The ids of the easter eggs smashed on this device, which the gallery then
-// shows. Read from storage as soon as it's first used, like the best score.
-export const FOUND_EASTER_EGGS_ATOM = atomWithStorage<string[]>(
-	'hero-easter-eggs-found',
-	[],
+// How many times each easter egg has been smashed on this device. The
+// gallery only shows the ones smashed at least once. Read from storage as
+// soon as it's first used, like the best score.
+export const EASTER_EGG_HITS_ATOM = atomWithStorage<EasterEggHits>(
+	'hero-easter-egg-hits',
+	{},
 	undefined,
 	{ getOnInit: true },
 );
@@ -76,5 +80,5 @@ export const GALLERY_ATOM = atom<GalleryView>({
 	index: 0,
 	caption: '',
 	count: 0,
-	locked: [],
+	hits: [],
 });

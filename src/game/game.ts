@@ -10,6 +10,7 @@ import {
 
 import { type BearActor, Bears } from './bears';
 import { ChaseCamera } from './chase-camera';
+import { bearChance } from './difficulty';
 import { EasterEggTrail, type PlacedEasterEgg } from './easter-egg-trail';
 import { type EasterEggInstance } from './easter-eggs';
 import { Effects } from './effects';
@@ -18,8 +19,8 @@ import { Player, type PlayerControls, STAR_END } from './player';
 import { bearBlastPoints, nextCombo } from './scoring';
 import { type StageScene } from './stage-scene';
 import { SYSTEM_ORDER, Systems } from './systems';
-import { isBlockingChaseView } from './view';
-import { terrainHeight } from './world';
+import { isBlockingChaseView, isInChaseCameraWay } from './view';
+import { SLOPE_ANGLE, terrainHeight } from './world';
 
 export interface GameCallbacks {
 	// The intro is over and the player now has control.
@@ -48,8 +49,6 @@ export interface GameInput {
 	throttle: number;
 }
 
-// Steepness of the mountainside, in radians.
-const slopeAngle = 0.24;
 // How far past an easter egg's clearing a smash reaches bears.
 const blastReach = 12;
 // How long after being caught before the game-over screen shows.
@@ -109,7 +108,7 @@ export class Game implements StageScene {
 
 		// The sky, light, mountains and ground are components (see
 		// ./components/world.tsx); everything else lives on the slope.
-		this._slope.rotation.x = -slopeAngle;
+		this._slope.rotation.x = -SLOPE_ANGLE;
 		this._scene.add(this._slope);
 		this._camera = new ChaseCamera(
 			this._slope,
@@ -137,6 +136,12 @@ export class Game implements StageScene {
 			onCatch: (bear) => {
 				this.caught(bear);
 			},
+			isInTheWay: (x, z) =>
+				isInChaseCameraWay(
+					{ x, z },
+					this._player.position,
+					this._camera.offset,
+				),
 		});
 
 		this.systems.add(SYSTEM_ORDER.character, (dt) => {
@@ -162,8 +167,8 @@ export class Game implements StageScene {
 	}
 
 	/**
-	 * Now and then, sends a bear up a newly placed tree: more of them further
-	 * down, and they lurk around the easter eggs.
+	 * Now and then, sends a bear up a newly placed tree: more of them the
+	 * further down I get.
 	 * @param tree - The tree that has just been placed.
 	 * @param isInLane - Whether it's in the lane I roll down.
 	 */
@@ -171,11 +176,11 @@ export class Game implements StageScene {
 		if (tree.occupant) {
 			this._bears.release(tree.occupant);
 		}
-		const { x, z } = tree.mesh.position;
-		const bearChance = this._trail.isInClearing(x, z, blastReach)
-			? 0.3
-			: Math.min(0.08, 0.025 + this._player.distance / 12_000);
-		if (isInLane && z < -70 && Math.random() < bearChance) {
+		if (
+			isInLane &&
+			tree.mesh.position.z < -70 &&
+			Math.random() < bearChance(this._player.distance)
+		) {
 			this._bears.climb(tree);
 		}
 	}

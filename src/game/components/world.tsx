@@ -5,7 +5,12 @@ import { type Mesh, MeshLambertMaterial, type Vector3 } from 'three';
 import { disposeObject } from '../easter-eggs';
 import { type Game } from '../game';
 import { SYSTEM_ORDER } from '../systems';
-import { CHUNK_LENGTH, createGroundChunk, shapeGroundChunk } from '../world';
+import {
+	CHUNK_LENGTH,
+	createGroundChunk,
+	createLedge,
+	shapeGroundChunk,
+} from '../world';
 
 import { GameContext, StageContext, useGame, useSystem } from './game-context';
 import { OnSlope } from './on-slope';
@@ -33,8 +38,7 @@ const Ground = () => {
 			vertexColors: true,
 			flatShading: true,
 		});
-		const ledge = createGroundChunk(material, 60);
-		shapeGroundChunk(ledge, 30);
+		const ledge = createLedge(material, 60);
 		const chunks = Array.from({ length: 3 }, (_value, i) => {
 			const chunk = createGroundChunk(material);
 			shapeGroundChunk(chunk, -CHUNK_LENGTH / 2 - i * CHUNK_LENGTH);

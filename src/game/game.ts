@@ -129,6 +129,11 @@ interface Blast {
 
 interface Tree {
 	mesh: Mesh;
+	// Its own copy, so it can fade out on its own.
+	material: MeshLambertMaterial;
+	// Fading out of the way of the camera, and how opaque it still is.
+	isFading: boolean;
+	opacity: number;
 	bear: BearActor | undefined;
 	state: 'standing' | 'falling';
 	yaw: number;
@@ -154,6 +159,8 @@ const treeCount = 170;
 const treeWindow = 230;
 const debrisCount = 320;
 const blastDuration = 0.7;
+// How long a tree in the camera's way takes to fade out, in seconds.
+const treeFadeDuration = 0.3;
 // How far past an easter egg's clearing a smash reaches bears.
 const blastReach = 12;
 // Points for each bear blasted, multiplied again by how many went at once.
@@ -449,13 +456,14 @@ export class Game {
 		);
 
 		for (let i = 0; i < treeCount; i++) {
-			const mesh = new Mesh(
-				geometries[i % geometries.length],
-				materials[i % materials.length],
-			);
+			const material = materials[i % materials.length].clone();
+			const mesh = new Mesh(geometries[i % geometries.length], material);
 			mesh.castShadow = true;
 			const tree: Tree = {
 				mesh,
+				material,
+				isFading: false,
+				opacity: 1,
 				bear: undefined,
 				state: 'standing',
 				yaw: 0,
@@ -524,6 +532,14 @@ export class Game {
 		const scale = MathUtils.randFloat(0.75, 1.25);
 		tree.state = 'standing';
 		tree.mesh.visible = true;
+		tree.mesh.castShadow = true;
+		if (tree.isFading) {
+			tree.isFading = false;
+			tree.opacity = 1;
+			tree.material.opacity = 1;
+			tree.material.transparent = false;
+			tree.material.needsUpdate = true;
+		}
 		tree.yaw = Math.random() * Math.PI * 2;
 		tree.angle = 0;
 		tree.angularVelocity = 0;
@@ -849,14 +865,25 @@ export class Game {
 				this.placeTree(tree, p.z - treeWindow);
 				continue;
 			}
-			// Once a tree is in the way it stays hidden until it's recycled, so
-			// it can't flicker in and out as the camera sways.
+			// Once a tree is in the way it fades out and stays hidden until it's
+			// recycled, so it can't flicker in and out as the camera sways.
 			if (
 				tree.state === 'standing' &&
-				tree.mesh.visible &&
+				!tree.isFading &&
 				this.blocksView(p.x, p.z)
 			) {
-				tree.mesh.visible = false;
+				tree.isFading = true;
+				tree.mesh.castShadow = false;
+				tree.material.transparent = true;
+				tree.material.needsUpdate = true;
+			}
+			if (tree.isFading && tree.mesh.visible) {
+				tree.opacity = Math.max(
+					0,
+					tree.opacity - dt / treeFadeDuration,
+				);
+				tree.material.opacity = tree.opacity;
+				tree.mesh.visible = tree.opacity > 0;
 			}
 			if (tree.state !== 'falling') {
 				continue;
@@ -1535,6 +1562,15 @@ export class Game {
 	}
 
 	public start(): void {
+		// Compile the see-through tree shader up front, so the first tree to
+		// fade out doesn't stutter.
+		const [tree] = this._trees;
+		tree.material.transparent = true;
+		tree.material.needsUpdate = true;
+		this._renderer.compile(this._scene, this._camera);
+		tree.material.transparent = false;
+		tree.material.needsUpdate = true;
+
 		this._last = performance.now();
 		this._renderer.setAnimationLoop((now: number) => {
 			this.frame(now);

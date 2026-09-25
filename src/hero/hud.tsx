@@ -49,13 +49,13 @@ export const Hud = () => {
 			<p
 				id="hero-hint"
 				data-show={isHintShown ? '' : undefined}
-				className="absolute inset-x-0 bottom-6 text-center text-sm font-semibold text-slate-900 opacity-0 transition-opacity duration-500 group-data-[mode=gallery]:hidden data-show:opacity-100 sm:text-base pointer-coarse:bottom-38"
+				className="absolute inset-x-0 bottom-6 text-center text-sm font-semibold text-slate-900 opacity-0 transition-opacity duration-500 group-data-[mode=gallery]:hidden data-show:opacity-100 sm:text-base any-pointer-coarse:bottom-38"
 			>
-				<span className="rounded-full bg-white/70 px-4 py-2 backdrop-blur-sm pointer-coarse:hidden">
+				<span className="rounded-full bg-white/70 px-4 py-2 backdrop-blur-sm any-pointer-coarse:hidden">
 					Use ← → to flatten trees · ↑ ↓ for speed · watch out for
 					bears 🐻
 				</span>
-				<span className="mx-4 hidden rounded-2xl bg-white/70 px-4 py-2 backdrop-blur-sm pointer-coarse:inline-block">
+				<span className="mx-4 hidden rounded-2xl bg-white/70 px-4 py-2 backdrop-blur-sm any-pointer-coarse:inline-block">
 					Steer and speed up with the stick · dodge the bears 🐻
 				</span>
 			</p>

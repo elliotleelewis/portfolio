@@ -14,8 +14,8 @@ const SceneCanvas = lazy(async () => {
 });
 
 /**
- * Where the game and gallery draw. Pressing either half steers the game; a
- * swipe moves the gallery along.
+ * Where the game and gallery draw. A swipe moves the gallery along; the game
+ * is steered with the keyboard or the on-screen stick.
  * @returns The stage.
  */
 export const Stage = () => {
@@ -25,34 +25,31 @@ export const Stage = () => {
 	const swipeStart = useRef<number | undefined>(undefined);
 
 	const onPointer = (event: PointerEvent<HTMLDivElement>): void => {
-		if (scene === 'gallery') {
-			if (event.type === 'pointerdown') {
-				swipeStart.current = event.clientX;
-			} else if (
-				event.type === 'pointerup' &&
-				swipeStart.current !== undefined
-			) {
-				const swipe = event.clientX - swipeStart.current;
-				swipeStart.current = undefined;
-				if (swipe < -swipeDistance) {
-					controller.nextEgg();
-				} else if (swipe > swipeDistance) {
-					controller.previousEgg();
-				}
-			} else if (event.type !== 'pointermove') {
-				swipeStart.current = undefined;
-			}
+		if (scene !== 'gallery') {
 			return;
 		}
-		const isDown = event.type === 'pointerdown' || event.buttons > 0;
-		const { left, width } = event.currentTarget.getBoundingClientRect();
-		controller.steerByTap(isDown, event.clientX - left < width / 2);
+		if (event.type === 'pointerdown') {
+			swipeStart.current = event.clientX;
+		} else if (
+			event.type === 'pointerup' &&
+			swipeStart.current !== undefined
+		) {
+			const swipe = event.clientX - swipeStart.current;
+			swipeStart.current = undefined;
+			if (swipe < -swipeDistance) {
+				controller.nextEgg();
+			} else if (swipe > swipeDistance) {
+				controller.previousEgg();
+			}
+		} else if (event.type !== 'pointermove') {
+			swipeStart.current = undefined;
+		}
 	};
 
 	return (
 		<div
 			id="hero-stage"
-			className="absolute inset-0 touch-none opacity-0 transition-opacity duration-1500 ease-in-out group-data-[state=playing]:opacity-100"
+			className="absolute inset-0 opacity-0 transition-opacity duration-1500 ease-in-out group-data-[state=playing]:touch-none group-data-[state=playing]:opacity-100"
 			onPointerDown={onPointer}
 			onPointerMove={onPointer}
 			onPointerUp={onPointer}

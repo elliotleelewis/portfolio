@@ -7,6 +7,7 @@ import { type StageScene } from '../game/stage-scene';
 import {
 	BEST_ATOM,
 	CALLOUT_ATOM,
+	EASTER_EGG_HITS_ATOM,
 	GALLERY_ATOM,
 	GAME_OVER_ATOM,
 	HINT_ATOM,
@@ -19,6 +20,7 @@ import {
 	STAGE_SCENE_ATOM,
 	type ShownScene,
 } from './atoms';
+import { addHit, readHits } from './easter-egg-hits';
 
 type Store = ReturnType<typeof createStore>;
 
@@ -64,6 +66,9 @@ export class HeroController {
 					if (combo > 1) {
 						this.callout(`${String(combo)}× combo!`, 900);
 					}
+				},
+				onEasterEgg: (id) => {
+					store.set(EASTER_EGG_HITS_ATOM, (hits) => addHit(hits, id));
 				},
 				onBearBlast: (bears, points) => {
 					this.callout(
@@ -203,15 +208,19 @@ export class HeroController {
 			return;
 		}
 		const galleryModule = await import('../game/gallery');
-		const next = new galleryModule.Gallery({
-			onSelect: (index, { caption }) => {
-				this._store.set(GALLERY_ATOM, (view) => ({
-					...view,
-					index,
-					caption,
-				}));
+		const next = new galleryModule.Gallery(
+			{
+				onSelect: (index, caption) => {
+					this._store.set(GALLERY_ATOM, (view) => ({
+						...view,
+						index,
+						caption,
+					}));
+				},
 			},
-		});
+			// Storage could hold anything.
+			readHits(this._store.get(EASTER_EGG_HITS_ATOM)),
+		);
 		this.show({ kind: 'gallery', scene: next });
 		this._gallery = next;
 		this._game = undefined;
@@ -219,10 +228,10 @@ export class HeroController {
 		this._store.set(GALLERY_ATOM, (view) => ({
 			...view,
 			count: next.count,
+			hits: next.hits,
 		}));
 		this._store.set(SCENE_ATOM, 'gallery');
 		this._store.set(MODE_ATOM, 'gallery');
-		next.select(0);
 	}
 
 	/**
@@ -281,22 +290,6 @@ export class HeroController {
 		}
 		this._game.input[input] = isHeld;
 		if (input === 'left' || input === 'right') {
-			this.hideHint();
-		}
-	}
-
-	/**
-	 * Steers towards whichever half of the stage is being pressed.
-	 * @param isDown - Whether the stage is being pressed.
-	 * @param isLeft - Whether it's the left half.
-	 */
-	public steerByTap(isDown: boolean, isLeft: boolean): void {
-		if (!this._game) {
-			return;
-		}
-		this._game.input.left = isDown && isLeft;
-		this._game.input.right = isDown && !isLeft;
-		if (isDown) {
 			this.hideHint();
 		}
 	}

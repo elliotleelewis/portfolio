@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 
 import { GALLERY_ATOM, SCENE_ATOM } from './atoms';
 import { useController } from './context';
+import { hitsMessage } from './easter-egg-hits';
 
 /**
  * The carousel controls for the easter egg gallery: a caption, arrows, a dot
@@ -12,7 +13,8 @@ import { useController } from './context';
 export const GalleryPanel = () => {
 	const controller = useController();
 	const scene = useAtomValue(SCENE_ATOM);
-	const { index, caption, count } = useAtomValue(GALLERY_ATOM);
+	const { index, caption, count, hits } = useAtomValue(GALLERY_ATOM);
+	const smashes = hits[index] ?? 0;
 	const next = useRef<HTMLButtonElement>(null);
 
 	useEffect(() => {
@@ -48,6 +50,14 @@ export const GalleryPanel = () => {
 					<p id="hero-gallery-caption" className="text-lg font-bold">
 						{caption}
 					</p>
+					<p
+						id="hero-gallery-hint"
+						className="text-sm text-slate-600"
+					>
+						{smashes > 0
+							? hitsMessage(smashes)
+							: 'Barrel into it on the trail to find out'}
+					</p>
 				</div>
 				<button
 					id="hero-gallery-next"
@@ -67,7 +77,9 @@ export const GalleryPanel = () => {
 					<button
 						key={i}
 						type="button"
-						aria-label={`Easter egg ${String(i + 1)}`}
+						aria-label={`Easter egg ${String(i + 1)}${
+							(hits[i] ?? 0) > 0 ? '' : ', not found yet'
+						}`}
 						aria-current={i === index}
 						data-active={i === index ? '' : undefined}
 						className="size-2.5 cursor-pointer rounded-full bg-white/60 shadow-sm transition-all data-active:w-6 data-active:bg-white"

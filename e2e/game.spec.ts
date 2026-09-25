@@ -66,6 +66,14 @@ test('goes back to the photo', async ({ page }) => {
 
 test.describe('gallery', () => {
 	test.beforeEach(async ({ page }) => {
+		// I've found the first two easter eggs, but not the rest.
+		await page.evaluate(() => {
+			localStorage.setItem(
+				'hero-easter-egg-hits',
+				JSON.stringify({ outhouse: 3, jailbreak: 1 }),
+			);
+		});
+		await page.reload();
 		await startRun(page);
 		await crash(page);
 		await page.getByRole('button', { name: 'See the easter eggs' }).click();
@@ -89,6 +97,24 @@ test.describe('gallery', () => {
 		await expect(caption).not.toHaveText(first ?? '');
 		await page.locator('#hero-gallery-prev').click();
 		await expect(caption).toHaveText(first ?? '');
+	});
+
+	test('counts my smashes, and hides the easter eggs I have not found yet', async ({
+		page,
+	}) => {
+		const caption = page.locator('#hero-gallery-caption');
+		const hint = page.locator('#hero-gallery-hint');
+		await expect(caption).not.toHaveText('?????');
+		await expect(hint).toHaveText('Smashed 3 times');
+
+		const third = page.getByRole('button', {
+			name: 'Easter egg 3, not found yet',
+		});
+		await third.click();
+		await expect(caption).toHaveText('?????');
+		await expect(hint).toHaveText(
+			'Barrel into it on the trail to find out',
+		);
 	});
 
 	test('hides the game HUD, even while leaving', async ({ page }) => {
@@ -160,7 +186,7 @@ test.describe('on a phone', () => {
 		expect(await readInput(page, 'throttle')).toBe(0);
 	});
 
-	test('does not zoom the page when tapping to steer', async ({ page }) => {
+	test('does not zoom the page when tapping the game', async ({ page }) => {
 		await startRun(page);
 		await page.evaluate(() => {
 			const prevented: boolean[] = [];
@@ -190,5 +216,50 @@ test.describe('on a phone', () => {
 			() => globalThis.visualViewport?.scale,
 		);
 		expect(scale).toBe(1);
+	});
+
+	test('lets the page scroll when dragging on the hero before playing', async ({
+		page,
+	}) => {
+		// Whether anything under a spot in the hero stops a drag there from
+		// scrolling the page.
+		const blocksScrolling = async (): Promise<boolean[]> =>
+			page.evaluate(() => {
+				const hero = globalThis.document.querySelector('#hero');
+				if (!hero) {
+					throw new Error('No hero');
+				}
+				const { left, top, width, height } =
+					hero.getBoundingClientRect();
+				const blocked: boolean[] = [];
+				for (const fx of [0.1, 0.5, 0.9]) {
+					for (const fy of [0.1, 0.5, 0.9]) {
+						let element = globalThis.document.elementFromPoint(
+							left + width * fx,
+							top + height * fy,
+						);
+						let isBlocked = false;
+						while (element) {
+							isBlocked ||=
+								globalThis.getComputedStyle(element)
+									.touchAction === 'none';
+							element = element.parentElement;
+						}
+						blocked.push(isBlocked);
+					}
+				}
+				return blocked;
+			});
+
+		expect(await blocksScrolling()).not.toContain(true);
+		await startRun(page);
+		// The game itself doesn't scroll away while I'm playing.
+		expect(await blocksScrolling()).toContain(true);
+		await page.locator('#hero-exit').click();
+		await expect(page.locator('#hero')).toHaveAttribute(
+			'data-state',
+			'idle',
+		);
+		expect(await blocksScrolling()).not.toContain(true);
 	});
 });

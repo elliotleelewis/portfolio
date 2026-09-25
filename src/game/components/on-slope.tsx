@@ -1,5 +1,5 @@
 import { createPortal } from '@react-three/fiber';
-import { type Object3D } from 'three';
+import type { Object3D } from 'three';
 
 import { useGame } from './game-context';
 

@@ -20,8 +20,8 @@ import {
 } from './bear';
 import { damp } from './easing';
 import { disposeObject } from './easter-eggs';
-import { type Tree } from './forest';
-import { type Player } from './player';
+import type { Tree } from './forest';
+import type { Player } from './player';
 import { pinToScreenEdge } from './view';
 import { terrainHeight } from './world';
 

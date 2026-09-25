@@ -4,9 +4,9 @@ import { useRef } from 'react';
 import { GalleryWorld } from '../game/components/gallery-world';
 import { GameWorld } from '../game/components/world';
 import { RENDER_PRIORITY, STEP_PRIORITY } from '../game/frame-order';
-import { type StageScene } from '../game/stage-scene';
+import type { StageScene } from '../game/stage-scene';
 
-import { type ShownScene } from './atoms';
+import type { ShownScene } from './atoms';
 
 // The longest step, so a pause (like a hidden tab) doesn't lurch the scene.
 const maxStep = 1 / 20;

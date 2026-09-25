@@ -1,4 +1,4 @@
-import { type ReadingDirection } from '../game/direction';
+import type { ReadingDirection } from '../game/direction';
 
 /**
  * Which way the page reads, from its `dir`.

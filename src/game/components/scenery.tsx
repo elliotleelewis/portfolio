@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { DirectionalLight, Vector3 } from 'three';
 
-import { type Mirror } from '../direction';
+import type { Mirror } from '../direction';
 import { disposeObject } from '../easter-eggs';
 import { SYSTEM_ORDER } from '../systems';
 import { FOG_COLOR, createMountains } from '../world';

@@ -7,7 +7,7 @@ import {
 	disposeObject,
 } from './easter-eggs';
 import { TREE_WINDOW } from './forest';
-import { type Player } from './player';
+import type { Player } from './player';
 import { LANE_HALF_WIDTH, terrainHeight } from './world';
 
 // Roughly how far apart the easter eggs are, in metres.

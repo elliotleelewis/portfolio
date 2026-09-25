@@ -1,4 +1,4 @@
-import { type Object3D, type Vector3 } from 'three';
+import type { Object3D, Vector3 } from 'three';
 
 export interface EasterEggFrame {
 	time: number;

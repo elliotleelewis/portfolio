@@ -3,7 +3,7 @@ import { type RefObject, useEffect } from 'react';
 
 import { SCENE_ATOM } from './atoms';
 import { useController } from './context';
-import { type HeldInput } from './controller';
+import type { HeldInput } from './controller';
 import { readingDirection } from './direction';
 
 // Which key (by `KeyboardEvent.code`) holds which input.

@@ -15,7 +15,7 @@ import {
 } from 'three';
 
 import { joint, part, standard } from './parts';
-import { type EasterEgg, type EasterEggFrame } from './types';
+import type { EasterEgg, EasterEggFrame } from './types';
 
 // One touch of the ball every this many seconds, alternating feet.
 const touchInterval = 0.46;

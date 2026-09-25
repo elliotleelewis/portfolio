@@ -30,6 +30,18 @@ test('ends the run when a bear catches me', async ({ page }) => {
 	);
 });
 
+test('remembers the best score from earlier visits', async ({ page }) => {
+	await page.evaluate(() => {
+		localStorage.setItem('hero-best-trees', '5');
+	});
+	await page.reload();
+	await startRun(page);
+	await crash(page);
+	await expect(page.locator('#hero-over-best')).toHaveText(
+		'Your best: 5 trees',
+	);
+});
+
 test('rolls again from the game-over card', async ({ page }) => {
 	await startRun(page);
 	await crash(page);

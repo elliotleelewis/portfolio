@@ -4,6 +4,7 @@ import { type Gallery } from '../game/gallery';
 import { type Game, type GameInput } from '../game/game';
 
 import {
+	BEST_ATOM,
 	CALLOUT_ATOM,
 	GALLERY_ATOM,
 	GAME_OVER_ATOM,
@@ -15,7 +16,6 @@ import {
 	SCENE_ATOM,
 	SCORE_ATOM,
 } from './atoms';
-import { readBest, saveBest } from './best';
 
 type Store = ReturnType<typeof createStore>;
 
@@ -101,10 +101,7 @@ export class HeroController {
 	}
 
 	private finish(trees: number, metres: number): void {
-		const best = readBest();
-		if (trees > best) {
-			saveBest(trees);
-		}
+		const best = this._store.get(BEST_ATOM);
 		this._store.set(RESULT_ATOM, {
 			trees,
 			metres: Math.floor(metres),
@@ -112,6 +109,10 @@ export class HeroController {
 		});
 		this._store.set(HINT_ATOM, false);
 		this._store.set(GAME_OVER_ATOM, true);
+		// Last, so the card is up even if storage fails.
+		if (trees > best) {
+			this._store.set(BEST_ATOM, trees);
+		}
 	}
 
 	private resetHud(): void {

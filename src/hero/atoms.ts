@@ -1,4 +1,5 @@
 import { atom } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
 
 export type Phase = 'idle' | 'loading' | 'playing';
 export type SceneKind = 'game' | 'gallery';
@@ -42,6 +43,12 @@ export const CALLOUT_ATOM = atom<Callout>({ text: '', isShown: false });
 // The last run, and whether its game-over card is up.
 export const RESULT_ATOM = atom<RunResult>({ trees: 0, metres: 0, best: 0 });
 export const GAME_OVER_ATOM = atom(false);
+
+// The most trees flattened in one run on this device. Read from storage as
+// soon as it's first used, since the controller reads it outside React.
+export const BEST_ATOM = atomWithStorage('hero-best-trees', 0, undefined, {
+	getOnInit: true,
+});
 
 export const GALLERY_ATOM = atom<GalleryView>({
 	index: 0,

@@ -144,7 +144,7 @@ import hero from '../media/hero.webp';
 	<!-- Easter egg gallery -->
 	<div
 		id="hero-gallery"
-		class="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 px-4 pb-6 opacity-0 transition-opacity duration-500 group-data-[mode=gallery]:pointer-events-auto group-data-[mode=gallery]:opacity-100"
+		class="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 px-4 pb-6 opacity-0 transition-opacity duration-500 group-data-[mode=gallery]:group-data-[state=playing]:pointer-events-auto group-data-[mode=gallery]:group-data-[state=playing]:opacity-100"
 		role="region"
 		aria-label="Easter egg gallery"
 		aria-roledescription="carousel"
@@ -399,9 +399,6 @@ import hero from '../media/hero.webp';
 		current = undefined;
 		game = undefined;
 		gallery = undefined;
-		if (hero) {
-			delete hero.dataset.mode;
-		}
 		isGameOver = false;
 		setState('idle');
 		delete hint?.dataset.show;
@@ -412,6 +409,14 @@ import hero from '../media/hero.webp';
 		setTimeout(() => {
 			scene.dispose();
 		}, 1500);
+		// Keep the mode until the HUD has faded out too (it waits 700ms, then
+		// fades for 700ms), so the game's HUD doesn't flash up over the
+		// gallery as it goes.
+		setTimeout(() => {
+			if (hero && !current) {
+				delete hero.dataset.mode;
+			}
+		}, 2000);
 		play?.focus();
 	};
 

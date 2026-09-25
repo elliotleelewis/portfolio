@@ -106,7 +106,12 @@ export const GameWorld = ({ game }: Props) => {
 				{createPortal(
 					<>
 						<Sky near={35} far={240} />
-						<Lighting reach={30} depth={120} focus={focus} />
+						<Lighting
+							reach={30}
+							depth={120}
+							focus={focus}
+							mirror={game.mirror}
+						/>
 						<Mountains />
 						<Ground />
 						<Trees />

@@ -20,6 +20,7 @@ import {
 	STAGE_SCENE_ATOM,
 	type ShownScene,
 } from './atoms';
+import { readingDirection } from './direction';
 import { addHit, readHits } from './easter-egg-hits';
 
 type Store = ReturnType<typeof createStore>;
@@ -83,7 +84,7 @@ export class HeroController {
 					this.finish(trees, metres);
 				},
 			},
-			{ skipIntro: shouldSkipIntro },
+			{ skipIntro: shouldSkipIntro, direction: readingDirection() },
 		);
 		this.show({ kind: 'game', scene: next });
 		this._game = next;
@@ -220,6 +221,7 @@ export class HeroController {
 			},
 			// Storage could hold anything.
 			readHits(this._store.get(EASTER_EGG_HITS_ATOM)),
+			readingDirection(),
 		);
 		this.show({ kind: 'gallery', scene: next });
 		this._gallery = next;

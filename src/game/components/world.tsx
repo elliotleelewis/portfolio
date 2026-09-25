@@ -114,6 +114,7 @@ export const GameWorld = ({ game }: Props) => {
 						<OnSlope object={game.bears} />
 						<OnSlope object={game.easterEggs} />
 						<OnSlope object={game.effects} />
+						<primitive object={game.alertPins} />
 					</>,
 					game.scene,
 				)}

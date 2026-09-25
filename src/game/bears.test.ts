@@ -1,6 +1,6 @@
 // The bears' alert badge is drawn on a canvas, so these need a DOM.
 // @vitest-environment happy-dom
-import { Mesh, Vector3 } from 'three';
+import { Mesh, PerspectiveCamera, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 
 import { type BearActor, Bears, MAX_BEARS } from './bears';
@@ -166,6 +166,61 @@ describe('Bears', () => {
 		run(0.5);
 		expect(bear.state).toBe('clinging');
 		expect(bear.isFading).toBe(false);
+	});
+
+	it('pins the "!" of a bear coming down out of shot to the edge of the view', () => {
+		const { player, bears, run } = setup();
+		const camera = new PerspectiveCamera(48, 16 / 9, 0.05, 1200);
+		camera.position.set(0, 3, player.position.z + 8);
+		camera.lookAt(0, 0, player.position.z);
+		// Off to the right, just ahead of me, so it spots me.
+		const bear = climbOrFail(
+			bears,
+			treeAt(player.position.x + 20, player.position.z - 4),
+		);
+		run(0.1);
+		expect(bear.rig.alert.visible).toBe(true);
+		bears.pinAlerts(camera);
+		expect(bear.pin.visible).toBe(true);
+		const spot = bear.pin.position.clone().project(camera);
+		// Just inside the right-hand edge.
+		expect(spot.x).toBeCloseTo(1 - 0.1 / camera.aspect, 2);
+		expect(Math.abs(spot.y)).toBeLessThan(0.9);
+		// As big as the "!" over the bear looks from the camera.
+		const distance = bear.rig.alert
+			.getWorldPosition(new Vector3())
+			.distanceTo(camera.position);
+		expect(
+			bear.pin.scale.x / bear.pin.position.distanceTo(camera.position),
+		).toBeCloseTo(bear.rig.alert.scale.x / distance, 5);
+
+		// Once it's in shot, the "!" over it is enough.
+		camera.lookAt(bear.rig.root.position);
+		bears.pinAlerts(camera);
+		expect(bear.pin.visible).toBe(false);
+	});
+
+	it('keeps a pinned "!" for a far-off bear big enough to notice', () => {
+		const { player, bears, run } = setup();
+		const camera = new PerspectiveCamera(48, 16 / 9, 0.05, 1200);
+		camera.position.set(0, 3, player.position.z + 8);
+		camera.lookAt(0, 0, player.position.z);
+		const near = climbOrFail(
+			bears,
+			treeAt(player.position.x + 20, player.position.z - 4),
+		);
+		const far = climbOrFail(
+			bears,
+			treeAt(player.position.x - 120, player.position.z - 4),
+		);
+		run(0.1);
+		// The far one hasn't spotted me, so show its "!" as if it had.
+		far.rig.alert.visible = true;
+		bears.pinAlerts(camera);
+		expect(near.pin.visible).toBe(true);
+		expect(far.pin.visible).toBe(true);
+		expect(far.pin.scale.x).toBeLessThan(near.pin.scale.x);
+		expect(far.pin.scale.x).toBeCloseTo((0.9 * 2) / 45);
 	});
 
 	it('sends the bears near a blast flying, and lands them out cold', () => {

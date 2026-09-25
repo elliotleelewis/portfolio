@@ -17,6 +17,11 @@ Height of a bear's middle above the ground when on all fours.
 export const BEAR_STANDING_HEIGHT = 0.74;
 
 /**
+ * Size of the "!" over a bear that has spotted me.
+ */
+export const BEAR_ALERT_SIZE = 0.9;
+
+/**
  * Distance from a tree trunk's axis to a climbing bear's middle.
  */
 export const BEAR_TRUNK_OFFSET = 0.58;
@@ -163,7 +168,7 @@ export const createBear = (parts: BearParts): Bear => {
 	});
 
 	const sprite = new Sprite(alert);
-	sprite.scale.setScalar(0.9);
+	sprite.scale.setScalar(BEAR_ALERT_SIZE);
 	sprite.visible = false;
 	sprite.renderOrder = 10;
 

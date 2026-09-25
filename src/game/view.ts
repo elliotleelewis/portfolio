@@ -52,3 +52,43 @@ export const isInChaseCameraWay = (
 		point.x - (player.x + offset.x),
 		point.z - (player.z + offset.z),
 	) < cameraReach;
+
+export interface ScreenPin {
+	// Where to show it, in normalised device coordinates (-1 to 1).
+	x: number;
+	y: number;
+	// Whether it's out of view, so needs pinning to the edge.
+	isOffScreen: boolean;
+}
+
+/**
+ * Where to show something that may be out of view: where it is if it's on
+ * screen, otherwise pinned just inside the edge in its direction.
+ * @param x - Its x, in normalised device coordinates.
+ * @param y - Its y, in normalised device coordinates.
+ * @param isBehind - Whether it's behind the camera (which flips x and y).
+ * @param inset - How far in from each edge to pin it, in the same units.
+ * @param inset.x - From the left and right edges.
+ * @param inset.y - From the top and bottom edges.
+ * @returns Where to show it.
+ */
+export const pinToScreenEdge = (
+	x: number,
+	y: number,
+	isBehind: boolean,
+	inset: { x: number; y: number },
+): ScreenPin => {
+	const px = isBehind ? -x : x;
+	const py = isBehind ? -y : y;
+	if (!isBehind && Math.abs(px) <= 1 && Math.abs(py) <= 1) {
+		return { x: px, y: py, isOffScreen: false };
+	}
+	const reach = Math.max(
+		Math.abs(px) / (1 - inset.x),
+		Math.abs(py) / (1 - inset.y),
+	);
+	// Dead behind: pin it to the bottom.
+	return reach === 0
+		? { x: 0, y: -(1 - inset.y), isOffScreen: true }
+		: { x: px / reach, y: py / reach, isOffScreen: true };
+};

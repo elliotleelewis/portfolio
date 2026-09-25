@@ -173,10 +173,14 @@ export const createBear = (parts: BearParts): Bear => {
 };
 
 /**
- * Frees the shared bear parts that aren't reachable as meshes in a scene.
+ * Frees the shared bear parts that aren't reachable as meshes in a scene
+ * (each bear may draw with its own copies of the materials).
  * @param parts - The shared parts.
  */
 export const disposeBearParts = (parts: BearParts): void => {
 	parts.alert.map?.dispose();
 	parts.alert.dispose();
+	for (const material of [parts.fur, parts.muzzle, parts.nose, parts.glint]) {
+		material.dispose();
+	}
 };

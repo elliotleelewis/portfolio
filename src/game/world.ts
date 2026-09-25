@@ -11,10 +11,13 @@ import {
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
-// Half-width of the part of the slope the player can roll over.
 // The haze the mountainside fades into, and the sky behind it.
 export const FOG_COLOR = new Color('#dde3e5');
 
+// Steepness of the mountainside, in radians.
+export const SLOPE_ANGLE = 0.24;
+
+// Half-width of the part of the slope the player can roll over.
 export const LANE_HALF_WIDTH = 24;
 
 // Length of each recycled strip of ground.
@@ -109,6 +112,58 @@ export const createGroundChunk = (
 	const mesh = new Mesh(geometry, material);
 	mesh.receiveShadow = true;
 	return mesh;
+};
+
+// How far the flat ledge I start on reaches under the top of the slope, so
+// there's never a crack between the two to see the sky through.
+const ledgeOverlap = 4;
+// How far below the slope the ledge's hidden edge sits.
+const ledgeTuck = 0.15;
+
+/**
+ * The height of the mountainside's surface, in the ledge's (world) space.
+ * @param x - Lateral position.
+ * @param z - Position down the mountain, below the ledge's edge (z < 0).
+ * @returns The slope's height there.
+ */
+export const slopeSurfaceHeight = (x: number, z: number): number => {
+	const cos = Math.cos(SLOPE_ANGLE);
+	const sin = Math.sin(SLOPE_ANGLE);
+	// Find the point on the slope that lands at z once tilted.
+	let slopeZ = z / cos;
+	for (let i = 0; i < 4; i++) {
+		slopeZ = (z + terrainHeight(x, slopeZ) * sin) / cos;
+	}
+	return terrainHeight(x, slopeZ) * cos + slopeZ * sin;
+};
+
+/**
+ * Creates the flat ledge I start on. Its far edge tucks just under the top
+ * of the slope, so the two always meet without a gap.
+ * @param material - Shared ground material.
+ * @param length - How far back from the slope the ledge goes.
+ * @returns The ledge mesh.
+ */
+export const createLedge = (
+	material: MeshLambertMaterial,
+	length: number,
+): Mesh => {
+	const ledge = createGroundChunk(material, length + ledgeOverlap);
+	shapeGroundChunk(ledge, (length - ledgeOverlap) / 2);
+	const position = ledge.geometry.getAttribute('position');
+	for (let i = 0; i < position.count; i++) {
+		const z = position.getZ(i) + ledge.position.z;
+		if (z >= 0) {
+			continue;
+		}
+		const x = position.getX(i);
+		const tuck = ledgeTuck * Math.min(1, -z / ledgeOverlap);
+		position.setY(i, slopeSurfaceHeight(x, z) - tuck);
+	}
+	position.needsUpdate = true;
+	ledge.geometry.computeVertexNormals();
+	ledge.geometry.computeBoundingSphere();
+	return ledge;
 };
 
 const paint = (geometry: BufferGeometry, color: string): BufferGeometry => {

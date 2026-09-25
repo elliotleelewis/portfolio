@@ -30,3 +30,25 @@ export const isBlockingChaseView = (
 	const dz = point.z - (player.z + offset.z * t);
 	return dx * dx + dz * dz < 2.5 * 2.5;
 };
+
+// How close to the chase camera something has to come to be in its way.
+const cameraReach = 4;
+
+/**
+ * Whether something at `point` is in the chase camera's way: between it and
+ * me, or right up close to it.
+ * @param point - Where it is.
+ * @param player - Where I am.
+ * @param offset - Where the camera sits relative to me.
+ * @returns True if it's in the way.
+ */
+export const isInChaseCameraWay = (
+	point: Point,
+	player: Point,
+	offset: Point,
+): boolean =>
+	isBlockingChaseView(point, player, offset) ||
+	Math.hypot(
+		point.x - (player.x + offset.x),
+		point.z - (player.z + offset.z),
+	) < cameraReach;

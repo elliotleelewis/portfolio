@@ -1,4 +1,4 @@
-import { Group, MathUtils, Vector3 } from 'three';
+import { Group, type Material, MathUtils, Mesh, Vector3 } from 'three';
 
 import {
 	BEAR_STANDING_HEIGHT,
@@ -15,13 +15,17 @@ import { type Tree } from './forest';
 import { type Player } from './player';
 import { terrainHeight } from './world';
 
-// Bears in the pool, sent up trees as they're placed.
-const bearCount = 8;
+// Bears in the pool to start with, sent up trees as they're placed. More join
+// as they're needed, further down the mountain, up to a limit.
+const initialBearCount = 8;
+export const MAX_BEARS = 24;
 const climbSpeed = 3.4;
 // How close a charging bear has to get to catch me.
 const catchRadius = 1.35;
 // How far behind me a bear goes before it gives up.
 const giveUpDistance = 30;
+// How long a bear in the camera's way takes to fade out, in seconds.
+const fadeDuration = 0.3;
 
 export type BearState =
 	| 'free'
@@ -51,6 +55,11 @@ export interface BearActor {
 	// How it flies (and tumbles) once blasted.
 	velocity: Vector3;
 	spin: Vector3;
+	// Its own copies of the bear materials, so it can fade out on its own.
+	materials: Material[];
+	// Fading out of the camera's way, and how opaque it still is.
+	isFading: boolean;
+	opacity: number;
 }
 
 export interface BearsHooks {
@@ -58,6 +67,8 @@ export interface BearsHooks {
 	isCaught: () => boolean;
 	// A charging bear has reached me.
 	onCatch: (bear: BearActor) => void;
+	// Whether something at (x, z) is in the camera's way.
+	isInTheWay: (x: number, z: number) => boolean;
 }
 
 /**
@@ -68,31 +79,60 @@ export class Bears {
 	private readonly _player: Player;
 	private readonly _hooks: BearsHooks;
 	private readonly _parts: BearParts = createBearParts();
+	private readonly _actors: BearActor[] = [];
 
 	// The bears, in the slope's space.
 	public readonly group = new Group();
-	public readonly actors: readonly BearActor[];
 
 	public constructor(player: Player, hooks: BearsHooks) {
 		this._player = player;
 		this._hooks = hooks;
-		this.actors = Array.from({ length: bearCount }, () => {
-			const rig = createBear(this._parts);
-			rig.root.visible = false;
-			this.group.add(rig.root);
-			return {
-				rig,
-				state: 'free',
-				tree: undefined,
-				timer: 0,
-				height: 0,
-				heading: 0,
-				gait: Math.random() * 10,
-				offset: new Vector3(),
-				velocity: new Vector3(),
-				spin: new Vector3(),
-			};
-		});
+		for (let i = 0; i < initialBearCount; i++) {
+			this.add();
+		}
+	}
+
+	/**
+	 * Adds a bear to the pool.
+	 * @returns The new bear, free to go up a tree.
+	 */
+	private add(): BearActor {
+		const { fur, muzzle, nose, glint } = this._parts;
+		const own = {
+			fur: fur.clone(),
+			muzzle: muzzle.clone(),
+			nose: nose.clone(),
+			glint: glint.clone(),
+		};
+		const rig = createBear({ ...this._parts, ...own });
+		rig.root.visible = false;
+		this.group.add(rig.root);
+		const bear: BearActor = {
+			rig,
+			state: 'free',
+			tree: undefined,
+			timer: 0,
+			height: 0,
+			heading: 0,
+			gait: Math.random() * 10,
+			offset: new Vector3(),
+			velocity: new Vector3(),
+			spin: new Vector3(),
+			materials: Object.values(own),
+			isFading: false,
+			opacity: 1,
+		};
+		this._actors.push(bear);
+		return bear;
+	}
+
+	/**
+	 * A free bear from the pool, adding one if they're all busy.
+	 * @returns The bear, or undefined if the pool is full and all are busy.
+	 */
+	private spare(): BearActor | undefined {
+		const bear = this._actors.find(({ state }) => state === 'free');
+		return bear || this._actors.length >= MAX_BEARS ? bear : this.add();
 	}
 
 	private updateBear(bear: BearActor, dt: number, time: number): void {
@@ -241,10 +281,9 @@ export class Bears {
 		const player = this._player.position;
 		if (bear.state === 'charging') {
 			if (p.z > player.z + 3 || this._hooks.isCaught()) {
-				// Missed me (or someone else got me): wander off sideways.
+				// Missed me (or someone else got me): carry on past, fading out
+				// if it gets in the camera's way.
 				bear.state = 'leaving';
-				bear.heading = (Math.sign(p.x - player.x) || 1) * (Math.PI / 2);
-				rig.root.rotation.y = bear.heading;
 			} else {
 				this.turnTowardsMe(bear, dt, 3.5);
 			}
@@ -316,12 +355,70 @@ export class Bears {
 	}
 
 	/**
+	 * Fades a bear that's left me out of the camera's way, like the trees.
+	 * @param bear - The bear.
+	 * @param dt - Seconds since the last step.
+	 */
+	private fade(bear: BearActor, dt: number): void {
+		const p = bear.rig.root.position;
+		if (!bear.isFading) {
+			if (bear.state !== 'leaving' || !this._hooks.isInTheWay(p.x, p.z)) {
+				return;
+			}
+			bear.isFading = true;
+			this.setShadows(bear, false);
+			for (const material of bear.materials) {
+				material.transparent = true;
+				material.needsUpdate = true;
+			}
+		}
+		bear.opacity = Math.max(0, bear.opacity - dt / fadeDuration);
+		for (const material of bear.materials) {
+			material.opacity = bear.opacity;
+		}
+		if (bear.opacity === 0) {
+			this.release(bear);
+		}
+	}
+
+	/**
+	 * Brings a faded bear back to solid, for its next outing.
+	 * @param bear - The bear.
+	 */
+	private unfade(bear: BearActor): void {
+		if (!bear.isFading) {
+			return;
+		}
+		bear.isFading = false;
+		bear.opacity = 1;
+		this.setShadows(bear, true);
+		for (const material of bear.materials) {
+			material.opacity = 1;
+			material.transparent = false;
+			material.needsUpdate = true;
+		}
+	}
+
+	private setShadows(bear: BearActor, isCasting: boolean): void {
+		bear.rig.root.traverse((child) => {
+			if (child instanceof Mesh) {
+				child.castShadow = isCasting;
+			}
+		});
+	}
+
+	// Every bear in the pool, busy or not.
+	public get actors(): readonly BearActor[] {
+		return this._actors;
+	}
+
+	/**
 	 * Sends a free bear up a tree, clinging to the uphill side of the trunk.
 	 * @param tree - The tree to climb.
-	 * @returns The bear, or undefined if they're all busy.
+	 * @returns The bear, or undefined if the pool is full and all are busy.
 	 */
 	public climb(tree: Tree<BearActor>): BearActor | undefined {
-		const bear = this.actors.find(({ state }) => state === 'free');
+		const bear = this.spare();
 		if (!bear) {
 			return undefined;
 		}
@@ -356,6 +453,7 @@ export class Bears {
 		this.leaveTree(bear);
 		bear.state = 'free';
 		bear.rig.root.visible = false;
+		this.unfade(bear);
 	}
 
 	/**
@@ -400,7 +498,7 @@ export class Bears {
 	 */
 	public blast(centre: { x: number; z: number }, reach: number): number {
 		let count = 0;
-		for (const bear of this.actors) {
+		for (const bear of this._actors) {
 			const p = bear.rig.root.position;
 			const dx = p.x - centre.x;
 			const dz = p.z - centre.z;
@@ -439,8 +537,7 @@ export class Bears {
 	 * @returns The bear.
 	 */
 	public spawnBesideMe(): BearActor {
-		const bear =
-			this.actors.find(({ state }) => state === 'free') ?? this.actors[0];
+		const bear = this.spare() ?? this._actors[0];
 		const p = this._player.position;
 		bear.rig.root.visible = true;
 		bear.rig.root.position.set(
@@ -458,7 +555,7 @@ export class Bears {
 	 */
 	public update(dt: number, time: number): void {
 		const player = this._player.position;
-		for (const bear of this.actors) {
+		for (const bear of this._actors) {
 			if (bear.state === 'free') {
 				continue;
 			}
@@ -469,6 +566,7 @@ export class Bears {
 			}
 			bear.timer += dt;
 			this.updateBear(bear, dt, time);
+			this.fade(bear, dt);
 		}
 	}
 

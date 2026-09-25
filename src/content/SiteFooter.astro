@@ -63,13 +63,6 @@ const year = new Date().getFullYear();
 			<h2 id="footer-title" class="font-display text-3xl font-semibold">
 				End of the trail.
 			</h2>
-			<button
-				id="footer-play"
-				type="button"
-				class="cursor-pointer rounded-full bg-accent px-6 py-3 font-semibold text-on-accent transition hover:brightness-110 focus-visible:ring-4 focus-visible:ring-snow/60 focus-visible:outline-none"
-			>
-				Take the quick way down again ⛰️
-			</button>
 			<ul class="flex gap-6" aria-label="Find me elsewhere">
 				{SOCIALS.map(({ label, href, viewBox, path }) => (
 					<li>
@@ -107,9 +100,4 @@ const year = new Date().getFullYear();
 	if (year) {
 		year.textContent = String(new Date().getFullYear());
 	}
-
-	// Back up to the top of the mountain, and off we go.
-	document.querySelector('#footer-play')?.addEventListener('click', () => {
-		document.querySelector<HTMLButtonElement>('#hero-play')?.click();
-	});
 </script>

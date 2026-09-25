@@ -1,11 +1,17 @@
 import { useAtomValue } from 'jotai';
-import { type PointerEvent, useRef } from 'react';
+import { type PointerEvent, Suspense, lazy, useRef } from 'react';
 
-import { SCENE_ATOM } from './atoms';
+import { SCENE_ATOM, STAGE_SCENE_ATOM } from './atoms';
 import { useController } from './context';
 
 // How far a swipe must go, in pixels, to change easter egg.
 const swipeDistance = 40;
+
+// Loaded with the game, not with the page.
+const SceneCanvas = lazy(async () => {
+	const { SceneCanvas: component } = await import('./scene-canvas');
+	return { default: component };
+});
 
 /**
  * Where the game and gallery draw. Pressing either half steers the game; a
@@ -15,6 +21,7 @@ const swipeDistance = 40;
 export const Stage = () => {
 	const controller = useController();
 	const scene = useAtomValue(SCENE_ATOM);
+	const stageScene = useAtomValue(STAGE_SCENE_ATOM);
 	const swipeStart = useRef<number | undefined>(undefined);
 
 	const onPointer = (event: PointerEvent<HTMLDivElement>): void => {
@@ -45,15 +52,23 @@ export const Stage = () => {
 	return (
 		<div
 			id="hero-stage"
-			ref={(stage) => {
-				controller.attachStage(stage);
-			}}
 			className="absolute inset-0 touch-none opacity-0 transition-opacity duration-1500 ease-in-out group-data-[state=playing]:opacity-100"
 			onPointerDown={onPointer}
 			onPointerMove={onPointer}
 			onPointerUp={onPointer}
 			onPointerCancel={onPointer}
 			onPointerLeave={onPointer}
-		/>
+		>
+			{stageScene && (
+				<Suspense>
+					<SceneCanvas
+						scene={stageScene}
+						onFirstFrame={(drawn) => {
+							controller.sceneReady(drawn);
+						}}
+					/>
+				</Suspense>
+			)}
+		</div>
 	);
 };

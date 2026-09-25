@@ -2,6 +2,7 @@ import { type createStore } from 'jotai';
 
 import { type Gallery } from '../game/gallery';
 import { type Game, type GameInput } from '../game/game';
+import { type StageScene } from '../game/stage-scene';
 
 import {
 	BEST_ATOM,
@@ -15,6 +16,7 @@ import {
 	RESULT_ATOM,
 	SCENE_ATOM,
 	SCORE_ATOM,
+	STAGE_SCENE_ATOM,
 } from './atoms';
 
 type Store = ReturnType<typeof createStore>;
@@ -31,9 +33,10 @@ const sceneFadeOut = 1500;
  */
 export class HeroController {
 	private readonly _store: Store;
-	private _stage: HTMLElement | undefined;
 	// Whichever scene is in the stage: the game or the gallery.
-	private _scene: { dispose: () => void } | undefined;
+	private _scene: StageScene | undefined;
+	// Scenes on their way out, torn down once the next has been drawn.
+	private _retiring: StageScene[] = [];
 	private _game: Game | undefined;
 	private _gallery: Gallery | undefined;
 	private _calloutTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -44,25 +47,14 @@ export class HeroController {
 
 	/**
 	 * Creates a game in the stage. The previous scene (if any) is torn down
-	 * once the new one has drawn its first frame, so there's no flash between
-	 * them.
+	 * once the new one has been drawn, so there's no flash between them.
 	 * @param shouldSkipIntro - Jump straight to the roll, for restarts.
 	 */
 	private async launch(shouldSkipIntro: boolean): Promise<void> {
-		const stage = this._stage;
-		if (!stage) {
-			return;
-		}
 		const gameModule = await import('../game/game');
-		const previous = this._scene;
 		const store = this._store;
 		const next = new gameModule.Game(
-			stage,
 			{
-				onReady: () => {
-					store.set(PHASE_ATOM, 'playing');
-					previous?.dispose();
-				},
 				onRolling: () => {
 					store.set(HINT_ATOM, true);
 				},
@@ -87,7 +79,7 @@ export class HeroController {
 			},
 			{ skipIntro: shouldSkipIntro },
 		);
-		this._scene = next;
+		this.show(next);
 		this._game = next;
 		this._gallery = undefined;
 		// A handle for the end-to-end tests, in development only.
@@ -97,7 +89,25 @@ export class HeroController {
 		store.set(SCENE_ATOM, 'game');
 		store.set(MODE_ATOM, 'game');
 		this.resetHud();
-		next.start();
+	}
+
+	/**
+	 * Puts a scene in the stage, retiring whatever was there.
+	 * @param scene - The new scene.
+	 */
+	private show(scene: StageScene): void {
+		if (this._scene) {
+			this._retiring.push(this._scene);
+		}
+		this._scene = scene;
+		this._store.set(STAGE_SCENE_ATOM, scene);
+	}
+
+	private disposeRetired(): void {
+		for (const scene of this._retiring) {
+			scene.dispose();
+		}
+		this._retiring = [];
 	}
 
 	private finish(trees: number, metres: number): void {
@@ -146,22 +156,23 @@ export class HeroController {
 	}
 
 	/**
-	 * Sets where the scenes draw.
-	 * @param stage - The stage element, or null when it unmounts.
+	 * The stage has drawn a scene for the first time: show it, and tear down
+	 * the scenes it replaced.
+	 * @param scene - The scene that was drawn.
 	 */
-	public attachStage(stage: HTMLElement | null): void {
-		this._stage = stage ?? undefined;
+	public sceneReady(scene: StageScene): void {
+		if (scene !== this._scene) {
+			return;
+		}
+		this._store.set(PHASE_ATOM, 'playing');
+		this.disposeRetired();
 	}
 
 	/**
 	 * Starts a run from the photo.
 	 */
 	public async start(): Promise<void> {
-		if (
-			!this._stage ||
-			this._game ||
-			this._store.get(PHASE_ATOM) === 'loading'
-		) {
+		if (this._game || this._store.get(PHASE_ATOM) === 'loading') {
 			return;
 		}
 		this._store.set(PHASE_ATOM, 'loading');
@@ -187,15 +198,11 @@ export class HeroController {
 	 * Swaps the game for the easter egg gallery.
 	 */
 	public async openGallery(): Promise<void> {
-		if (!this._stage || !this._scene) {
+		if (!this._scene) {
 			return;
 		}
 		const galleryModule = await import('../game/gallery');
-		const previous = this._scene;
-		const next = new galleryModule.Gallery(this._stage, {
-			onReady: () => {
-				previous.dispose();
-			},
+		const next = new galleryModule.Gallery({
 			onSelect: (index, { caption }) => {
 				this._store.set(GALLERY_ATOM, (view) => ({
 					...view,
@@ -204,7 +211,7 @@ export class HeroController {
 				}));
 			},
 		});
-		this._scene = next;
+		this.show(next);
 		this._gallery = next;
 		this._game = undefined;
 		this._store.set(GAME_OVER_ATOM, false);
@@ -214,7 +221,6 @@ export class HeroController {
 		}));
 		this._store.set(SCENE_ATOM, 'gallery');
 		this._store.set(MODE_ATOM, 'gallery');
-		next.start();
 		next.select(0);
 	}
 
@@ -233,10 +239,17 @@ export class HeroController {
 		this._store.set(SCENE_ATOM, undefined);
 		this._store.set(HINT_ATOM, false);
 		this._store.set(GAME_OVER_ATOM, false);
-		// The mode stays as it is (so the game's HUD doesn't flash up over the
-		// gallery as everything fades out) until the next scene sets its own.
+		this._retiring.push(scene);
+		// Keep drawing the scene while the photo fades back in, then let the
+		// canvas go (unless a new scene has already taken its place). The mode
+		// stays as it is, so the game's HUD doesn't flash up over the gallery
+		// as everything fades out, until the next scene sets its own.
 		setTimeout(() => {
-			scene.dispose();
+			if (this._scene) {
+				return;
+			}
+			this._store.set(STAGE_SCENE_ATOM, undefined);
+			this.disposeRetired();
 		}, sceneFadeOut);
 	}
 

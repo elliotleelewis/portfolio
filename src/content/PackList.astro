@@ -1,0 +1,66 @@
+---
+import SectionHeading from '../components/SectionHeading.astro';
+
+// Skills, grouped like a packing list.
+const pack = [
+	{ heading: 'Languages', items: ['TypeScript', 'JavaScript', 'SCSS'] },
+	{
+		heading: 'Frameworks',
+		items: ['React', 'Angular', 'Tailwind', 'Styled Components'],
+	},
+	{ heading: 'APIs & runtime', items: ['GraphQL', 'gRPC', 'Node.js'] },
+	{
+		heading: 'Testing & tooling',
+		items: ['Vitest', 'Jest', 'Playwright', 'Vite', 'Git'],
+	},
+];
+---
+
+<section class="pt-28" aria-labelledby="pack-title">
+	<SectionHeading
+		id="pack-title"
+		marker="02"
+		kicker="The pack"
+		title="What I carry"
+	/>
+	<div class="grid gap-4 sm:grid-cols-2" data-reveal>
+		{pack.map(({ heading, items }) => (
+			<div class="rounded-xl border border-line bg-surface p-6">
+				<h3 class="font-mono text-xs tracking-widest text-muted uppercase">
+					{heading}
+				</h3>
+				<ul class="mt-4 flex flex-col gap-2.5">
+					{items.map((item) => (
+						<li class="flex items-center gap-3 font-medium">
+							<svg
+								class="size-4 shrink-0 text-accent"
+								viewBox="0 0 16 16"
+								aria-hidden="true"
+							>
+								<rect
+									x="1"
+									y="1"
+									width="14"
+									height="14"
+									rx="3"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="1.5"
+								/>
+								<path
+									d="M4.5 8.5l2.2 2.2 4.8-5"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="1.8"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+							</svg>
+							{item}
+						</li>
+					))}
+				</ul>
+			</div>
+		))}
+	</div>
+</section>

@@ -1,0 +1,37 @@
+---
+import type { ImageMetadata } from 'astro';
+import { Image } from 'astro:assets';
+
+interface Props {
+	company: string;
+	// When I was there, e.g. "2024 – now".
+	span: string;
+	logo: ImageMetadata;
+	logoBackground: string;
+}
+
+const { company, span, logo, logoBackground } = Astro.props;
+---
+
+<!-- One stop on the trail: a company, with its roles and highlights. -->
+<li class="relative" data-reveal>
+	<span
+		class="absolute top-1.5 -left-[calc(2rem+9px)] size-4 rounded-full border-4 border-paper bg-accent ring-2 ring-accent sm:-left-[calc(3rem+9px)]"
+		aria-hidden="true"
+	></span>
+	<p class="font-mono text-xs tracking-widest text-muted uppercase">{span}</p>
+	<div class="mt-3 flex items-center gap-3">
+		<div
+			class="grid size-10 shrink-0 place-items-center rounded-md p-1.5"
+			style={{ backgroundColor: logoBackground }}
+		>
+			<Image src={logo} alt="" class="size-7" width={28} height={28} />
+		</div>
+		<h3 class="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
+			{company}
+		</h3>
+	</div>
+	<div class="mt-4 flex flex-col gap-6">
+		<slot />
+	</div>
+</li>

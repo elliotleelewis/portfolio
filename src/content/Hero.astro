@@ -1,20 +1,20 @@
 ---
 import { Image } from 'astro:assets';
 
-import hero from '../media/hero.jpg';
+import hero from '../media/hero.webp';
 ---
 
 <section
 	id="hero"
 	data-state="idle"
-	class="group relative h-[85svh] min-h-120 overflow-hidden rounded-2xl border border-white/20 bg-[#dde3e5] shadow-2xl select-none"
+	class="group relative h-[85svh] min-h-120 overflow-hidden rounded-3xl bg-[#dde3e5] shadow-2xl ring-1 shadow-pine/20 ring-line select-none"
 	aria-label="Elliot on a mountain"
 >
 	<Image
 		src={hero}
 		alt="Elliot smiling on a hiking trail, with pine trees and mountains behind him"
-		class="absolute inset-0 size-full object-cover object-[50%_55%] transition-opacity duration-1500 ease-in-out group-data-[state=playing]:opacity-0"
-		widths={[640, 960, 1280, 1717]}
+		class="absolute inset-0 size-full object-cover object-[50%_45%] transition-opacity duration-1500 ease-in-out group-data-[state=playing]:opacity-0"
+		widths={[640, 960, 1280]}
 		sizes="(min-width: 1536px) 1408px, (min-width: 1280px) 1152px, 100vw"
 		loading="eager"
 		fetchpriority="high"
@@ -97,7 +97,7 @@ import hero from '../media/hero.jpg';
 				Caught by a bear!
 			</h3>
 			<p class="mt-2">
-				You flattened <strong id="hero-over-score">0</strong>
+				You flattened <strong id="hero-over-score">0</strong>{' '}
 				<span id="hero-over-trees">trees</span> and rolled{' '}
 				<strong id="hero-over-distance">0</strong>m.
 			</p>

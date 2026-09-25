@@ -1,0 +1,23 @@
+---
+interface Props {
+	id: string;
+	// Numbered like a trail marker, e.g. "01".
+	marker: string;
+	kicker: string;
+	title: string;
+}
+
+const { id, marker, kicker, title } = Astro.props;
+---
+
+<header class="mb-10">
+	<p class="font-mono text-xs tracking-[0.25em] text-accent uppercase">
+		{marker} · {kicker}
+	</p>
+	<h2
+		id={id}
+		class="mt-3 font-display text-4xl font-semibold tracking-tight sm:text-5xl"
+	>
+		{title}
+	</h2>
+</header>

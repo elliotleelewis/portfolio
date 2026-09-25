@@ -1,0 +1,22 @@
+---
+interface Props {
+	href: string;
+	label: string;
+}
+
+const { href, label } = Astro.props;
+---
+
+<!-- A link shaped like a wooden trail signpost, pointing the way. -->
+<a
+	href={href}
+	target="_blank"
+	rel="noopener noreferrer"
+	class="group inline-flex items-center gap-2 bg-pine py-2 pr-7 pl-3.5 text-sm font-semibold text-paper transition [clip-path:polygon(0_0,calc(100%-14px)_0,100%_50%,calc(100%-14px)_100%,0_100%)] hover:bg-accent hover:text-on-accent focus-visible:bg-accent focus-visible:text-on-accent focus-visible:outline-none"
+>
+	<span class="size-4 [&>svg]:size-4" aria-hidden="true">
+		<slot />
+	</span>
+	{label}
+	<span class="sr-only">(opens in a new tab)</span>
+</a>

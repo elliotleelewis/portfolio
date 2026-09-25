@@ -1,32 +1,24 @@
 ---
-import Bio from '../content/Bio.astro';
-import Educations from '../content/Educations.astro';
-import Experiences from '../content/Experiences.astro';
-import Footer from '../content/Footer.astro';
-import Header from '../content/Header.astro';
+import BaseCamp from '../content/BaseCamp.astro';
 import Hero from '../content/Hero.astro';
-import Links from '../content/Links.astro';
-import Skills from '../content/Skills.astro';
+import Intro from '../content/Intro.astro';
+import PackList from '../content/PackList.astro';
+import SiteFooter from '../content/SiteFooter.astro';
+import Trail from '../content/Trail.astro';
 import Layout from '../layout/Layout.astro';
 
 import '../styles/global.css';
 ---
 
 <Layout title="Elliot Lewis">
-	<div class="container mx-auto px-8 pt-8 sm:pt-16 md:px-16">
+	<div class="mx-auto max-w-6xl px-4 pt-4 sm:px-8 sm:pt-8">
 		<Hero />
 	</div>
-	<main class="container mx-auto flex min-h-screen flex-col gap-4 p-8 sm:pb-16 md:flex-row md:px-16">
-		<div class="flex basis-3/4 flex-col gap-4 md:grow">
-			<Header />
-			<Experiences />
-			<Educations />
-		</div>
-		<div class="flex basis-1/4 flex-col gap-4 md:grow">
-			<Skills />
-			<Bio />
-			<Links />
-			<Footer />
-		</div>
+	<main class="mx-auto max-w-3xl px-5 sm:px-8">
+		<Intro />
+		<Trail />
+		<PackList />
+		<BaseCamp />
 	</main>
+	<SiteFooter />
 </Layout>

@@ -1,3 +1,5 @@
+import { shuffle } from '../shuffle';
+
 import { BATTLESTATION } from './battlestation';
 import { JAILBREAK } from './jailbreak';
 import { KEEPY_UPPIES } from './keepy-uppies';
@@ -21,17 +23,6 @@ export const ALL_EASTER_EGGS: readonly EasterEgg[] = [
 	WOOD_STOVE,
 ];
 
-// Shuffled once per page load (Fisher–Yates), then placed down the mountain
-// in that order and round again, so every run in a visit shares the order.
-const shuffle = <T>(items: readonly T[]): T[] => {
-	const shuffled = [...items];
-	for (let i = shuffled.length - 1; i > 0; i--) {
-		const j = Math.floor(Math.random() * (i + 1));
-		const swap = shuffled[i];
-		shuffled[i] = shuffled[j];
-		shuffled[j] = swap;
-	}
-	return shuffled;
-};
-
+// Shuffled once per page load, then placed down the mountain in that order
+// and round again, so every run in a visit shares the order.
 export const EASTER_EGGS: readonly EasterEgg[] = shuffle(ALL_EASTER_EGGS);

@@ -242,7 +242,9 @@ export class Gallery {
 	}
 
 	private frame(now: number): void {
-		const dt = Math.min((now - this._last) / 1000, 1 / 20);
+		// Never step backwards (the frame time can predate start()), and cap
+		// long pauses.
+		const dt = Math.min(Math.max(0, (now - this._last) / 1000), 1 / 20);
 		this._last = now;
 		this._time += dt;
 

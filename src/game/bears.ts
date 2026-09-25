@@ -15,8 +15,10 @@ import { type Tree } from './forest';
 import { type Player } from './player';
 import { terrainHeight } from './world';
 
-// Bears in the pool, sent up trees as they're placed.
-const bearCount = 8;
+// Bears in the pool to start with, sent up trees as they're placed. More join
+// as they're needed, further down the mountain, up to a limit.
+const initialBearCount = 8;
+export const MAX_BEARS = 24;
 const climbSpeed = 3.4;
 // How close a charging bear has to get to catch me.
 const catchRadius = 1.35;
@@ -68,31 +70,50 @@ export class Bears {
 	private readonly _player: Player;
 	private readonly _hooks: BearsHooks;
 	private readonly _parts: BearParts = createBearParts();
+	private readonly _actors: BearActor[] = [];
 
 	// The bears, in the slope's space.
 	public readonly group = new Group();
-	public readonly actors: readonly BearActor[];
 
 	public constructor(player: Player, hooks: BearsHooks) {
 		this._player = player;
 		this._hooks = hooks;
-		this.actors = Array.from({ length: bearCount }, () => {
-			const rig = createBear(this._parts);
-			rig.root.visible = false;
-			this.group.add(rig.root);
-			return {
-				rig,
-				state: 'free',
-				tree: undefined,
-				timer: 0,
-				height: 0,
-				heading: 0,
-				gait: Math.random() * 10,
-				offset: new Vector3(),
-				velocity: new Vector3(),
-				spin: new Vector3(),
-			};
-		});
+		for (let i = 0; i < initialBearCount; i++) {
+			this.add();
+		}
+	}
+
+	/**
+	 * Adds a bear to the pool.
+	 * @returns The new bear, free to go up a tree.
+	 */
+	private add(): BearActor {
+		const rig = createBear(this._parts);
+		rig.root.visible = false;
+		this.group.add(rig.root);
+		const bear: BearActor = {
+			rig,
+			state: 'free',
+			tree: undefined,
+			timer: 0,
+			height: 0,
+			heading: 0,
+			gait: Math.random() * 10,
+			offset: new Vector3(),
+			velocity: new Vector3(),
+			spin: new Vector3(),
+		};
+		this._actors.push(bear);
+		return bear;
+	}
+
+	/**
+	 * A free bear from the pool, adding one if they're all busy.
+	 * @returns The bear, or undefined if the pool is full and all are busy.
+	 */
+	private spare(): BearActor | undefined {
+		const bear = this._actors.find(({ state }) => state === 'free');
+		return bear || this._actors.length >= MAX_BEARS ? bear : this.add();
 	}
 
 	private updateBear(bear: BearActor, dt: number, time: number): void {
@@ -315,13 +336,18 @@ export class Bears {
 		bear.tree = undefined;
 	}
 
+	// Every bear in the pool, busy or not.
+	public get actors(): readonly BearActor[] {
+		return this._actors;
+	}
+
 	/**
 	 * Sends a free bear up a tree, clinging to the uphill side of the trunk.
 	 * @param tree - The tree to climb.
-	 * @returns The bear, or undefined if they're all busy.
+	 * @returns The bear, or undefined if the pool is full and all are busy.
 	 */
 	public climb(tree: Tree<BearActor>): BearActor | undefined {
-		const bear = this.actors.find(({ state }) => state === 'free');
+		const bear = this.spare();
 		if (!bear) {
 			return undefined;
 		}
@@ -400,7 +426,7 @@ export class Bears {
 	 */
 	public blast(centre: { x: number; z: number }, reach: number): number {
 		let count = 0;
-		for (const bear of this.actors) {
+		for (const bear of this._actors) {
 			const p = bear.rig.root.position;
 			const dx = p.x - centre.x;
 			const dz = p.z - centre.z;
@@ -439,8 +465,7 @@ export class Bears {
 	 * @returns The bear.
 	 */
 	public spawnBesideMe(): BearActor {
-		const bear =
-			this.actors.find(({ state }) => state === 'free') ?? this.actors[0];
+		const bear = this.spare() ?? this._actors[0];
 		const p = this._player.position;
 		bear.rig.root.visible = true;
 		bear.rig.root.position.set(
@@ -458,7 +483,7 @@ export class Bears {
 	 */
 	public update(dt: number, time: number): void {
 		const player = this._player.position;
-		for (const bear of this.actors) {
+		for (const bear of this._actors) {
 			if (bear.state === 'free') {
 				continue;
 			}

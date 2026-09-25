@@ -3,7 +3,7 @@
 import { Mesh, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 
-import { type BearActor, Bears } from './bears';
+import { type BearActor, Bears, MAX_BEARS } from './bears';
 import { type Tree } from './forest';
 import { Player, TURN_END } from './player';
 import { terrainHeight } from './world';
@@ -82,16 +82,17 @@ const climbOrFail = (bears: Bears, tree: Tree<BearActor>): BearActor => {
 };
 
 describe('Bears', () => {
-	it('sends a bear up a tree, until the pool runs out', () => {
+	it('sends a bear up a tree, adding bears until the pool is full', () => {
 		const { bears } = setup();
-		const trees = Array.from(
-			{ length: bears.actors.length + 1 },
-			(_value, i) => treeAt(0, -100 - i * 10),
+		const trees = Array.from({ length: MAX_BEARS + 1 }, (_value, i) =>
+			treeAt(0, -100 - i * 10),
 		);
 		const climbed = trees.map((tree) => bears.climb(tree));
 		expect(climbed.at(0)?.state).toBe('clinging');
 		expect(trees[0].occupant).toBe(climbed[0]);
+		expect(climbed.at(-2)?.state).toBe('clinging');
 		expect(climbed.at(-1)).toBeUndefined();
+		expect(bears.actors).toHaveLength(MAX_BEARS);
 	});
 
 	it('stays up its tree until I come near', () => {

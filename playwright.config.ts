@@ -34,7 +34,7 @@ export default defineConfig({
 	],
 	// The dev server, which exposes a test handle on the game.
 	webServer: {
-		command: 'pnpm astro dev --port 4321',
+		command: 'astro dev --port 4321',
 		url: 'http://localhost:4321',
 		reuseExistingServer: !isCi,
 		timeout: 120_000,

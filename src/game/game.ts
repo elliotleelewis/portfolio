@@ -162,7 +162,7 @@ export class Game implements StageScene {
 
 	/**
 	 * Now and then, sends a bear up a newly placed tree: more of them the
-	 * further down I get, and they lurk around the easter eggs.
+	 * further down I get.
 	 * @param tree - The tree that has just been placed.
 	 * @param isInLane - Whether it's in the lane I roll down.
 	 */
@@ -170,11 +170,11 @@ export class Game implements StageScene {
 		if (tree.occupant) {
 			this._bears.release(tree.occupant);
 		}
-		const { x, z } = tree.mesh.position;
-		const chance = this._trail.isInClearing(x, z, blastReach)
-			? 0.3
-			: bearChance(this._player.distance);
-		if (isInLane && z < -70 && Math.random() < chance) {
+		if (
+			isInLane &&
+			tree.mesh.position.z < -70 &&
+			Math.random() < bearChance(this._player.distance)
+		) {
 			this._bears.climb(tree);
 		}
 	}

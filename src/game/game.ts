@@ -1,44 +1,27 @@
 import {
-	type BufferGeometry,
-	Color,
 	Group,
-	InstancedMesh,
-	type Material,
 	MathUtils,
 	Matrix4,
-	Mesh,
-	MeshBasicMaterial,
-	MeshLambertMaterial,
 	type Object3D,
 	PerspectiveCamera,
 	Quaternion,
 	Scene,
-	SphereGeometry,
-	TetrahedronGeometry,
 	Vector3,
 	type WebGLRenderer,
 } from 'three';
 
 import { type BearActor, Bears } from './bears';
 import { damp } from './easing';
-import {
-	EASTER_EGGS,
-	type EasterEgg,
-	type EasterEggInstance,
-	disposeObject,
-} from './easter-eggs';
-import {
-	type Forest,
-	type ForestHooks,
-	TREE_WINDOW,
-	type Tree,
-} from './forest';
+import { EasterEggTrail, type PlacedEasterEgg } from './easter-egg-trail';
+import { type EasterEggInstance } from './easter-eggs';
+import { Effects } from './effects';
+import { type Forest, type ForestHooks, type Tree } from './forest';
 import { Player, type PlayerControls, STAR_END } from './player';
 import { bearBlastPoints, nextCombo } from './scoring';
 import { type StageScene } from './stage-scene';
 import { SYSTEM_ORDER, Systems } from './systems';
 import { isBlockingChaseView } from './view';
-import { LANE_HALF_WIDTH, terrainHeight } from './world';
+import { terrainHeight } from './world';
 
 export interface GameCallbacks {
 	// The intro is over and the player now has control.
@@ -67,49 +50,10 @@ export interface GameInput {
 	throttle: number;
 }
 
-interface PlacedEasterEgg {
-	egg: EasterEgg;
-	x: number;
-	z: number;
-	yaw: number;
-	// Created once it's close enough to matter.
-	instance: EasterEggInstance | undefined;
-	// Whether I've barrelled through it.
-	isSmashed: boolean;
-}
-
-// A piece of a smashed easter egg, flying off.
-interface Shard {
-	mesh: Mesh;
-	velocity: Vector3;
-	spin: Vector3;
-	scale: Vector3;
-	life: number;
-}
-
-// The fireball and smoke from smashing an easter egg.
-interface Blast {
-	fire: Mesh<SphereGeometry, MeshBasicMaterial>;
-	smoke: Mesh<SphereGeometry, MeshBasicMaterial>;
-	age: number;
-}
-
-interface Debris {
-	position: Vector3;
-	velocity: Vector3;
-	spin: Vector3;
-	rotation: Vector3;
-	life: number;
-}
-
 // Steepness of the mountainside, in radians.
 const slopeAngle = 0.24;
-const debrisCount = 320;
-const blastDuration = 0.7;
 // How far past an easter egg's clearing a smash reaches bears.
 const blastReach = 12;
-// Roughly how far apart the easter eggs are, in metres.
-const easterEggSpacing = 150;
 // How long after being caught before the game-over screen shows.
 const gameOverDelay = 1.6;
 
@@ -150,13 +94,9 @@ export class Game implements StageScene {
 	private readonly _slope = new Group();
 	private readonly _player: Player;
 	private _forest: Forest<BearActor> | undefined;
-	private readonly _debris: Debris[] = [];
-	private readonly _debrisMesh: InstancedMesh;
+	private readonly _effects = new Effects();
 	private readonly _bears: Bears;
-	private readonly _easterEggs: PlacedEasterEgg[] = [];
-	private readonly _shards: Shard[] = [];
-	private readonly _blast: Blast;
-	private _easterEggCount = 0;
+	private readonly _trail: EasterEggTrail;
 	private readonly _reducedMotion: boolean;
 
 	private _time = 0;
@@ -164,7 +104,6 @@ export class Game implements StageScene {
 	private _combo = 0;
 	private _lastHit = -10;
 	private _shake = 0;
-	private _debrisCursor = 0;
 	private _caughtAt: number | undefined;
 	private _isGameOverReported = false;
 	private _cameraZoom = 1;
@@ -181,7 +120,7 @@ export class Game implements StageScene {
 
 	// How the trees ask the game where they can go.
 	public readonly forestHooks: ForestHooks<BearActor> = {
-		isInClearing: (x, z) => this.isInClearing(x, z),
+		isInClearing: (x, z) => this._trail.isInClearing(x, z),
 		isBlockingView: (x, z) => this.blocksView(x, z),
 		onPlace: (tree, isInLane) => {
 			this.placeBear(tree, isInLane);
@@ -211,10 +150,6 @@ export class Game implements StageScene {
 		this._slope.rotation.x = -slopeAngle;
 		this._scene.add(this._slope);
 
-		// Plan the first easter egg before the trees are planted, so they
-		// leave it a clearing.
-		this.planEasterEgg(-easterEggSpacing + MathUtils.randFloatSpread(40));
-
 		this._player = new Player({
 			onRolling: () => {
 				this._callbacks.onRolling();
@@ -224,58 +159,19 @@ export class Game implements StageScene {
 				this.checkHits();
 			},
 		});
+		this._trail = new EasterEggTrail(this._player, {
+			canSmash: () =>
+				this._player.isRolling && this._caughtAt === undefined,
+			onSmash: (placed, instance) => {
+				this.smash(placed, instance);
+			},
+		});
 		this._bears = new Bears(this._player, {
 			isCaught: () => this._caughtAt !== undefined,
 			onCatch: (bear) => {
 				this.caught(bear);
 			},
 		});
-
-		this._debrisMesh = new InstancedMesh(
-			new TetrahedronGeometry(0.14),
-			new MeshLambertMaterial({ flatShading: true }),
-			debrisCount,
-		);
-		this._debrisMesh.frustumCulled = false;
-		const color = new Color();
-		for (let i = 0; i < debrisCount; i++) {
-			this._debris.push({
-				position: new Vector3(),
-				velocity: new Vector3(),
-				spin: new Vector3(),
-				rotation: new Vector3(),
-				life: 0,
-			});
-			color.set(i % 5 === 0 ? '#6b4d33' : '#3f6532');
-			color.offsetHSL(0, 0, (Math.random() - 0.5) * 0.12);
-			this._debrisMesh.setColorAt(i, color);
-			this._debrisMesh.setMatrixAt(i, this._m.makeScale(0, 0, 0));
-		}
-		this._slope.add(this._debrisMesh);
-
-		this._blast = {
-			fire: new Mesh(
-				new SphereGeometry(1, 16, 12),
-				new MeshBasicMaterial({
-					color: '#ffb347',
-					transparent: true,
-					depthWrite: false,
-					fog: false,
-				}),
-			),
-			smoke: new Mesh(
-				new SphereGeometry(1, 12, 8),
-				new MeshBasicMaterial({
-					color: '#8a8f8c',
-					transparent: true,
-					depthWrite: false,
-				}),
-			),
-			age: blastDuration,
-		};
-		this._blast.fire.visible = false;
-		this._blast.smoke.visible = false;
-		this._slope.add(this._blast.smoke, this._blast.fire);
 
 		this.systems.add(SYSTEM_ORDER.character, (dt) => {
 			this.updatePlayer(dt);
@@ -284,12 +180,10 @@ export class Game implements StageScene {
 			this._bears.update(dt, this._time);
 		});
 		this.systems.add(SYSTEM_ORDER.easterEggs, (dt) => {
-			this.updateEasterEggs(dt);
+			this._trail.update(dt, this._time);
 		});
 		this.systems.add(SYSTEM_ORDER.effects, (dt) => {
-			this.updateDebris(dt);
-			this.updateShards(dt);
-			this.updateBlast(dt);
+			this._effects.update(dt);
 		});
 		this.systems.add(SYSTEM_ORDER.camera, (dt) => {
 			this.updateCamera(dt);
@@ -307,7 +201,7 @@ export class Game implements StageScene {
 			this._bears.release(tree.occupant);
 		}
 		const { x, z } = tree.mesh.position;
-		const bearChance = this.isNearClearing(x, z)
+		const bearChance = this._trail.isInClearing(x, z, blastReach)
 			? 0.3
 			: Math.min(0.08, 0.025 + this._player.distance / 12_000);
 		if (isInLane && z < -70 && Math.random() < bearChance) {
@@ -374,24 +268,14 @@ export class Game implements StageScene {
 		}
 
 		// A burst of needles and bark.
-		for (let i = 0; i < 22; i++) {
-			const d = this._debris[this._debrisCursor];
-			this._debrisCursor = (this._debrisCursor + 1) % debrisCount;
-			d.life = MathUtils.randFloat(0.8, 1.6);
-			d.position
-				.copy(tree.mesh.position)
-				.add(this._v2.set(0, MathUtils.randFloat(0.5, 5), 0));
-			d.velocity.set(
-				MathUtils.randFloatSpread(8) + side * 3,
-				MathUtils.randFloat(2, 9),
-				MathUtils.randFloatSpread(6) - this._player.speed * 0.3,
-			);
-			d.spin.set(
-				MathUtils.randFloatSpread(14),
-				MathUtils.randFloatSpread(14),
-				MathUtils.randFloatSpread(14),
-			);
-		}
+		this._effects.burst({
+			origin: tree.mesh.position,
+			count: 22,
+			lift: [0.5, 5],
+			spread: { x: 8, z: 6 },
+			upward: [2, 9],
+			drift: { x: side * 3, z: -this._player.speed * 0.3 },
+		});
 	}
 
 	/**
@@ -412,190 +296,28 @@ export class Game implements StageScene {
 	}
 
 	/**
-	 * Picks the next easter egg and where it goes.
-	 * @param z - Roughly where down the slope to put it.
-	 */
-	private planEasterEgg(z: number): void {
-		if (EASTER_EGGS.length === 0) {
-			return;
-		}
-		const egg = EASTER_EGGS[this._easterEggCount % EASTER_EGGS.length];
-		this._easterEggCount++;
-		// Towards the middle of the slope, where the camera will catch it.
-		const margin = LANE_HALF_WIDTH - 10;
-		this._easterEggs.push({
-			egg,
-			x: MathUtils.randFloatSpread(margin * 2),
-			z,
-			yaw: MathUtils.randFloatSpread(0.6),
-			instance: undefined,
-			isSmashed: false,
-		});
-	}
-
-	private isInClearing(x: number, z: number): boolean {
-		return this._easterEggs.some(
-			(placed) =>
-				(x - placed.x) ** 2 + (z - placed.z) ** 2 <
-				placed.egg.clearingRadius ** 2,
-		);
-	}
-
-	private isNearClearing(x: number, z: number): boolean {
-		return this._easterEggs.some(
-			(placed) =>
-				(x - placed.x) ** 2 + (z - placed.z) ** 2 <
-				(placed.egg.clearingRadius + blastReach) ** 2,
-		);
-	}
-
-	private updateEasterEggs(dt: number): void {
-		const player = this._player.position;
-
-		// Always have the next one planned well ahead of the trees.
-		const last = this._easterEggs.at(-1);
-		if (!last || last.z > player.z - TREE_WINDOW - 60) {
-			this.planEasterEgg(
-				(last?.z ?? player.z) -
-					easterEggSpacing +
-					MathUtils.randFloatSpread(60),
-			);
-		}
-
-		// Clear away the ones well behind me.
-		const behind = this._easterEggs.filter(({ z }) => z > player.z + 40);
-		for (const placed of behind) {
-			if (placed.instance) {
-				placed.instance.object.removeFromParent();
-				disposeObject(placed.instance.object);
-			}
-			this._easterEggs.splice(this._easterEggs.indexOf(placed), 1);
-		}
-
-		for (const placed of this._easterEggs) {
-			if (!placed.instance && placed.z > player.z - TREE_WINDOW) {
-				placed.instance = placed.egg.create();
-				const { object } = placed.instance;
-				object.position.set(
-					placed.x,
-					terrainHeight(placed.x, placed.z) - 0.05,
-					placed.z,
-				);
-				object.rotation.y = placed.yaw;
-				this._slope.add(object);
-			}
-			if (!placed.instance) {
-				continue;
-			}
-			this.updateEasterEgg(placed, placed.instance, dt);
-		}
-	}
-
-	private updateEasterEgg(
-		placed: PlacedEasterEgg,
-		instance: EasterEggInstance,
-		dt: number,
-	): void {
-		if (placed.isSmashed) {
-			return;
-		}
-		const { object } = instance;
-		const root = this._player.position;
-		object.updateMatrixWorld();
-		// My position in the easter egg's own space.
-		const local = object.worldToLocal(
-			this._slope.localToWorld(this._v.copy(root)),
-		);
-		instance.update?.({ time: this._time, dt, player: local });
-
-		// Barrel straight through anything solid.
-		const { footprint } = placed.egg;
-		if (
-			!footprint ||
-			!this._player.isRolling ||
-			this._caughtAt !== undefined
-		) {
-			return;
-		}
-		const reach = 0.9;
-		if (
-			Math.abs(local.x) > footprint.halfWidth + reach ||
-			Math.abs(local.z) > footprint.halfDepth + reach
-		) {
-			return;
-		}
-		this.smash(placed, instance);
-	}
-
-	/**
 	 * Blows an easter egg apart as I roll through it.
 	 * @param placed - The easter egg.
 	 * @param instance - Its scene objects.
 	 */
 	private smash(placed: PlacedEasterEgg, instance: EasterEggInstance): void {
-		placed.isSmashed = true;
-		const { object } = instance;
 		const centre = this._v2.set(
 			placed.x,
 			terrainHeight(placed.x, placed.z) + 1,
 			placed.z,
 		);
-
-		// Fling every piece outwards, keeping where it was in the world.
-		const meshes: Mesh[] = [];
-		object.traverse((child) => {
-			if (child instanceof Mesh) {
-				meshes.push(child as Mesh);
-			}
-		});
-		for (const mesh of meshes) {
-			this._slope.attach(mesh);
-			const outwards = this._v
-				.subVectors(mesh.position, centre)
-				.setY(0)
-				.normalize()
-				.multiplyScalar(MathUtils.randFloat(4, 11));
-			this._shards.push({
-				mesh,
-				velocity: new Vector3(
-					outwards.x + MathUtils.randFloatSpread(3),
-					MathUtils.randFloat(5, 12),
-					outwards.z - this._player.speed * 0.4,
-				),
-				spin: new Vector3(
-					MathUtils.randFloatSpread(10),
-					MathUtils.randFloatSpread(10),
-					MathUtils.randFloatSpread(10),
-				),
-				scale: mesh.scale.clone(),
-				life: MathUtils.randFloat(1.4, 2.4),
-			});
-		}
-		object.removeFromParent();
-
-		const { fire, smoke } = this._blast;
-		fire.position.copy(centre);
-		smoke.position.copy(centre);
-		this._blast.age = 0;
+		this._effects.shatter(instance.object, centre, this._player.speed);
+		this._effects.explode(centre);
 		this.blastBears(placed);
-
 		// Plus a spray of dirt and needles.
-		for (let i = 0; i < 40; i++) {
-			const d = this._debris[this._debrisCursor];
-			this._debrisCursor = (this._debrisCursor + 1) % debrisCount;
-			d.life = MathUtils.randFloat(0.8, 1.6);
-			d.position.copy(centre);
-			d.velocity.set(
-				MathUtils.randFloatSpread(14),
-				MathUtils.randFloat(4, 12),
-				MathUtils.randFloatSpread(14) - this._player.speed * 0.3,
-			);
-			d.spin.set(
-				MathUtils.randFloatSpread(14),
-				MathUtils.randFloatSpread(14),
-				MathUtils.randFloatSpread(14),
-			);
-		}
+		this._effects.burst({
+			origin: centre,
+			count: 40,
+			lift: [0, 0],
+			spread: { x: 14, z: 14 },
+			upward: [4, 12],
+			drift: { x: 0, z: -this._player.speed * 0.3 },
+		});
 		if (!this._reducedMotion) {
 			this._shake = 0.6;
 		}
@@ -620,53 +342,6 @@ export class Game implements StageScene {
 		this._callbacks.onBearBlast(count, points);
 	}
 
-	private updateShards(dt: number): void {
-		for (let i = this._shards.length - 1; i >= 0; i--) {
-			const shard = this._shards[i];
-			const { mesh, velocity } = shard;
-			shard.life -= dt;
-			if (shard.life <= 0) {
-				mesh.removeFromParent();
-				disposeObject(mesh);
-				this._shards.splice(i, 1);
-				continue;
-			}
-			velocity.y -= 22 * dt;
-			mesh.position.addScaledVector(velocity, dt);
-			const ground = terrainHeight(mesh.position.x, mesh.position.z);
-			if (mesh.position.y < ground) {
-				mesh.position.y = ground;
-				velocity.multiplyScalar(0.5);
-				velocity.y = Math.abs(velocity.y) * 0.6;
-			}
-			mesh.rotation.x += shard.spin.x * dt;
-			mesh.rotation.y += shard.spin.y * dt;
-			mesh.rotation.z += shard.spin.z * dt;
-			// Shrink away at the end.
-			mesh.scale
-				.copy(shard.scale)
-				.multiplyScalar(Math.min(1, shard.life * 2.5));
-		}
-	}
-
-	private updateBlast(dt: number): void {
-		const { fire, smoke } = this._blast;
-		const isActive = this._blast.age < blastDuration;
-		fire.visible = isActive;
-		smoke.visible = isActive;
-		if (!isActive) {
-			return;
-		}
-		this._blast.age += dt;
-		const t = Math.min(1, this._blast.age / blastDuration);
-		// A quick flash of fire, then a slower, wider puff of smoke.
-		fire.scale.setScalar(0.4 + Math.sqrt(t) * 2.4);
-		fire.material.opacity = (1 - t) ** 2;
-		smoke.scale.setScalar(0.8 + t * 3.5);
-		smoke.position.y += dt * 2;
-		smoke.material.opacity = 0.55 * (1 - t);
-	}
-
 	private caught(bear: BearActor): void {
 		if (this._caughtAt !== undefined) {
 			return;
@@ -677,36 +352,6 @@ export class Game implements StageScene {
 		this._bears.maul(bear, this._v.copy(this._chaseOffset).negate());
 		if (!this._reducedMotion) {
 			this._shake = 0.5;
-		}
-	}
-
-	private updateDebris(dt: number): void {
-		let isActive = false;
-		for (const [i, d] of this._debris.entries()) {
-			if (d.life <= 0) {
-				continue;
-			}
-			isActive = true;
-			d.life -= dt;
-			d.velocity.y -= 18 * dt;
-			d.position.addScaledVector(d.velocity, dt);
-			const ground = terrainHeight(d.position.x, d.position.z);
-			if (d.position.y < ground) {
-				d.position.y = ground;
-				d.velocity.multiplyScalar(0.4);
-				d.velocity.y = Math.abs(d.velocity.y);
-			}
-			d.rotation.addScaledVector(d.spin, dt);
-			const scale = Math.max(0, Math.min(1, d.life * 2));
-			this._q.setFromAxisAngle(
-				this._v.copy(d.rotation).normalize(),
-				d.rotation.length(),
-			);
-			this._m.compose(d.position, this._q, this._v2.setScalar(scale));
-			this._debrisMesh.setMatrixAt(i, this._m);
-		}
-		if (isActive) {
-			this._debrisMesh.instanceMatrix.needsUpdate = true;
 		}
 	}
 
@@ -779,6 +424,16 @@ export class Game implements StageScene {
 	// The bears, to add to the slope.
 	public get bears(): Object3D {
 		return this._bears.group;
+	}
+
+	// The easter eggs, to add to the slope.
+	public get easterEggs(): Object3D {
+		return this._trail.group;
+	}
+
+	// Debris, flying pieces and the smash's fireball, to add to the slope.
+	public get effects(): Object3D {
+		return this._effects.group;
 	}
 
 	public get camera(): PerspectiveCamera {
@@ -889,31 +544,10 @@ export class Game implements StageScene {
 	}
 
 	public dispose(): void {
+		// Each part frees what it made; the world's components free theirs.
 		this._player.dispose();
-		const geometries = new Set<BufferGeometry>();
-		const materials = new Set<Material>();
-		this._scene.traverse((object) => {
-			if (!(object instanceof Mesh)) {
-				return;
-			}
-
-			geometries.add(object.geometry as BufferGeometry);
-			const material = object.material as Material | Material[];
-			const list = Array.isArray(material) ? material : [material];
-			for (const m of list) {
-				materials.add(m);
-			}
-		});
-		for (const geometry of geometries) {
-			geometry.dispose();
-		}
-		for (const material of materials) {
-			material.dispose();
-		}
-		this._debrisMesh.dispose();
-		for (const shard of this._shards) {
-			disposeObject(shard.mesh);
-		}
 		this._bears.dispose();
+		this._trail.dispose();
+		this._effects.dispose();
 	}
 }

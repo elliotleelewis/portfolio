@@ -29,10 +29,22 @@ export const addHit = (hits: unknown, id: string): EasterEggHits => {
 	return { ...counts, [id]: (counts[id] ?? 0) + 1 };
 };
 
+// The most smashes the gallery counts out; past this it's just "many".
+export const MAX_COUNTED_HITS = 9999;
+
+// English number formatting, with commas between the thousands.
+const numberFormat = new Intl.NumberFormat('en');
+
 /**
  * The line under a found easter egg's caption in the gallery.
  * @param hits - How many times it's been smashed.
  * @returns What to say about it.
  */
-export const hitsMessage = (hits: number): string =>
-	hits === 1 ? 'Smashed once' : `Smashed ${String(hits)} times`;
+export const hitsMessage = (hits: number): string => {
+	if (hits === 1) {
+		return 'Smashed once';
+	}
+	return hits > MAX_COUNTED_HITS
+		? 'Smashed many times'
+		: `Smashed ${numberFormat.format(hits)} times`;
+};

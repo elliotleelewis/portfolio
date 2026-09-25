@@ -17,6 +17,11 @@ Height of a bear's middle above the ground when on all fours.
 export const BEAR_STANDING_HEIGHT = 0.74;
 
 /**
+ * Size of the "!" over a bear that has spotted me.
+ */
+export const BEAR_ALERT_SIZE = 0.9;
+
+/**
  * Distance from a tree trunk's axis to a climbing bear's middle.
  */
 export const BEAR_TRUNK_OFFSET = 0.58;
@@ -47,8 +52,6 @@ export interface BearParts {
 	nose: Material;
 	glint: Material;
 	alert: SpriteMaterial;
-	// The same badge, pinned to the edge of the view (so a constant size).
-	pin: SpriteMaterial;
 	geometries: Record<
 		| 'body'
 		| 'hump'
@@ -86,36 +89,28 @@ const alertTexture = (): CanvasTexture => {
  * Creates the geometry and materials shared by every bear in a game.
  * @returns The shared parts.
  */
-export const createBearParts = (): BearParts => {
-	const badge = alertTexture();
-	return {
-		fur: new MeshStandardMaterial({ color: '#1f1b19', roughness: 0.95 }),
-		muzzle: new MeshStandardMaterial({ color: '#8a6a4c', roughness: 0.9 }),
-		nose: new MeshStandardMaterial({ color: '#0b0b0b', roughness: 0.4 }),
-		glint: new MeshStandardMaterial({
-			color: '#ffffff',
-			emissive: '#ffffff',
-			emissiveIntensity: 0.4,
-		}),
-		alert: new SpriteMaterial({ map: badge, depthTest: false }),
-		pin: new SpriteMaterial({
-			map: badge,
-			depthTest: false,
-			sizeAttenuation: false,
-		}),
-		geometries: {
-			body: new SphereGeometry(1, 18, 12),
-			hump: new SphereGeometry(0.36, 14, 10),
-			head: new SphereGeometry(0.27, 16, 12),
-			snout: new SphereGeometry(0.13, 12, 8),
-			ear: new SphereGeometry(0.08, 8, 6),
-			nose: new SphereGeometry(0.05, 8, 6),
-			glint: new SphereGeometry(0.028, 6, 4),
-			leg: new CapsuleGeometry(0.12, 0.42, 4, 8),
-			paw: new SphereGeometry(0.13, 10, 6),
-		},
-	};
-};
+export const createBearParts = (): BearParts => ({
+	fur: new MeshStandardMaterial({ color: '#1f1b19', roughness: 0.95 }),
+	muzzle: new MeshStandardMaterial({ color: '#8a6a4c', roughness: 0.9 }),
+	nose: new MeshStandardMaterial({ color: '#0b0b0b', roughness: 0.4 }),
+	glint: new MeshStandardMaterial({
+		color: '#ffffff',
+		emissive: '#ffffff',
+		emissiveIntensity: 0.4,
+	}),
+	alert: new SpriteMaterial({ map: alertTexture(), depthTest: false }),
+	geometries: {
+		body: new SphereGeometry(1, 18, 12),
+		hump: new SphereGeometry(0.36, 14, 10),
+		head: new SphereGeometry(0.27, 16, 12),
+		snout: new SphereGeometry(0.13, 12, 8),
+		ear: new SphereGeometry(0.08, 8, 6),
+		nose: new SphereGeometry(0.05, 8, 6),
+		glint: new SphereGeometry(0.028, 6, 4),
+		leg: new CapsuleGeometry(0.12, 0.42, 4, 8),
+		paw: new SphereGeometry(0.13, 10, 6),
+	},
+});
 
 /**
  * Builds a low-poly black bear, facing +z, centred on its belly.
@@ -173,7 +168,7 @@ export const createBear = (parts: BearParts): Bear => {
 	});
 
 	const sprite = new Sprite(alert);
-	sprite.scale.setScalar(0.9);
+	sprite.scale.setScalar(BEAR_ALERT_SIZE);
 	sprite.visible = false;
 	sprite.renderOrder = 10;
 
@@ -190,7 +185,6 @@ export const createBear = (parts: BearParts): Bear => {
 export const disposeBearParts = (parts: BearParts): void => {
 	parts.alert.map?.dispose();
 	parts.alert.dispose();
-	parts.pin.dispose();
 	for (const material of [parts.fur, parts.muzzle, parts.nose, parts.glint]) {
 		material.dispose();
 	}

@@ -9,6 +9,7 @@ import {
 } from 'three';
 
 import {
+	BEAR_ALERT_SIZE,
 	BEAR_STANDING_HEIGHT,
 	BEAR_TRUNK_OFFSET,
 	type Bear,
@@ -35,11 +36,13 @@ const catchRadius = 1.35;
 const giveUpDistance = 30;
 // How long a bear in the camera's way takes to fade out, in seconds.
 const fadeDuration = 0.3;
-// A pinned "!": its size (as a fraction of the view's height, roughly), how
-// far in from the edge of the view it sits, and how far from the camera.
-const pinSize = 0.07;
+// A pinned "!": how far in from the edge of the view it sits, and how far
+// from the camera.
 const pinInset = 0.1;
 const pinDistance = 2;
+// Bears further off than this get a pinned "!" as big as one this far off,
+// so it's never too small to notice.
+const pinFarthest = 45;
 
 export type BearState =
 	| 'free'
@@ -127,8 +130,7 @@ export class Bears {
 		const rig = createBear({ ...this._parts, ...own });
 		rig.root.visible = false;
 		this.group.add(rig.root);
-		const pin = new Sprite(this._parts.pin);
-		pin.scale.setScalar(pinSize);
+		const pin = new Sprite(this._parts.alert);
 		pin.visible = false;
 		pin.renderOrder = 10;
 		this.pins.add(pin);
@@ -448,6 +450,7 @@ export class Bears {
 			}
 			rig.alert.updateWorldMatrix(true, false);
 			const point = rig.alert.getWorldPosition(this._point);
+			const distance = point.distanceTo(camera.position);
 			const isBehind =
 				this._eye.copy(point).applyMatrix4(camera.matrixWorldInverse)
 					.z > 0;
@@ -463,6 +466,12 @@ export class Bears {
 				.sub(camera.position)
 				.setLength(pinDistance)
 				.add(camera.position);
+			// As big as the "!" over the bear looks from here, so it's clear how
+			// far off the bear is.
+			pin.scale.setScalar(
+				(BEAR_ALERT_SIZE * pinDistance) /
+					Math.min(distance, pinFarthest),
+			);
 			pin.visible = true;
 		}
 	}

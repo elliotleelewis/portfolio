@@ -20,6 +20,19 @@ const run = (gallery: Gallery, seconds: number): void => {
 	}
 };
 
+/**
+ * A gallery of found easter eggs, settled on the first, ready to drag.
+ * @returns The gallery, and what it has told the hero since settling.
+ */
+const setUpDrag = () => {
+	const onSelect = vi.fn();
+	const gallery = new Gallery({ onSelect }, all);
+	gallery.resize(1600, 900);
+	run(gallery, 2);
+	onSelect.mockClear();
+	return { gallery, onSelect };
+};
+
 describe('Gallery', () => {
 	it('lines every easter egg up in a row, starting at the first', () => {
 		const onSelect = vi.fn();
@@ -101,5 +114,105 @@ describe('Gallery', () => {
 		run(gallery, 4);
 		expect(gallery.focus.x).toBeLessThan(-GALLERY_SPACING / 2);
 		gallery.dispose();
+	});
+
+	describe('dragging', () => {
+		it('pulls the camera along with the finger', () => {
+			const { gallery } = setUpDrag();
+			const start = gallery.focus.x;
+			gallery.drag(0.3);
+			run(gallery, 1);
+			// About halfway to the next easter egg.
+			expect(gallery.focus.x - start).toBeGreaterThan(
+				GALLERY_SPACING * 0.4,
+			);
+			expect(gallery.focus.x - start).toBeLessThan(GALLERY_SPACING * 0.6);
+			gallery.dispose();
+		});
+
+		it('keeps the easter egg under the finger as a drag sets off', () => {
+			const { gallery } = setUpDrag();
+			const start = gallery.focus.x;
+			// A tenth of the way to the next one.
+			gallery.drag(0.06);
+			run(gallery, 1);
+			const moved = gallery.focus.x - start;
+			expect(moved).toBeGreaterThan(0);
+			// Far less than a tenth of the way along the row.
+			expect(moved).toBeLessThan(GALLERY_SPACING * 0.05);
+			gallery.dispose();
+		});
+
+		it('shows the next caption past halfway, and lands on it', () => {
+			const { gallery, onSelect } = setUpDrag();
+			const [, second] = ALL_EASTER_EGGS;
+			const atSecond = () =>
+				gallery.easterEggs.children.find(
+					({ position }) => position.x === GALLERY_SPACING,
+				);
+			const before = atSecond();
+			gallery.drag(0.18);
+			expect(onSelect).not.toHaveBeenCalled();
+			gallery.drag(0.42);
+			expect(onSelect).toHaveBeenLastCalledWith(
+				1,
+				second.gallery.caption,
+				false,
+			);
+			// Only once it lands does the easter egg start its moment over.
+			expect(atSecond()).toBe(before);
+			gallery.release(0);
+			expect(gallery.index).toBe(1);
+			expect(atSecond()).not.toBe(before);
+			gallery.dispose();
+		});
+
+		it('springs back after a short, slow drag', () => {
+			const { gallery, onSelect } = setUpDrag();
+			const [first] = ALL_EASTER_EGGS;
+			gallery.drag(0.36);
+			gallery.drag(0.18);
+			gallery.release(0.1);
+			expect(gallery.index).toBe(0);
+			expect(onSelect).toHaveBeenLastCalledWith(
+				0,
+				first.gallery.caption,
+				false,
+			);
+			gallery.dispose();
+		});
+
+		it('moves on after a flick, however short', () => {
+			const { gallery } = setUpDrag();
+			gallery.drag(0.06);
+			gallery.release(3);
+			expect(gallery.index).toBe(1);
+			gallery.dispose();
+		});
+
+		it('moves at most one easter egg a swipe', () => {
+			const { gallery } = setUpDrag();
+			gallery.drag(3);
+			gallery.release(10);
+			expect(gallery.index).toBe(1);
+			gallery.dispose();
+		});
+
+		it('stays put when pulled past the start of the row', () => {
+			const { gallery, onSelect } = setUpDrag();
+			gallery.drag(-0.6);
+			expect(onSelect).not.toHaveBeenCalled();
+			gallery.release(-5);
+			expect(gallery.index).toBe(0);
+			gallery.dispose();
+		});
+
+		it('ignores letting go without a drag', () => {
+			const { gallery, onSelect } = setUpDrag();
+			gallery.release(5);
+			expect(gallery.index).toBe(0);
+			expect(onSelect).not.toHaveBeenCalled();
+			gallery.dispose();
+		});
 	});
 });

@@ -1,4 +1,4 @@
-import { Group, PerspectiveCamera, Scene, Vector3 } from 'three';
+import { Group, MathUtils, PerspectiveCamera, Scene, Vector3 } from 'three';
 
 import { type Mirror, type ReadingDirection, mirrorFor } from './direction';
 import { damp } from './easing';
@@ -11,6 +11,7 @@ import {
 } from './easter-eggs';
 import { MYSTERY_SHOWCASE, createMystery } from './mystery';
 import type { StageScene } from './stage-scene';
+import { dragOffset, swipeStep } from './swipe';
 import { SYSTEM_ORDER, Systems } from './systems';
 
 export interface GalleryCallbacks {
@@ -26,8 +27,16 @@ interface Station {
 	isLocked: boolean;
 	instance: EasterEggInstance;
 	position: Vector3;
+	// How the camera shows it: where it sits and looks, and the caption.
+	shot: Shot;
 	// When the camera arrived, so the easter egg can replay from the start.
 	arrivedAt: number;
+}
+
+interface Shot {
+	camera: Vector3;
+	look: Vector3;
+	caption: string;
 }
 
 // Distance between easter eggs along the row.
@@ -36,10 +45,71 @@ const fov = 40;
 // How far off an easter egg "thinks" I am when it isn't being looked at, so
 // it waits for me rather than playing out its moment.
 const faraway = new Vector3(0, 0, 500);
+// How quickly the camera catches up: gently after a button press, snappily
+// once a swipe lets go, and all but at once while a finger is dragging.
+const glideRate = 3;
+// How far a finger drags, as a share of the stage's width, to pull the
+// camera along to the next easter egg.
+const swipeWidth = 0.6;
+const snapRate = 7;
+const dragRate = 25;
 // When the camera arrives, I "approach" from this far off, at this speed,
 // to set off anything that happens as I roll up.
 const approachFrom = 70;
 const approachSpeed = 35;
+
+// How much of a drag at either end moves the camera at the finger's pace,
+// with the rest spent crossing the gap between easter eggs.
+const followShare = 0.4;
+
+/**
+ * A curve from 0 to 1 with a given slope at each end.
+ * @param t - How far along, from 0 to 1.
+ * @param slope - How steep it is at either end.
+ * @returns How far along the curve is.
+ */
+const hermite = (t: number, slope: number): number =>
+	(t ** 3 - 2 * t ** 2 + t) * slope +
+	(-2 * t ** 3 + 3 * t ** 2) +
+	(t ** 3 - t ** 2) * slope;
+
+/**
+ * How far the camera has come towards the next easter egg for how far a
+ * drag has gone. At either end it keeps pace with the finger, so what's on
+ * screen stays under it; in the middle it hurries across the gap.
+ * @param t - How far the drag has gone, from 0 to 1.
+ * @param pace - How far the camera moves for each easter egg dragged, to
+ * keep up with the finger.
+ * @returns How far the camera has come, from 0 to 1.
+ */
+const follow = (t: number, pace: number): number => {
+	if (t <= followShare) {
+		return t * pace;
+	}
+	if (t >= 1 - followShare) {
+		return 1 - (1 - t) * pace;
+	}
+	const from = followShare * pace;
+	const gap = 1 - 2 * from;
+	const middle = 1 - 2 * followShare;
+	return (
+		from + gap * hermite((t - followShare) / middle, (pace * middle) / gap)
+	);
+};
+
+/**
+ * Where the camera shows an easter egg from, in world space.
+ * @param showcase - How the easter egg is shown, in its own space.
+ * @param position - Where it stands.
+ * @returns The camera's shot of it.
+ */
+const shotOf = (showcase: EasterEggShowcase, position: Vector3): Shot => {
+	const camera = new Vector3().fromArray(showcase.camera).add(position);
+	const look = new Vector3().fromArray(showcase.target).add(position);
+	// Aim a little low, so the easter egg sits above the caption panel.
+	look.y -= camera.distanceTo(look) * 0.14;
+	return { camera, look, caption: showcase.caption };
+};
 
 /**
  * A clearing with every easter egg lined up in a row, and a camera that
@@ -59,6 +129,12 @@ export class Gallery implements StageScene {
 	private readonly _drift = new Vector3();
 
 	private _index = 0;
+	// How far a drag has pulled the camera along the row, in easter eggs.
+	private _offset = 0;
+	private _isDragging = false;
+	// Which easter egg's caption is showing, which a drag can change.
+	private _shown = 0;
+	private _rate = glideRate;
 	private _zoom = 1;
 	private _time = 0;
 
@@ -99,6 +175,10 @@ export class Gallery implements StageScene {
 				isLocked,
 				instance: this.place(egg, isLocked, position),
 				position,
+				shot: shotOf(
+					isLocked ? MYSTERY_SHOWCASE : egg.gallery,
+					position,
+				),
 				arrivedAt: 0,
 			};
 		});
@@ -137,12 +217,70 @@ export class Gallery implements StageScene {
 	}
 
 	/**
+	 * Where the camera is heading: the current easter egg's shot, or part of
+	 * the way to a neighbour's while a drag pulls it along.
+	 */
+	private aim(): void {
+		const { shot } = this._stations[this._index];
+		this._cameraTarget.copy(shot.camera);
+		this._lookTarget.copy(shot.look);
+		// Blend towards whichever neighbour the drag is pulling to...
+		const toward = MathUtils.clamp(
+			this._offset,
+			this._index > 0 ? -1 : 0,
+			this._index < this._stations.length - 1 ? 1 : 0,
+		);
+		// The easter eggs are much further apart than the view is wide, so
+		// the camera sets off (and arrives) at the pace that keeps what's on
+		// screen under the finger, and hurries across the gap in between.
+		const pace = this.followPace();
+		if (toward !== 0) {
+			const next = this._stations[this._index + Math.sign(toward)].shot;
+			const amount = follow(Math.abs(toward), pace);
+			this._cameraTarget.lerp(next.camera, amount);
+			this._lookTarget.lerp(next.look, amount);
+		}
+		// ...and slide on along the row, at that pace, for any stretch past
+		// it.
+		const stretch =
+			(this._offset - toward) * GALLERY_SPACING * pace * this.mirror;
+		this._cameraTarget.x += stretch;
+		this._lookTarget.x += stretch;
+	}
+
+	/**
+	 * How fast the camera has to move along the row, as a share of the way
+	 * to the next easter egg for each easter egg dragged, to keep what's on
+	 * screen under the finger.
+	 * @returns The pace, from 0 to 1.
+	 */
+	private followPace(): number {
+		const { shot } = this._stations[this._index];
+		const distance = shot.camera.distanceTo(shot.look) * this._zoom;
+		const halfFov = MathUtils.degToRad(this._camera.fov / 2);
+		const viewWidth =
+			2 * distance * Math.tan(halfFov) * this._camera.aspect;
+		return Math.min(1, (swipeWidth * viewWidth) / GALLERY_SPACING);
+	}
+
+	/**
+	 * Tells the hero which easter egg's caption to show.
+	 * @param index - Which easter egg.
+	 */
+	private show(index: number): void {
+		this._shown = index;
+		const { shot, isLocked } = this._stations[index];
+		this._callbacks.onSelect(index, shot.caption, isLocked);
+	}
+
+	/**
 	 * Glides the camera to the current easter egg, with a gentle drift once
 	 * it's there.
 	 * @param dt - Seconds since the last step.
 	 */
 	private glide(dt: number): void {
-		const rate = damp(3, dt);
+		this.aim();
+		const rate = damp(this._isDragging ? dragRate : this._rate, dt);
 		const drift = this._v
 			.subVectors(this._cameraTarget, this._lookTarget)
 			.multiplyScalar(this._zoom)
@@ -211,6 +349,9 @@ export class Gallery implements StageScene {
 	public select(index: number): void {
 		const count = this._stations.length;
 		this._index = ((index % count) + count) % count;
+		this._offset = 0;
+		this._isDragging = false;
+		this._rate = glideRate;
 		const station = this._stations[this._index];
 		// Start its moment over, fresh.
 		station.instance.object.removeFromParent();
@@ -221,21 +362,57 @@ export class Gallery implements StageScene {
 			station.position,
 		);
 		station.arrivedAt = this._time;
+		this.aim();
+		this.show(this._index);
+	}
 
-		const showcase: EasterEggShowcase = station.isLocked
-			? MYSTERY_SHOWCASE
-			: station.egg.gallery;
-		const { camera, target } = showcase;
-		this._cameraTarget.fromArray(camera).add(station.position);
-		this._lookTarget.fromArray(target).add(station.position);
-		// Aim a little low, so the easter egg sits above the caption panel.
-		this._lookTarget.y -=
-			this._cameraTarget.distanceTo(this._lookTarget) * 0.14;
-		this._callbacks.onSelect(
-			this._index,
-			showcase.caption,
-			station.isLocked,
-		);
+	/**
+	 * Pulls the camera along the row with a finger, one easter egg at most
+	 * either way, showing the caption of whichever it's nearer.
+	 * @param across - How far the finger has moved towards the next easter
+	 * egg, as a share of the stage's width.
+	 */
+	public drag(across: number): void {
+		const hasPrevious = this._index > 0;
+		const hasNext = this._index < this._stations.length - 1;
+		this._isDragging = true;
+		this._offset = dragOffset(across / swipeWidth, hasPrevious, hasNext);
+		const nearest =
+			this._index +
+			Math.round(
+				MathUtils.clamp(
+					this._offset,
+					hasPrevious ? -1 : 0,
+					hasNext ? 1 : 0,
+				),
+			);
+		if (nearest !== this._shown) {
+			this.show(nearest);
+		}
+	}
+
+	/**
+	 * Lets go of a drag: on to the next or previous easter egg if it went far
+	 * or fast enough, otherwise back where it started.
+	 * @param velocity - How fast the finger was moving towards the next
+	 * easter egg, in stage widths a second.
+	 */
+	public release(velocity: number): void {
+		if (!this._isDragging) {
+			return;
+		}
+		const step = swipeStep(this._offset, velocity / swipeWidth);
+		const target = this._index + step;
+		if (step !== 0 && target >= 0 && target < this._stations.length) {
+			this.select(target);
+		} else {
+			this._offset = 0;
+			this._isDragging = false;
+			if (this._shown !== this._index) {
+				this.show(this._index);
+			}
+		}
+		this._rate = snapRate;
 	}
 
 	public get scene(): Scene {

@@ -9,6 +9,7 @@ import {
 	Mesh,
 	MeshBasicMaterial,
 	MeshLambertMaterial,
+	type Object3D,
 	PerspectiveCamera,
 	Quaternion,
 	Scene,
@@ -27,7 +28,7 @@ import {
 	createBearParts,
 	disposeBearParts,
 } from './bear';
-import { type Character, createCharacter } from './character';
+import { damp } from './easing';
 import {
 	EASTER_EGGS,
 	type EasterEgg,
@@ -40,6 +41,7 @@ import {
 	TREE_WINDOW,
 	type Tree,
 } from './forest';
+import { Player, type PlayerControls, STAR_END } from './player';
 import { bearBlastPoints, nextCombo } from './scoring';
 import { type StageScene } from './stage-scene';
 import { SYSTEM_ORDER, Systems } from './systems';
@@ -141,7 +143,6 @@ const debrisCount = 320;
 const blastDuration = 0.7;
 // How far past an easter egg's clearing a smash reaches bears.
 const blastReach = 12;
-const contactOffset = 0.05;
 const bearCount = 8;
 // States in which a bear is still up (or on) its tree.
 const treeBoundStates = new Set<BearState>(['clinging', 'alert', 'climbing']);
@@ -152,11 +153,7 @@ const easterEggSpacing = 150;
 // How long after being caught before the game-over screen shows.
 const gameOverDelay = 1.6;
 
-// Intro timeline, in seconds.
-const lookStart = 1.5;
-const starStart = 5;
-const starEnd = 5.8;
-const turnEnd = 6.5;
+// When the camera has swung round from the intro to chase me.
 const cameraSwingEnd = 8;
 
 const fov = 38;
@@ -178,37 +175,6 @@ const chaseLookAhead = new Vector3(-0.5, 0.8, -7);
 const portraitChaseOffset = new Vector3(2.4, 5, 11);
 const portraitChaseLookAhead = new Vector3(0, 0.5, -8);
 
-// Head yaw/pitch keyframes while looking around: [time, yaw, pitch].
-const lookKeys: [number, number, number][] = [
-	[lookStart, 0, 0],
-	[2.1, 0.8, 0.05],
-	[2.8, 0.8, 0.1],
-	[3.4, -0.8, 0.02],
-	[4.1, -0.8, -0.05],
-	[4.5, 0, 0.3],
-	[5, 0, 0],
-];
-
-const smooth = (edge0: number, edge1: number, x: number): number =>
-	MathUtils.smootherstep(x, edge0, edge1);
-
-const damp = (rate: number, dt: number): number => 1 - Math.exp(-rate * dt);
-
-const lookAround = (t: number): [yaw: number, pitch: number] => {
-	for (let i = 1; i < lookKeys.length; i++) {
-		const [t1, yaw1, pitch1] = lookKeys[i] ?? [0, 0, 0];
-		if (t <= t1) {
-			const [t0, yaw0, pitch0] = lookKeys[i - 1] ?? [0, 0, 0];
-			const k = smooth(t0, t1, t);
-			return [
-				MathUtils.lerp(yaw0, yaw1, k),
-				MathUtils.lerp(pitch0, pitch1, k),
-			];
-		}
-	}
-	return [0, 0];
-};
-
 /**
  * A little mountain-rolling game: I look around, strike a star pose, then
  * cartwheel down the mountain flattening trees.
@@ -222,7 +188,7 @@ export class Game implements StageScene {
 	private readonly _chaseOffset = new Vector3();
 	private readonly _chaseLookAhead = new Vector3();
 	private readonly _slope = new Group();
-	private readonly _character: Character;
+	private readonly _player: Player;
 	private _forest: Forest<BearActor> | undefined;
 	private readonly _debris: Debris[] = [];
 	private readonly _debrisMesh: InstancedMesh;
@@ -235,10 +201,6 @@ export class Game implements StageScene {
 	private readonly _reducedMotion: boolean;
 
 	private _time = 0;
-	private _rolling = false;
-	private _speed = 0;
-	private _lateral = 0;
-	private _distance = 0;
 	private _score = 0;
 	private _combo = 0;
 	private _lastHit = -10;
@@ -279,7 +241,7 @@ export class Game implements StageScene {
 	public constructor(callbacks: GameCallbacks, options: GameOptions = {}) {
 		this._callbacks = callbacks;
 		if (options.skipIntro) {
-			this._time = starEnd - 0.4;
+			this._time = STAR_END - 0.4;
 		}
 		this._reducedMotion = globalThis.matchMedia(
 			'(prefers-reduced-motion: reduce)',
@@ -313,8 +275,15 @@ export class Game implements StageScene {
 		// leave it a clearing.
 		this.planEasterEgg(-easterEggSpacing + MathUtils.randFloatSpread(40));
 
-		this._character = createCharacter();
-		this._slope.add(this._character.root);
+		this._player = new Player({
+			onRolling: () => {
+				this._callbacks.onRolling();
+			},
+			onMove: () => {
+				this._callbacks.onDistance(this._player.distance);
+				this.checkHits();
+			},
+		});
 
 		this._debrisMesh = new InstancedMesh(
 			new TetrahedronGeometry(0.14),
@@ -363,7 +332,7 @@ export class Game implements StageScene {
 		this._slope.add(this._blast.smoke, this._blast.fire);
 
 		this.systems.add(SYSTEM_ORDER.character, (dt) => {
-			this.updateCharacter(dt);
+			this.updatePlayer(dt);
 		});
 		this.systems.add(SYSTEM_ORDER.bears, (dt) => {
 			this.updateBears(dt);
@@ -394,7 +363,7 @@ export class Game implements StageScene {
 		const { x, z } = tree.mesh.position;
 		const bearChance = this.isNearClearing(x, z)
 			? 0.3
-			: Math.min(0.08, 0.025 + this._distance / 12_000);
+			: Math.min(0.08, 0.025 + this._player.distance / 12_000);
 		const bear = this._bears.find(({ state }) => state === 'free');
 		if (bear && isInLane && z < -70 && Math.random() < bearChance) {
 			this.attachBear(bear, tree);
@@ -438,125 +407,22 @@ export class Game implements StageScene {
 		bear.rig.root.visible = false;
 	}
 
-	private updateCharacter(dt: number): void {
-		const t = this._time;
-		const c = this._character;
-
-		// Breathing and blinking.
-		c.body.position.y = -1.05 + Math.sin(t * 2.2) * 0.004;
-		const blink = t % 3.7 < 0.12 ? 0.15 : 1;
-		for (const eye of c.eyes) {
-			eye.scale.y = blink;
-		}
-
-		// Look at the camera, then look around.
-		const [yaw, pitch] = lookAround(t);
-		c.head.rotation.set(-pitch, yaw, 0);
-		c.body.rotation.y = yaw * 0.15;
-
-		// Hands up in the air, legs out: a star.
-		const star = smooth(starStart, starEnd, t);
-		c.leftArm.rotation.z = MathUtils.lerp(0.08, 2.35, star);
-		c.rightArm.rotation.z = -c.leftArm.rotation.z;
-		c.leftLeg.rotation.z = MathUtils.lerp(0, 0.5, star);
-		c.rightLeg.rotation.z = -c.leftLeg.rotation.z;
-
-		// Turn side-on, ready to cartwheel.
-		c.facing.rotation.y = smooth(starEnd, turnEnd, t) * (Math.PI / 2);
-
-		if (t >= turnEnd) {
-			if (!this._rolling) {
-				this._rolling = true;
-				this._callbacks.onRolling();
-			}
-			if (this._caughtAt === undefined) {
-				this.roll(dt);
-			} else {
-				this.crash(dt);
-			}
-		}
-
-		// Keep the lowest hand or foot touching the ground.
-		c.roller.position.y = 0;
-		c.root.updateMatrixWorld(true);
-		let lowest = Infinity;
-		for (const extremity of c.extremities) {
-			extremity.getWorldPosition(this._v);
-			c.root.worldToLocal(this._v);
-			lowest = Math.min(lowest, this._v.y);
-		}
-		c.roller.position.y =
-			contactOffset + Math.abs(c.lean.rotation.z) * 0.08 - lowest;
-	}
-
-	// Caught: skid to a stop and flop onto my back.
-	private crash(dt: number): void {
-		const c = this._character;
-		this._speed = MathUtils.lerp(this._speed, 0, damp(3, dt));
-		this._lateral = MathUtils.lerp(this._lateral, 0, damp(3, dt));
-		const root = c.root.position;
-		root.x += this._lateral * dt;
-		root.z -= this._speed * dt;
-		root.y = terrainHeight(root.x, root.z);
-
-		const fullTurn = Math.PI * 2;
-		const upright = Math.round(c.roller.rotation.x / fullTurn) * fullTurn;
-		c.roller.rotation.x = MathUtils.lerp(
-			c.roller.rotation.x,
-			upright,
-			damp(4, dt),
-		);
-		c.lean.rotation.z = MathUtils.lerp(
-			c.lean.rotation.z,
-			Math.PI / 2,
-			damp(3, dt),
-		);
-		c.head.rotation.set(0, -0.6, 0);
-	}
-
-	private roll(dt: number): void {
-		const c = this._character;
+	private updatePlayer(dt: number): void {
 		const { left, right, faster, slower, steer, throttle } = this.input;
-
-		let target = MathUtils.clamp(10 + this._distance / 40, 10, 28);
-		const push = MathUtils.clamp(
-			throttle + Number(faster) - Number(slower),
-			-1,
-			1,
+		const controls: PlayerControls = {
+			turn: MathUtils.clamp(steer + Number(right) - Number(left), -1, 1),
+			push: MathUtils.clamp(
+				throttle + Number(faster) - Number(slower),
+				-1,
+				1,
+			),
+		};
+		this._player.update(
+			dt,
+			this._time,
+			controls,
+			this._caughtAt !== undefined,
 		);
-		target *= 1 + push * (push > 0 ? 0.35 : 0.45);
-		this._speed = MathUtils.lerp(this._speed, target, damp(0.8, dt));
-
-		const turn = MathUtils.clamp(
-			steer + Number(right) - Number(left),
-			-1,
-			1,
-		);
-		const maxLateral = 7 + this._speed * 0.3;
-		this._lateral = MathUtils.lerp(
-			this._lateral,
-			turn * maxLateral,
-			damp(5, dt),
-		);
-
-		const root = c.root.position;
-		root.x += this._lateral * dt;
-		if (Math.abs(root.x) > LANE_HALF_WIDTH) {
-			root.x = Math.sign(root.x) * LANE_HALF_WIDTH;
-			this._lateral *= -0.3;
-		}
-		root.z -= this._speed * dt;
-		root.y = terrainHeight(root.x, root.z);
-		this._distance = -root.z;
-
-		// Cartwheel: the spin matches the ground speed for the average reach
-		// of my hands and feet.
-		c.roller.rotation.x -= (this._speed / 1.2) * dt;
-		c.lean.rotation.z = -this._lateral * 0.03;
-		c.root.rotation.y = -Math.atan2(this._lateral, this._speed) * 0.8;
-
-		this._callbacks.onDistance(this._distance);
-		this.checkHits();
 	}
 
 	private checkHits(): void {
@@ -564,7 +430,7 @@ export class Game implements StageScene {
 		if (!forest) {
 			return;
 		}
-		const player = this._character.root.position;
+		const player = this._player.position;
 		for (const tree of forest.hits(player)) {
 			this.topple(forest, tree, tree.mesh.position.x - player.x);
 		}
@@ -583,9 +449,13 @@ export class Game implements StageScene {
 
 		const side = Math.sign(dx) || (Math.random() < 0.5 ? -1 : 1);
 		const direction = this._v
-			.set(side * (0.8 + Math.abs(dx)) + this._lateral * 0.08, 0, -1.4)
+			.set(
+				side * (0.8 + Math.abs(dx)) + this._player.lateral * 0.08,
+				0,
+				-1.4,
+			)
 			.normalize();
-		forest.fell(tree, direction, this._speed);
+		forest.fell(tree, direction, this._player.speed);
 
 		this._combo = nextCombo(this._combo, this._time - this._lastHit);
 		this._lastHit = this._time;
@@ -606,7 +476,7 @@ export class Game implements StageScene {
 			d.velocity.set(
 				MathUtils.randFloatSpread(8) + side * 3,
 				MathUtils.randFloat(2, 9),
-				MathUtils.randFloatSpread(6) - this._speed * 0.3,
+				MathUtils.randFloatSpread(6) - this._player.speed * 0.3,
 			);
 			d.spin.set(
 				MathUtils.randFloatSpread(14),
@@ -624,10 +494,10 @@ export class Game implements StageScene {
 	 */
 	private blocksView(x: number, z: number): boolean {
 		return (
-			this._rolling &&
+			this._player.isRolling &&
 			isBlockingChaseView(
 				{ x, z },
-				this._character.root.position,
+				this._player.position,
 				this._chaseOffset,
 			)
 		);
@@ -672,7 +542,7 @@ export class Game implements StageScene {
 	}
 
 	private updateEasterEggs(dt: number): void {
-		const player = this._character.root.position;
+		const player = this._player.position;
 
 		// Always have the next one planned well ahead of the trees.
 		const last = this._easterEggs.at(-1);
@@ -722,7 +592,7 @@ export class Game implements StageScene {
 			return;
 		}
 		const { object } = instance;
-		const root = this._character.root.position;
+		const root = this._player.position;
 		object.updateMatrixWorld();
 		// My position in the easter egg's own space.
 		const local = object.worldToLocal(
@@ -732,7 +602,11 @@ export class Game implements StageScene {
 
 		// Barrel straight through anything solid.
 		const { footprint } = placed.egg;
-		if (!footprint || !this._rolling || this._caughtAt !== undefined) {
+		if (
+			!footprint ||
+			!this._player.isRolling ||
+			this._caughtAt !== undefined
+		) {
 			return;
 		}
 		const reach = 0.9;
@@ -778,7 +652,7 @@ export class Game implements StageScene {
 				velocity: new Vector3(
 					outwards.x + MathUtils.randFloatSpread(3),
 					MathUtils.randFloat(5, 12),
-					outwards.z - this._speed * 0.4,
+					outwards.z - this._player.speed * 0.4,
 				),
 				spin: new Vector3(
 					MathUtils.randFloatSpread(10),
@@ -806,7 +680,7 @@ export class Game implements StageScene {
 			d.velocity.set(
 				MathUtils.randFloatSpread(14),
 				MathUtils.randFloat(4, 12),
-				MathUtils.randFloatSpread(14) - this._speed * 0.3,
+				MathUtils.randFloatSpread(14) - this._player.speed * 0.3,
 			);
 			d.spin.set(
 				MathUtils.randFloatSpread(14),
@@ -853,7 +727,7 @@ export class Game implements StageScene {
 			bear.velocity.set(
 				(dx / (distance || 1)) * force,
 				MathUtils.randFloat(9, 14),
-				(dz / (distance || 1)) * force - this._speed * 0.3,
+				(dz / (distance || 1)) * force - this._player.speed * 0.3,
 			);
 			bear.spin.set(
 				MathUtils.randFloatSpread(12),
@@ -918,7 +792,7 @@ export class Game implements StageScene {
 	}
 
 	private updateBears(dt: number): void {
-		const player = this._character.root.position;
+		const player = this._player.position;
 		for (const bear of this._bears) {
 			if (bear.state === 'free') {
 				continue;
@@ -1006,15 +880,15 @@ export class Game implements StageScene {
 
 	private updateClinging(bear: BearActor): void {
 		const { rig } = bear;
-		const player = this._character.root.position;
+		const player = this._player.position;
 		rig.pose.rotation.z = Math.sin(this._time * 1.3 + bear.gait) * 0.06;
 		const ahead = player.z - rig.root.position.z;
 		// Spot me early enough to be on the ground as I arrive.
 		if (!(
-			this._rolling &&
+			this._player.isRolling &&
 			this._caughtAt === undefined &&
 			ahead > -2 &&
-			ahead < this._speed * 2.6 + 8
+			ahead < this._player.speed * 2.6 + 8
 		)) {
 			return;
 		}
@@ -1047,7 +921,7 @@ export class Game implements StageScene {
 	private updateDismounting(bear: BearActor, dt: number): void {
 		const { rig, tree } = bear;
 		const p = rig.root.position;
-		const k = smooth(0, 0.3, bear.timer);
+		const k = MathUtils.smootherstep(bear.timer, 0, 0.3);
 		rig.pose.rotation.x = MathUtils.lerp(-Math.PI / 2, 0, k);
 		p.z += dt * 2;
 		p.y =
@@ -1073,7 +947,7 @@ export class Game implements StageScene {
 	private updateCharging(bear: BearActor, dt: number): void {
 		const { rig } = bear;
 		const p = rig.root.position;
-		const player = this._character.root.position;
+		const player = this._player.position;
 		if (bear.state === 'charging') {
 			if (p.z > player.z + 3 || this._caughtAt !== undefined) {
 				// Missed me (or someone else got me): wander off sideways.
@@ -1084,7 +958,7 @@ export class Game implements StageScene {
 				this.turnBearTowardsMe(bear, dt, 3.5);
 			}
 		}
-		const speed = Math.min(11, 8 + this._distance / 250);
+		const speed = Math.min(11, 8 + this._player.distance / 250);
 		p.x += Math.sin(bear.heading) * speed * dt;
 		p.z += Math.cos(bear.heading) * speed * dt;
 
@@ -1113,11 +987,11 @@ export class Game implements StageScene {
 	private updateMauling(bear: BearActor, dt: number): void {
 		const { rig } = bear;
 		const p = rig.root.position;
-		const player = this._character.root.position;
+		const player = this._player.position;
 		// Stand over me, up on hind legs, waving.
 		p.x = MathUtils.lerp(p.x, player.x + bear.offset.x, damp(8, dt));
 		p.z = MathUtils.lerp(p.z, player.z + bear.offset.z, damp(8, dt));
-		const rear = smooth(0.2, 0.7, bear.timer);
+		const rear = MathUtils.smootherstep(bear.timer, 0.2, 0.7);
 		p.y = terrainHeight(p.x, p.z) + BEAR_STANDING_HEIGHT + rear * 0.45;
 		rig.pose.rotation.x = -1.05 * rear;
 		rig.head.rotation.x = 0.6 * rear;
@@ -1132,7 +1006,7 @@ export class Game implements StageScene {
 
 	private turnBearTowardsMe(bear: BearActor, dt: number, rate: number): void {
 		const p = bear.rig.root.position;
-		const player = this._character.root.position;
+		const player = this._player.position;
 		const target = Math.atan2(player.x - p.x, player.z - p.z);
 		// Shortest way round.
 		const delta = MathUtils.euclideanModulo(
@@ -1148,7 +1022,7 @@ export class Game implements StageScene {
 			return;
 		}
 		this._caughtAt = this._time;
-		const player = this._character.root.position;
+		const player = this._player.position;
 		const p = bear.rig.root.position;
 		if (bear.tree) {
 			bear.tree.occupant = undefined;
@@ -1200,7 +1074,7 @@ export class Game implements StageScene {
 	}
 
 	private updateCamera(dt: number): void {
-		const player = this._character.root.position;
+		const player = this._player.position;
 
 		// Once caught, move in for a closer look.
 		this._cameraZoom = MathUtils.lerp(
@@ -1220,7 +1094,11 @@ export class Game implements StageScene {
 			this._v2.copy(player).add(this._chaseLookAhead),
 		);
 
-		const swing = smooth(starEnd, cameraSwingEnd, this._time);
+		const swing = MathUtils.smootherstep(
+			this._time,
+			STAR_END,
+			cameraSwingEnd,
+		);
 		const position = chase.lerp(this._introCamera, 1 - swing);
 		const target = chaseTarget.lerp(this._introTarget, 1 - swing);
 		const cameraFov = MathUtils.lerp(fov, chaseFov, swing);
@@ -1253,7 +1131,12 @@ export class Game implements StageScene {
 
 	// Where I am, in the slope's space.
 	public get player(): Vector3 {
-		return this._character.root.position;
+		return this._player.position;
+	}
+
+	// My rig, to add to the slope.
+	public get character(): Object3D {
+		return this._player.root;
 	}
 
 	public get camera(): PerspectiveCamera {
@@ -1278,7 +1161,7 @@ export class Game implements StageScene {
 	public catchPlayer(): void {
 		const bear =
 			this._bears.find(({ state }) => state === 'free') ?? this._bears[0];
-		const p = this._character.root.position;
+		const p = this._player.position;
 		bear.rig.root.visible = true;
 		bear.rig.root.position.set(
 			p.x,
@@ -1340,7 +1223,7 @@ export class Game implements StageScene {
 		this._introCamera.set(0, cameraY, distance);
 		this._introTarget.set(0, cameraY, 0);
 
-		const landscape = smooth(0.5, 1.3, aspect);
+		const landscape = MathUtils.smootherstep(aspect, 0.5, 1.3);
 		this._chaseOffset.lerpVectors(
 			portraitChaseOffset,
 			chaseOffset,
@@ -1369,10 +1252,11 @@ export class Game implements StageScene {
 			return;
 		}
 		this._isGameOverReported = true;
-		this._callbacks.onGameOver(this._score, this._distance);
+		this._callbacks.onGameOver(this._score, this._player.distance);
 	}
 
 	public dispose(): void {
+		this._player.dispose();
 		const geometries = new Set<BufferGeometry>();
 		const materials = new Set<Material>();
 		this._scene.traverse((object) => {

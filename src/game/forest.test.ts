@@ -68,9 +68,11 @@ describe('Forest', () => {
 		const forest = new Forest<string>(hooks());
 		forest.plant();
 		const [tree] = standing(forest);
+		// Somewhere known in the lane, clear of the rocky banks either side.
+		tree.mesh.position.set(0, terrainHeight(0, -60) - 0.15, -60);
 		const player = tree.mesh.position.clone();
-		forest.fell(tree, new Vector3(1, 0, -1).normalize(), 20);
-		for (let i = 0; i < 120; i++) {
+		forest.fell(tree, new Vector3(0.3, 0, -1).normalize(), 20);
+		for (let i = 0; i < 180; i++) {
 			forest.update(1 / 60, player.z);
 		}
 		const { x, y, z } = tree.mesh.position;

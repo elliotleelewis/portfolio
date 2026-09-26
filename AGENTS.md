@@ -51,6 +51,7 @@ Import types with `import type { … }`, not `import { type … }`. With `verbat
 - **Game parts** are plain classes, such as `Player`, `Forest`, `Bears`, `EasterEggTrail`, `Effects` and `ChaseCamera`.
   - They don't touch React, so they can be unit-tested directly.
   - Each step runs them as systems, in the order set by `SYSTEM_ORDER` in `systems.ts`. Keep new behaviour in its own class or system rather than adding to `Game`.
+  - My rig (`character.ts`) and the bears' (`bear.ts`) are built with each joint's pieces merged into one mesh per material, to save draw calls. Animate the joints. To move a piece on its own, keep it out of the merge, as my eyes are for blinking.
 - **Worlds:** `src/game/components/` holds React Three Fiber components that add the sky, light, mountains, ground and trees to a scene.
   - They join the scene's step with `useSystem`, so tests that fast-forward the game run them too.
   - Components free what they create. Game parts free theirs in `dispose()`.

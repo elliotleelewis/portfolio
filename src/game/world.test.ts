@@ -2,7 +2,11 @@ import { Group, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 
 import {
+	APPEAR_AHEAD,
 	CHUNK_LENGTH,
+	FOG_FAR,
+	GROUND_CHUNKS,
+	GROUND_RECYCLE_DISTANCE,
 	LANE_HALF_WIDTH,
 	SLOPE_ANGLE,
 	createLedge,
@@ -24,6 +28,20 @@ describe('terrainHeight', () => {
 				expect(step).toBeLessThan(0.2);
 			}
 		}
+	});
+});
+
+describe('the ground', () => {
+	it('reaches past the haze, so a new strip is never seen arriving', () => {
+		// Just before the strip behind me leapfrogs ahead, the others reach
+		// this far ahead of me.
+		const reach =
+			(GROUND_CHUNKS - 1) * CHUNK_LENGTH - GROUND_RECYCLE_DISTANCE;
+		expect(reach).toBeGreaterThanOrEqual(APPEAR_AHEAD);
+	});
+
+	it('only puts new things ahead where the haze hides them', () => {
+		expect(APPEAR_AHEAD).toBeGreaterThan(FOG_FAR);
 	});
 });
 

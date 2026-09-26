@@ -54,6 +54,7 @@ Import types with `import type { … }`, not `import { type … }`. With `verbat
 - **Worlds:** `src/game/components/` holds React Three Fiber components that add the sky, light, mountains, ground and trees to a scene.
   - They join the scene's step with `useSystem`, so tests that fast-forward the game run them too.
   - Components free what they create. Game parts free theirs in `dispose()`.
+  - The haze (`src/game/haze.ts`) changes three.js's fog for every material that uses it. It's measured by distance, not depth, and anything it has swallowed fades out, so the far mountains show through rather than a haze-coloured shape. Put anything new on the slope at least `APPEAR_AHEAD` ahead of the player (see `world.ts`), so it arrives already hidden.
 - **Easter eggs:** one module each in `src/game/easter-eggs/`, listed in `index.ts`. See the README for how to add one.
 - **Right-to-left:** the game and gallery mirror for right-to-left pages.
   - The page's direction becomes a `Mirror` (`1` or `-1`, in `src/game/direction.ts`), which flips the chase camera's side, the sun and the gallery row.

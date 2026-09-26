@@ -9,6 +9,7 @@ import {
 	type EasterEggShowcase,
 	disposeObject,
 } from './easter-eggs';
+import { fadeIntoHaze } from './haze';
 import { MYSTERY_SHOWCASE, createMystery } from './mystery';
 import type { StageScene } from './stage-scene';
 import { dragOffset, swipeStep } from './swipe';
@@ -157,6 +158,8 @@ export class Gallery implements StageScene {
 		direction: ReadingDirection = 'ltr',
 	) {
 		this._callbacks = callbacks;
+		// Before anything is drawn, so every material picks it up.
+		fadeIntoHaze();
 		this.mirror = mirrorFor(direction);
 		this._scene.add(this.easterEggs);
 

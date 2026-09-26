@@ -11,14 +11,21 @@ import {
 	type WebGLRenderer,
 } from 'three';
 
-import { LANE_HALF_WIDTH, createTreeGeometry, terrainHeight } from './world';
+import {
+	APPEAR_AHEAD,
+	LANE_HALF_WIDTH,
+	createTreeGeometry,
+	terrainHeight,
+} from './world';
 
-// Trees in the pool, recycled from behind me to ahead of me.
-const treeCount = 170;
-// How far ahead of me the trees reach.
-export const TREE_WINDOW = 230;
 // How far behind me a tree goes before it's recycled.
 const recycleDistance = 25;
+// How far ahead of me the trees reach: far enough that a recycled tree is
+// replanted out of sight, in the haze.
+export const TREE_WINDOW = APPEAR_AHEAD + recycleDistance;
+// Trees in the pool, recycled from behind me to ahead of me: about two for
+// every three metres of slope.
+const treeCount = Math.round((TREE_WINDOW + recycleDistance) * 0.67);
 // How long a tree in the camera's way takes to fade out, in seconds.
 const fadeDuration = 0.3;
 

@@ -20,8 +20,23 @@ export const SLOPE_ANGLE = 0.24;
 // Half-width of the part of the slope the player can roll over.
 export const LANE_HALF_WIDTH = 24;
 
+// The haze on the mountain: where it starts, and where it hides everything,
+// in metres from the camera.
+export const FOG_NEAR = 35;
+export const FOG_FAR = 240;
+
+// How far ahead of me anything new (ground, trees, easter eggs) is put, so
+// it's already lost in the haze when it appears rather than popping in. The
+// camera sits behind me, but the haze thins towards the edges of the view,
+// so this leaves some room past FOG_FAR.
+export const APPEAR_AHEAD = 270;
+
 // Length of each recycled strip of ground.
 export const CHUNK_LENGTH = 120;
+// How many strips there are, leapfrogging each other as I roll.
+export const GROUND_CHUNKS = 4;
+// A strip leapfrogs ahead once it's this far behind me.
+export const GROUND_RECYCLE_DISTANCE = 30;
 
 const chunkWidth = 200;
 

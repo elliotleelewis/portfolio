@@ -14,7 +14,7 @@ interface HeroHandle {
 
 /**
  * Starts a run from the photo and skips the intro.
- * @param page - The page, already on the home page.
+ * @param page - The page, already on the home page or the game page.
  */
 export const startRun = async (page: Page): Promise<void> => {
 	const hero = page.locator('#hero');

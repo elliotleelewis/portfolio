@@ -43,7 +43,7 @@ The end-to-end tests start their own dev server. To use a Chromium you already h
 
 ```text
 src/
-  pages/        The page itself.
+  pages/        The home page, and the game on its own, full-window, at /game.
   layout/       The HTML shell and analytics.
   content/      The page's sections: hero, intro, trail, pack list, base camp, footer.
   components/   Smaller pieces those sections share.

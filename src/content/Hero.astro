@@ -3,15 +3,26 @@ import { Image } from 'astro:assets';
 
 import { Hero } from '../hero/hero';
 import hero from '../media/hero.webp';
+
+interface Props {
+	// Fills the whole window, on the game's own page.
+	isFullscreen?: boolean;
+}
+
+const { isFullscreen = false } = Astro.props;
 ---
 
-<Hero client:load>
+<Hero client:load isFullscreen={isFullscreen}>
 	<Image
 		src={hero}
 		alt="Elliot smiling on a hiking trail, with pine trees and mountains behind him"
 		class="absolute inset-0 size-full object-cover object-[50%_45%] transition-opacity duration-1500 ease-in-out group-data-[state=playing]:opacity-0"
 		widths={[640, 960, 1280]}
-		sizes="(min-width: 1536px) 1408px, (min-width: 1280px) 1152px, 100vw"
+		sizes={
+			isFullscreen
+				? '100vw'
+				: '(min-width: 1536px) 1408px, (min-width: 1280px) 1152px, 100vw'
+		}
 		loading="eager"
 		fetchpriority="high"
 	/>

@@ -14,9 +14,12 @@ import { Stage } from './stage';
 interface Props {
 	// The photo, which the game fades in over.
 	children?: ReactNode;
+	// Whether the hero fills the whole window (the game's own page), rather
+	// than sitting at the top of the home page as a card.
+	isFullscreen?: boolean;
 }
 
-const HeroSection = ({ children }: Props) => {
+const HeroSection = ({ children, isFullscreen = false }: Props) => {
 	const controller = useController();
 	const phase = useAtomValue(PHASE_ATOM);
 	const mode = useAtomValue(MODE_ATOM);
@@ -30,17 +33,24 @@ const HeroSection = ({ children }: Props) => {
 			ref={section}
 			data-state={phase}
 			data-mode={mode}
-			className="group relative h-[85svh] min-h-120 overflow-hidden rounded-3xl bg-[#dde3e5] shadow-2xl ring-1 shadow-pine/20 ring-line select-none"
+			className={
+				isFullscreen
+					? 'group fixed inset-0 overflow-hidden bg-[#dde3e5] select-none'
+					: 'group relative h-[85svh] min-h-120 overflow-hidden rounded-3xl bg-[#dde3e5] shadow-2xl ring-1 shadow-pine/20 ring-line select-none'
+			}
 			aria-label="Elliot on a mountain"
 		>
 			{children}
 			<Stage />
 			<PlayOverlay
 				onPlay={() => {
-					section.current?.scrollIntoView({
-						behavior: 'smooth',
-						block: 'center',
-					});
+					// On the home page, bring all of the game into view first.
+					if (!isFullscreen) {
+						section.current?.scrollIntoView({
+							behavior: 'smooth',
+							block: 'center',
+						});
+					}
 					void controller.start();
 				}}
 			/>
@@ -56,16 +66,19 @@ const HeroSection = ({ children }: Props) => {
  * mountain, with a gallery of the easter eggs hidden along the way.
  * @param props - Component props.
  * @param props.children - The photo.
+ * @param props.isFullscreen - Whether it fills the whole window.
  * @returns The hero.
  */
-export const Hero = ({ children }: Props) => {
+export const Hero = ({ children, isFullscreen }: Props) => {
 	const [store] = useState(() => createStore());
 	const [controller] = useState(() => new HeroController(store));
 
 	return (
 		<Provider store={store}>
 			<ControllerContext value={controller}>
-				<HeroSection>{children}</HeroSection>
+				<HeroSection isFullscreen={isFullscreen}>
+					{children}
+				</HeroSection>
 			</ControllerContext>
 		</Provider>
 	);

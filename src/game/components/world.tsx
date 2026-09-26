@@ -7,6 +7,10 @@ import type { Game } from '../game';
 import { SYSTEM_ORDER } from '../systems';
 import {
 	CHUNK_LENGTH,
+	FOG_FAR,
+	FOG_NEAR,
+	GROUND_CHUNKS,
+	GROUND_RECYCLE_DISTANCE,
 	createGroundChunk,
 	createLedge,
 	shapeGroundChunk,
@@ -16,9 +20,6 @@ import { GameContext, StageContext, useGame, useSystem } from './game-context';
 import { OnSlope } from './on-slope';
 import { Lighting, Mountains, Sky } from './scenery';
 import { Trees } from './trees';
-
-// Ground chunks leapfrog ahead once they're this far behind me.
-const groundRecycleDistance = 30;
 
 interface GroundPieces {
 	// The flat ledge I start on.
@@ -39,7 +40,7 @@ const Ground = () => {
 			flatShading: true,
 		});
 		const ledge = createLedge(material, 60);
-		const chunks = Array.from({ length: 3 }, (_value, i) => {
+		const chunks = Array.from({ length: GROUND_CHUNKS }, (_value, i) => {
 			const chunk = createGroundChunk(material);
 			shapeGroundChunk(chunk, -CHUNK_LENGTH / 2 - i * CHUNK_LENGTH);
 			return chunk;
@@ -63,9 +64,12 @@ const Ground = () => {
 			// A loop, not an if, so it keeps up even after a big jump.
 			while (
 				chunk.position.z - CHUNK_LENGTH / 2 >
-				playerZ + groundRecycleDistance
+				playerZ + GROUND_RECYCLE_DISTANCE
 			) {
-				shapeGroundChunk(chunk, chunk.position.z - CHUNK_LENGTH * 3);
+				shapeGroundChunk(
+					chunk,
+					chunk.position.z - CHUNK_LENGTH * GROUND_CHUNKS,
+				);
 			}
 		}
 	});
@@ -105,7 +109,7 @@ export const GameWorld = ({ game }: Props) => {
 			<GameContext value={game}>
 				{createPortal(
 					<>
-						<Sky near={35} far={240} />
+						<Sky near={FOG_NEAR} far={FOG_FAR} />
 						<Lighting
 							reach={30}
 							depth={120}

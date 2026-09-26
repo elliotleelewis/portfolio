@@ -2,7 +2,7 @@ import { Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 
 import { Forest, type ForestHooks, TREE_WINDOW, type Tree } from './forest';
-import { terrainHeight } from './world';
+import { APPEAR_AHEAD, terrainHeight } from './world';
 
 const hooks = (overrides: Partial<ForestHooks<string>> = {}) => ({
 	isInClearing: () => false,
@@ -51,6 +51,28 @@ describe('Forest', () => {
 		for (const { mesh } of forest.trees) {
 			expect(mesh.position.z).toBeLessThanOrEqual(-75);
 		}
+	});
+
+	it('replants passed trees out of sight, in the haze', () => {
+		const forest = new Forest<string>(hooks());
+		forest.plant();
+		let replanted = 0;
+		// Roll down the slope a little at a time, as the game does.
+		for (let playerZ = 0; playerZ > -200; playerZ -= 0.5) {
+			const before = forest.trees.map(({ mesh }) => mesh.position.z);
+			forest.update(1 / 60, playerZ);
+			for (const [i, { mesh }] of forest.trees.entries()) {
+				// Only trees that jumped ahead (not ones barely moving).
+				if (mesh.position.z >= before[i] - 1) {
+					continue;
+				}
+				replanted++;
+				expect(playerZ - mesh.position.z).toBeGreaterThanOrEqual(
+					APPEAR_AHEAD - 0.5,
+				);
+			}
+		}
+		expect(replanted).toBeGreaterThan(0);
 	});
 
 	it('finds the trees I am rolling into', () => {

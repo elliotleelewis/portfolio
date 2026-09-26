@@ -1,6 +1,6 @@
 // The bears' alert badge is drawn on a canvas, so these need a DOM.
 // @vitest-environment happy-dom
-import { Object3D, PerspectiveCamera, Vector3 } from 'three';
+import { Box3, Mesh, Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 
 import { type BearActor, Bears, MAX_BEARS } from './bears';
@@ -84,6 +84,33 @@ const climbOrFail = (bears: Bears, tree: Tree<BearActor>): BearActor => {
 };
 
 describe('Bears', () => {
+	it('draws each bear with one mesh per material in each part that moves', () => {
+		const { bears } = setup();
+		const [bear] = bears.actors;
+		const meshes: Object3D[] = [];
+		bear.rig.root.traverse((child) => {
+			if (child instanceof Mesh) {
+				meshes.push(child);
+			}
+		});
+		// Body; head, snout, nose and eyes; four legs.
+		expect(meshes).toHaveLength(9);
+		expect(bear.rig.head.children).toHaveLength(4);
+		for (const leg of bear.rig.legs) {
+			expect(leg.children).toHaveLength(1);
+		}
+		// Still the same bear: from its tail to its nose, and its paws to its
+		// ears.
+		bear.rig.root.updateMatrixWorld(true);
+		const box = new Box3().setFromObject(bear.rig.pose);
+		expect(box.min.z).toBeCloseTo(-0.768, 3);
+		expect(box.max.z).toBeCloseTo(1.31, 3);
+		expect(box.min.y).toBeCloseTo(-0.75, 3);
+		expect(box.max.y).toBeCloseTo(0.5, 3);
+		expect(box.max.x).toBeCloseTo(0.42, 3);
+		bears.dispose();
+	});
+
 	it('sends a bear up a tree, adding bears until the pool is full', () => {
 		const { bears } = setup();
 		const trees = Array.from({ length: MAX_BEARS + 1 }, (_value, i) =>

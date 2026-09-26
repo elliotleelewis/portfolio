@@ -1,4 +1,4 @@
-import { Vector3 } from 'three';
+import { InstancedMesh, Matrix4, Mesh, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 
 import { Forest, type ForestHooks, TREE_WINDOW, type Tree } from './forest';
@@ -28,9 +28,9 @@ describe('Forest', () => {
 		);
 		forest.plant();
 		expect(placed).toHaveLength(forest.trees.length);
-		for (const { mesh } of forest.trees) {
-			expect(mesh.position.z).toBeLessThanOrEqual(20);
-			expect(mesh.position.z).toBeGreaterThanOrEqual(20 - TREE_WINDOW);
+		for (const { body } of forest.trees) {
+			expect(body.position.z).toBeLessThanOrEqual(20);
+			expect(body.position.z).toBeGreaterThanOrEqual(20 - TREE_WINDOW);
 		}
 	});
 
@@ -39,8 +39,8 @@ describe('Forest', () => {
 			hooks({ isInClearing: (x) => Math.abs(x) < 10 }),
 		);
 		forest.plant();
-		for (const { mesh } of forest.trees) {
-			expect(Math.abs(mesh.position.x)).toBeGreaterThanOrEqual(10);
+		for (const { body } of forest.trees) {
+			expect(Math.abs(body.position.x)).toBeGreaterThanOrEqual(10);
 		}
 	});
 
@@ -48,8 +48,8 @@ describe('Forest', () => {
 		const forest = new Forest<string>(hooks());
 		forest.plant();
 		forest.update(1 / 60, -100);
-		for (const { mesh } of forest.trees) {
-			expect(mesh.position.z).toBeLessThanOrEqual(-75);
+		for (const { body } of forest.trees) {
+			expect(body.position.z).toBeLessThanOrEqual(-75);
 		}
 	});
 
@@ -59,15 +59,15 @@ describe('Forest', () => {
 		let replanted = 0;
 		// Roll down the slope a little at a time, as the game does.
 		for (let playerZ = 0; playerZ > -200; playerZ -= 0.5) {
-			const before = forest.trees.map(({ mesh }) => mesh.position.z);
+			const before = forest.trees.map(({ body }) => body.position.z);
 			forest.update(1 / 60, playerZ);
-			for (const [i, { mesh }] of forest.trees.entries()) {
+			for (const [i, { body }] of forest.trees.entries()) {
 				// Only trees that jumped ahead (not ones barely moving).
-				if (mesh.position.z >= before[i] - 1) {
+				if (body.position.z >= before[i] - 1) {
 					continue;
 				}
 				replanted++;
-				expect(playerZ - mesh.position.z).toBeGreaterThanOrEqual(
+				expect(playerZ - body.position.z).toBeGreaterThanOrEqual(
 					APPEAR_AHEAD - 0.5,
 				);
 			}
@@ -79,7 +79,7 @@ describe('Forest', () => {
 		const forest = new Forest<string>(hooks());
 		forest.plant();
 		const [tree] = forest.trees;
-		const player = tree.mesh.position.clone();
+		const player = tree.body.position.clone();
 		expect(forest.hits(player)).toContain(tree);
 		expect(forest.hits(player.clone().setX(player.x + 50))).not.toContain(
 			tree,
@@ -91,17 +91,37 @@ describe('Forest', () => {
 		forest.plant();
 		const [tree] = standing(forest);
 		// Somewhere known in the lane, clear of the rocky banks either side.
-		tree.mesh.position.set(0, terrainHeight(0, -60) - 0.15, -60);
-		const player = tree.mesh.position.clone();
+		tree.body.position.set(0, terrainHeight(0, -60) - 0.15, -60);
+		const player = tree.body.position.clone();
 		forest.fell(tree, new Vector3(0.3, 0, -1).normalize(), 20);
 		for (let i = 0; i < 180; i++) {
 			forest.update(1 / 60, player.z);
 		}
-		const { x, y, z } = tree.mesh.position;
+		const { x, y, z } = tree.body.position;
 		expect(tree.state).toBe('falling');
 		expect(tree.angle).toBeGreaterThan(1);
 		expect(y).toBeCloseTo(terrainHeight(x, z) - 0.15, 1);
 		expect(forest.hits(player)).not.toContain(tree);
+	});
+
+	it('draws every tree of each kind in one go', () => {
+		const forest = new Forest<string>(hooks());
+		forest.plant();
+		const batches = forest.group.children.filter(
+			(child): child is InstancedMesh => child instanceof InstancedMesh,
+		);
+		expect(batches).toHaveLength(3);
+		const drawn = batches.reduce((sum, { count }) => sum + count, 0);
+		expect(drawn).toBe(forest.trees.length);
+		// Each tree is drawn where it stands.
+		const [tree] = forest.trees;
+		const matrix = new Matrix4();
+		batches[tree.kind].getMatrixAt(tree.slot, matrix);
+		expect(
+			new Vector3()
+				.setFromMatrixPosition(matrix)
+				.distanceTo(tree.body.position),
+		).toBeLessThan(1e-3);
 	});
 
 	it('fades out trees in the way of the camera, then stands them back up', () => {
@@ -111,14 +131,49 @@ describe('Forest', () => {
 		);
 		forest.plant();
 		const [tree] = forest.trees;
+		const batch = () =>
+			forest.group.children.filter(
+				(child): child is InstancedMesh =>
+					child instanceof InstancedMesh,
+			)[tree.kind];
+		const scaleInBatch = () => {
+			const matrix = new Matrix4();
+			batch().getMatrixAt(tree.slot, matrix);
+			return new Vector3().setFromMatrixScale(matrix).x;
+		};
+		// Half-way through fading: out of its batch, drawn see-through on its
+		// own instead.
+		for (let i = 0; i < 9; i++) {
+			forest.update(1 / 60, 0);
+		}
+		expect(tree.isFading).toBe(true);
+		expect(tree.opacity).toBeGreaterThan(0);
+		expect(tree.opacity).toBeLessThan(1);
+		expect(scaleInBatch()).toBe(0);
+		const ghosts = forest.group.children.filter(
+			(child) =>
+				child instanceof Mesh && !(child instanceof InstancedMesh),
+		);
+		expect(ghosts).toHaveLength(
+			forest.trees.filter((t) => t.isFading).length,
+		);
+		// Once gone, it's not drawn at all.
 		for (let i = 0; i < 30; i++) {
 			forest.update(1 / 60, 0);
 		}
-		expect(tree.mesh.visible).toBe(false);
-		// Once recycled ahead, it's a fresh, solid tree.
+		expect(tree.opacity).toBe(0);
+		expect(scaleInBatch()).toBe(0);
+		expect(
+			forest.group.children.some(
+				(child) =>
+					child instanceof Mesh && !(child instanceof InstancedMesh),
+			),
+		).toBe(false);
+		// Once recycled ahead, it's a fresh, solid tree back in its batch.
 		isBlocking = false;
 		forest.update(1 / 60, -1000);
-		expect(tree.mesh.visible).toBe(true);
-		expect(tree.material.opacity).toBe(1);
+		expect(tree.isFading).toBe(false);
+		expect(tree.opacity).toBe(1);
+		expect(scaleInBatch()).toBeGreaterThan(0);
 	});
 });

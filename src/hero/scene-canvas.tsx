@@ -65,7 +65,14 @@ interface Props {
 export const SceneCanvas = ({ shown, onFirstFrame }: Props) => (
 	// `flat` keeps three's default (no) tone mapping, and "percentage" is its
 	// PCF shadow map, so the scenes look as they were designed.
-	<Canvas flat shadows="percentage" dpr={[1, 2]}>
+	<Canvas
+		flat
+		shadows="percentage"
+		dpr={[1, 2]}
+		// Smoothing the edges costs a lot on high-density screens (most phones),
+		// where the pixels are too small for jagged edges to show.
+		gl={{ antialias: globalThis.devicePixelRatio < 2 }}
+	>
 		<Frame scene={shown.scene} onFirstFrame={onFirstFrame} />
 		{/* A fresh world for each scene. */}
 		{shown.kind === 'game' ? (

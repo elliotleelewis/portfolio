@@ -492,14 +492,14 @@ export class Bears {
 			return undefined;
 		}
 		const { rig } = bear;
-		const scale = tree.mesh.scale.x;
+		const scale = tree.body.scale.x;
 		bear.state = 'clinging';
 		bear.tree = tree;
 		bear.timer = 0;
 		bear.height = MathUtils.randFloat(2.6, 3.8) * scale;
 		bear.heading = Math.PI;
 		tree.occupant = bear;
-		const { x, y, z } = tree.mesh.position;
+		const { x, y, z } = tree.body.position;
 		rig.root.visible = true;
 		rig.root.position.set(x, y + bear.height, z + BEAR_TRUNK_OFFSET);
 		rig.root.rotation.set(0, Math.PI, 0);

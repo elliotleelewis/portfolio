@@ -193,7 +193,7 @@ export class Game implements StageScene {
 		}
 		if (
 			isInLane &&
-			tree.mesh.position.z < -70 &&
+			tree.body.position.z < -70 &&
 			Math.random() < bearChance(this._player.distance)
 		) {
 			this._bears.climb(tree);
@@ -225,7 +225,7 @@ export class Game implements StageScene {
 		}
 		const player = this._player.position;
 		for (const tree of forest.hits(player)) {
-			this.topple(forest, tree, tree.mesh.position.x - player.x);
+			this.topple(forest, tree, tree.body.position.x - player.x);
 		}
 	}
 
@@ -258,7 +258,7 @@ export class Game implements StageScene {
 
 		// A burst of needles and bark.
 		this._effects.burst({
-			origin: tree.mesh.position,
+			origin: tree.body.position,
 			count: 22,
 			lift: [0.5, 5],
 			spread: { x: 8, z: 6 },

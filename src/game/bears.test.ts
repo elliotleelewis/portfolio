@@ -1,6 +1,6 @@
 // The bears' alert badge is drawn on a canvas, so these need a DOM.
 // @vitest-environment happy-dom
-import { Mesh, PerspectiveCamera, Vector3 } from 'three';
+import { Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 
 import { type BearActor, Bears, MAX_BEARS } from './bears';
@@ -11,11 +11,12 @@ import { terrainHeight } from './world';
 const dt = 1 / 60;
 
 const treeAt = (x: number, z: number): Tree<BearActor> => {
-	const mesh = new Mesh();
-	mesh.position.set(x, terrainHeight(x, z), z);
+	const body = new Object3D();
+	body.position.set(x, terrainHeight(x, z), z);
 	return {
-		mesh,
-		material: undefined as never,
+		body,
+		kind: 0,
+		slot: 0,
 		isFading: false,
 		opacity: 1,
 		occupant: undefined,

@@ -2,9 +2,12 @@ import {
 	type BufferGeometry,
 	type Camera,
 	Group,
+	InstancedMesh,
 	MathUtils,
+	Matrix4,
 	Mesh,
 	MeshLambertMaterial,
+	Object3D,
 	Quaternion,
 	type Scene,
 	Vector3,
@@ -30,9 +33,12 @@ const treeCount = Math.round((TREE_WINDOW + recycleDistance) * 0.67);
 const fadeDuration = 0.3;
 
 export interface Tree<Occupant> {
-	mesh: Mesh;
-	// Its own copy, so it can fade out on its own.
-	material: MeshLambertMaterial;
+	// Where it stands, which way it leans and how big it is. Not drawn
+	// itself: the forest draws all the trees of each kind in one go.
+	body: Object3D;
+	// Which kind of tree it is (its shape and tint), and its place among them.
+	kind: number;
+	slot: number;
 	// Fading out of the way of the camera, and how opaque it still is.
 	isFading: boolean;
 	opacity: number;
@@ -59,6 +65,27 @@ export interface ForestHooks<Occupant> {
 	onPlace: (tree: Tree<Occupant>, isInLane: boolean) => void;
 }
 
+type Ghost = Mesh<BufferGeometry, MeshLambertMaterial>;
+
+/**
+ * A see-through stand-in for a tree fading out of the camera's way. Its
+ * shape and tint are set when it's used.
+ * @returns The stand-in.
+ */
+const createGhost = (): Ghost => {
+	const ghost = new Mesh(
+		undefined,
+		new MeshLambertMaterial({
+			vertexColors: true,
+			flatShading: true,
+			transparent: true,
+		}),
+	);
+	// Placed straight from its tree's body.
+	ghost.matrixAutoUpdate = false;
+	return ghost;
+};
+
 /**
  * The trees down the mountainside: where they stand, how they fade out of
  * the camera's way, and how they topple when I roll into them.
@@ -67,6 +94,13 @@ export class Forest<Occupant> {
 	private readonly _hooks: ForestHooks<Occupant>;
 	private readonly _geometries: BufferGeometry[];
 	private readonly _materials: MeshLambertMaterial[];
+	// Every tree of each kind, drawn in one go.
+	private readonly _batches: InstancedMesh[];
+	// See-through stand-ins for the trees fading out of the camera's way,
+	// which can't fade within a batch, and spare ones to reuse.
+	private readonly _ghosts = new Map<Tree<Occupant>, Ghost>();
+	private readonly _spareGhosts: Ghost[] = [];
+	private readonly _hidden = new Matrix4().makeScale(0, 0, 0);
 	private readonly _up = new Vector3(0, 1, 0);
 	private readonly _q = new Quaternion();
 	private readonly _q2 = new Quaternion();
@@ -93,18 +127,27 @@ export class Forest<Occupant> {
 				}),
 		);
 
-		this.trees = Array.from({ length: treeCount }, (_value, i) => {
-			const material =
-				this._materials[i % this._materials.length].clone();
-			const mesh = new Mesh(
-				this._geometries[i % this._geometries.length],
-				material,
+		const kinds = this._geometries.length;
+		this._batches = this._geometries.map((geometry, kind) => {
+			const batch = new InstancedMesh(
+				geometry,
+				this._materials[kind],
+				Math.ceil((treeCount - kind) / kinds),
 			);
-			mesh.castShadow = true;
-			this.group.add(mesh);
+			batch.castShadow = true;
+			// The trees move about too much to cull the batch as a whole.
+			batch.frustumCulled = false;
+			this.group.add(batch);
+			return batch;
+		});
+
+		this.trees = Array.from({ length: treeCount }, (_value, i) => {
+			const body = new Object3D();
+			body.matrixAutoUpdate = false;
 			return {
-				mesh,
-				material,
+				body,
+				kind: i % kinds,
+				slot: Math.floor(i / kinds),
 				isFading: false,
 				opacity: 1,
 				occupant: undefined,
@@ -170,24 +213,69 @@ export class Forest<Occupant> {
 		}
 		const scale = MathUtils.randFloat(0.75, 1.25);
 		tree.state = 'standing';
-		tree.mesh.visible = true;
-		tree.mesh.castShadow = true;
-		if (tree.isFading) {
-			tree.isFading = false;
-			tree.opacity = 1;
-			tree.material.opacity = 1;
-			tree.material.transparent = false;
-			tree.material.needsUpdate = true;
-		}
+		tree.isFading = false;
+		tree.opacity = 1;
+		this.releaseGhost(tree);
 		tree.yaw = Math.random() * Math.PI * 2;
 		tree.angle = 0;
 		tree.angularVelocity = 0;
 		tree.velocity.set(0, 0, 0);
 		tree.hitRadius = 1 + scale * 0.35;
-		tree.mesh.scale.setScalar(scale);
-		tree.mesh.position.set(x, terrainHeight(x, z) - 0.15, z);
-		tree.mesh.quaternion.setFromAxisAngle(this._up, tree.yaw);
+		tree.body.scale.setScalar(scale);
+		tree.body.position.set(x, terrainHeight(x, z) - 0.15, z);
+		tree.body.quaternion.setFromAxisAngle(this._up, tree.yaw);
 		this._hooks.onPlace(tree, isInLane);
+	}
+
+	/**
+	 * Takes a tree out of its batch and draws it on its own, see-through, so
+	 * it can fade out of the camera's way.
+	 * @param tree - The tree.
+	 */
+	private startFading(tree: Tree<Occupant>): void {
+		tree.isFading = true;
+		const ghost = this._spareGhosts.pop() ?? createGhost();
+		ghost.geometry = this._geometries[tree.kind];
+		ghost.material.color.copy(this._materials[tree.kind].color);
+		ghost.material.opacity = tree.opacity;
+		this._ghosts.set(tree, ghost);
+		this.group.add(ghost);
+	}
+
+	/**
+	 * Puts away a tree's see-through stand-in, if it has one.
+	 * @param tree - The tree.
+	 */
+	private releaseGhost(tree: Tree<Occupant>): void {
+		const ghost = this._ghosts.get(tree);
+		if (!ghost) {
+			return;
+		}
+		this._ghosts.delete(tree);
+		ghost.removeFromParent();
+		this._spareGhosts.push(ghost);
+	}
+
+	/**
+	 * Hands every tree's latest position on to the batches that draw them.
+	 */
+	private draw(): void {
+		for (const tree of this.trees) {
+			const { body } = tree;
+			body.updateMatrix();
+			const ghost = this._ghosts.get(tree);
+			if (ghost) {
+				ghost.matrix.copy(body.matrix);
+			}
+			this._batches[tree.kind].setMatrixAt(
+				tree.slot,
+				// A fading tree is drawn by its stand-in, or not at all once gone.
+				tree.isFading ? this._hidden : body.matrix,
+			);
+		}
+		for (const batch of this._batches) {
+			batch.instanceMatrix.needsUpdate = true;
+		}
 	}
 
 	/**
@@ -197,6 +285,7 @@ export class Forest<Occupant> {
 		for (const tree of this.trees) {
 			this.place(tree, 20 - Math.random() * TREE_WINDOW, true);
 		}
+		this.draw();
 	}
 
 	/**
@@ -211,12 +300,12 @@ export class Forest<Occupant> {
 		scene: Scene,
 		camera: Camera,
 	): void {
-		const [tree] = this.trees;
-		tree.material.transparent = true;
-		tree.material.needsUpdate = true;
+		const ghost = this._spareGhosts.pop() ?? createGhost();
+		ghost.geometry = this._geometries[0];
+		this.group.add(ghost);
 		renderer.compile(scene, camera);
-		tree.material.transparent = false;
-		tree.material.needsUpdate = true;
+		ghost.removeFromParent();
+		this._spareGhosts.push(ghost);
 	}
 
 	/**
@@ -225,12 +314,12 @@ export class Forest<Occupant> {
 	 * @returns The trees I've hit.
 	 */
 	public hits(player: Vector3): Tree<Occupant>[] {
-		return this.trees.filter(({ state, mesh, hitRadius }) => {
+		return this.trees.filter(({ state, body, hitRadius }) => {
 			if (state !== 'standing') {
 				return false;
 			}
-			const dx = mesh.position.x - player.x;
-			const dz = mesh.position.z - player.z;
+			const dx = body.position.x - player.x;
+			const dz = body.position.z - player.z;
 			return Math.abs(dz) < 1 && Math.abs(dx) < hitRadius;
 		});
 	}
@@ -259,7 +348,7 @@ export class Forest<Occupant> {
 	 */
 	public update(dt: number, playerZ: number): void {
 		for (const tree of this.trees) {
-			const p = tree.mesh.position;
+			const p = tree.body.position;
 			if (p.z > playerZ + recycleDistance) {
 				this.place(tree, p.z - TREE_WINDOW);
 				continue;
@@ -271,15 +360,15 @@ export class Forest<Occupant> {
 				!tree.isFading &&
 				this._hooks.isBlockingView(p.x, p.z)
 			) {
-				tree.isFading = true;
-				tree.mesh.castShadow = false;
-				tree.material.transparent = true;
-				tree.material.needsUpdate = true;
+				this.startFading(tree);
 			}
-			if (tree.isFading && tree.mesh.visible) {
+			const ghost = this._ghosts.get(tree);
+			if (ghost) {
 				tree.opacity = Math.max(0, tree.opacity - dt / fadeDuration);
-				tree.material.opacity = tree.opacity;
-				tree.mesh.visible = tree.opacity > 0;
+				ghost.material.opacity = tree.opacity;
+				if (tree.opacity === 0) {
+					this.releaseGhost(tree);
+				}
 			}
 			if (tree.state !== 'falling') {
 				continue;
@@ -300,8 +389,9 @@ export class Forest<Occupant> {
 			}
 			this._q.setFromAxisAngle(tree.axis, tree.angle);
 			this._q2.setFromAxisAngle(this._up, tree.yaw);
-			tree.mesh.quaternion.multiplyQuaternions(this._q, this._q2);
+			tree.body.quaternion.multiplyQuaternions(this._q, this._q2);
 		}
+		this.draw();
 	}
 
 	public dispose(): void {
@@ -311,8 +401,11 @@ export class Forest<Occupant> {
 		for (const material of this._materials) {
 			material.dispose();
 		}
-		for (const { material } of this.trees) {
-			material.dispose();
+		for (const batch of this._batches) {
+			batch.dispose();
+		}
+		for (const ghost of [...this._ghosts.values(), ...this._spareGhosts]) {
+			ghost.material.dispose();
 		}
 	}
 }

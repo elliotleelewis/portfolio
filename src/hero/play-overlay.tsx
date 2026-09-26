@@ -1,23 +1,8 @@
 import { useAtomValue } from 'jotai';
-import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { SCENE_ATOM } from './atoms';
-
-const unsubscribe = (): void => {
-	// Nothing to clean up: hydration only happens once.
-};
-const subscribe = (): (() => void) => unsubscribe;
-
-/**
- * Whether React has hydrated the page yet, so event handlers are live.
- * @returns False while server-rendered, true once hydrated.
- */
-const useIsHydrated = (): boolean =>
-	useSyncExternalStore(
-		subscribe,
-		() => true,
-		() => false,
-	);
+import { useIsHydrated } from './hooks';
 
 interface Props {
 	onPlay: () => void;

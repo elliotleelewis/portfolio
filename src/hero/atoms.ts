@@ -49,6 +49,10 @@ export const SCENE_ATOM = atom<SceneKind | undefined>(undefined);
 // fades out.
 export const MODE_ATOM = atom<SceneKind | undefined>(undefined);
 
+// Whether the game is waiting on its start screen (on the game's own page)
+// for me to press start.
+export const WAITING_ATOM = atom(false);
+
 export const SCORE_ATOM = atom(0);
 export const METRES_ATOM = atom(0);
 export const HINT_ATOM = atom(false);

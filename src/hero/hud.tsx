@@ -1,6 +1,12 @@
 import { useAtomValue } from 'jotai';
 
-import { CALLOUT_ATOM, HINT_ATOM, METRES_ATOM, SCORE_ATOM } from './atoms';
+import {
+	CALLOUT_ATOM,
+	HINT_ATOM,
+	METRES_ATOM,
+	SCORE_ATOM,
+	WAITING_ATOM,
+} from './atoms';
 import { useController } from './context';
 import { Stick } from './stick';
 
@@ -15,10 +21,16 @@ export const Hud = () => {
 	const metres = useAtomValue(METRES_ATOM);
 	const callout = useAtomValue(CALLOUT_ATOM);
 	const isHintShown = useAtomValue(HINT_ATOM);
+	// Out of the way of the start screen until the run begins.
+	const isWaiting = useAtomValue(WAITING_ATOM);
 
 	return (
 		<div
-			className="pointer-events-none absolute inset-0 opacity-0 transition-opacity delay-700 duration-700 group-data-[state=playing]:opacity-100"
+			className={
+				isWaiting
+					? 'pointer-events-none invisible absolute inset-0 opacity-0'
+					: 'pointer-events-none absolute inset-0 opacity-0 transition-opacity delay-700 duration-700 group-data-[state=playing]:opacity-100'
+			}
 			aria-live="polite"
 		>
 			<div className="absolute inset-s-4 top-4 flex gap-2 font-mono text-sm text-slate-900 group-data-[mode=gallery]:hidden sm:text-base">
@@ -34,10 +46,12 @@ export const Hud = () => {
 				type="button"
 				className="pointer-events-auto absolute inset-e-4 top-4 cursor-pointer rounded-lg bg-white/70 px-3 py-1.5 text-sm text-slate-900 backdrop-blur-sm group-data-[state=idle]:pointer-events-none hover:bg-white/90 focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none sm:text-base"
 				onClick={() => {
-					controller.stop();
+					controller.leave();
 				}}
 			>
-				Back to the trail ✕
+				{controller.hasStartScreen
+					? 'Back to the start ✕'
+					: 'Back to the trail ✕'}
 			</button>
 			<div
 				id="hero-combo"

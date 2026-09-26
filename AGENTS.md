@@ -57,7 +57,8 @@ Import types with `import type { … }`, not `import { type … }`. With `verbat
   - Components free what they create. Game parts free theirs in `dispose()`.
   - The haze (`src/game/haze.ts`) changes three.js's fog for every material that uses it. It's measured by distance, not depth, and anything it has swallowed fades out, so the far mountains show through rather than a haze-coloured shape. Put anything new on the slope at least `APPEAR_AHEAD` ahead of the player (see `world.ts`), so it arrives already hidden.
 - **Easter eggs:** one module each in `src/game/easter-eggs/`, listed in `index.ts`. See the README for how to add one.
-  - Each easter egg's parts that share a parent and a material are merged into one mesh to save draw calls (`mergeStill` in `easter-eggs/merge.ts`). A part the easter egg moves on its own is put back automatically the moment it moves, and every part is put back before a smash, so each flies off separately.
+  - Each easter egg's parts that share a parent and a material are merged into one mesh to save draw calls (`mergeStill` in `easter-eggs/merge.ts`). Plain parts whose materials differ only in colour merge too, with their colours in the geometry. Glowing, see-through and textured materials keep their own, so animate those rather than a plain material's colour.
+  - A part the easter egg moves (or recolours) on its own is put back automatically the moment it changes, and every part is put back before a smash, so each flies off separately.
   - Keep your own references to the parts you animate. Don't find them by walking `children`: merged parts aren't there.
 - **Right-to-left:** the game and gallery mirror for right-to-left pages.
   - The page's direction becomes a `Mirror` (`1` or `-1`, in `src/game/direction.ts`), which flips the chase camera's side, the sun and the gallery row.

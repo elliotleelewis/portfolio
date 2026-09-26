@@ -1,7 +1,10 @@
 import {
 	BufferGeometry,
+	Color,
+	Float32BufferAttribute,
 	Material,
 	Mesh,
+	MeshStandardMaterial,
 	type Object3D,
 	Quaternion,
 	Vector3,
@@ -21,21 +24,69 @@ export interface MergedEasterEgg extends EasterEggInstance {
 }
 
 // A part taken out of the scene and drawn as part of a merged mesh, and how
-// it was placed when it was merged.
+// it was placed (and, if its colour went into the merge, what colour it was)
+// when it was merged.
 interface Original {
-	mesh: Mesh;
+	mesh: Mesh<BufferGeometry, Material>;
 	position: Vector3;
 	quaternion: Quaternion;
 	scale: Vector3;
 	isVisible: boolean;
+	color: Color | undefined;
 }
 
-// Parts merged into one mesh, alongside them under their parent.
+// Parts merged into one mesh, alongside them under their parent. Parts
+// merged by colour draw with a material of the merge's own, which goes when
+// it does.
 interface Merge {
 	parent: Object3D;
 	merged: Mesh;
 	originals: Original[];
+	ownMaterial: Material | undefined;
 }
+
+/**
+ * Whether a material's colour can go into the geometry instead, so parts
+ * that differ only in colour can share one material: a plain, solid, untextured
+ * standard material that doesn't glow. Easter eggs animate glowing and
+ * see-through materials (a flickering ember, the RGB, smoke), so those keep
+ * their own.
+ * @param material - The material.
+ * @returns True if its colour can go into the geometry.
+ */
+const isTintable = (material: Material): material is MeshStandardMaterial =>
+	material instanceof MeshStandardMaterial &&
+	material.type === 'MeshStandardMaterial' &&
+	!material.transparent &&
+	!material.vertexColors &&
+	material.emissive.getHex() === 0 &&
+	[
+		material.map,
+		material.alphaMap,
+		material.aoMap,
+		material.bumpMap,
+		material.displacementMap,
+		material.emissiveMap,
+		material.envMap,
+		material.lightMap,
+		material.metalnessMap,
+		material.normalMap,
+		material.roughnessMap,
+	].every((map) => map === null);
+
+// What a material's look leaves out: which material it is, and its colour.
+const unlike = new Set(['uuid', 'name', 'color']);
+
+/**
+ * Everything about a tintable material but its colour, so materials that
+ * look alike apart from their colour share it.
+ * @param material - The material.
+ * @returns Its look, colour aside.
+ */
+const lookOf = (material: MeshStandardMaterial): string =>
+	JSON.stringify(material.toJSON(), (key: string, value: unknown) =>
+		unlike.has(key) ? undefined : value,
+	);
 
 /**
  * Whether a mesh can be merged with others like it: a plain mesh with one
@@ -63,7 +114,9 @@ const isMergeable = (
  */
 const mergeKey = (mesh: Mesh<BufferGeometry, Material>): string =>
 	[
-		mesh.material.uuid,
+		isTintable(mesh.material)
+			? `tint:${lookOf(mesh.material)}`
+			: mesh.material.uuid,
 		mesh.castShadow,
 		mesh.receiveShadow,
 		mesh.geometry.index ? 'indexed' : 'flat',
@@ -82,23 +135,54 @@ const mergeKey = (mesh: Mesh<BufferGeometry, Material>): string =>
  * @returns True if it has changed.
  */
 const hasChanged = (original: Original): boolean => {
-	const { mesh, position, quaternion, scale, isVisible } = original;
+	const { mesh, position, quaternion, scale, isVisible, color } = original;
 	return (
 		!mesh.position.equals(position) ||
 		!mesh.quaternion.equals(quaternion) ||
 		!mesh.scale.equals(scale) ||
-		mesh.visible !== isVisible
+		mesh.visible !== isVisible ||
+		(color !== undefined &&
+			(!isTintable(mesh.material) || !mesh.material.color.equals(color)))
 	);
+};
+
+/**
+ * A copy of a part's geometry, moved into place in its parent, and coloured
+ * like its material if the merge takes its colour.
+ * @param mesh - The part.
+ * @param isTinted - Whether to colour it.
+ * @returns The copy.
+ */
+const placedGeometry = (
+	mesh: Mesh<BufferGeometry, Material>,
+	isTinted: boolean,
+): BufferGeometry => {
+	const geometry = mesh.geometry.clone().applyMatrix4(mesh.matrix);
+	if (isTinted && isTintable(mesh.material)) {
+		const { r, g, b } = mesh.material.color;
+		const { count } = geometry.getAttribute('position');
+		geometry.setAttribute(
+			'color',
+			new Float32BufferAttribute(
+				Array.from({ length: count }, () => [r, g, b]).flat(),
+				3,
+			),
+		);
+	}
+	return geometry;
 };
 
 /**
  * Merges an easter egg's parts that share a parent and a material into one
  * mesh each, so the easter egg takes far fewer draw calls. A merged mesh
- * stays under the same parent, so it still moves with it.
+ * stays under the same parent, so it still moves with it. Plain parts whose
+ * materials differ only in colour merge too, with their colours in the
+ * geometry.
  *
  * Some easter eggs move single parts about (a chain link flying off, a
- * spark). After every update, any merged-away part that has changed is put
- * back, along with the rest of its merge, before anything is drawn.
+ * spark). After every update, any merged-away part that has changed (or
+ * whose colour has) is put back, along with the rest of its merge, before
+ * anything is drawn.
  * @param instance - The easter egg, just created.
  * @returns The easter egg, merged.
  */
@@ -130,15 +214,26 @@ export const mergeStill = (instance: EasterEggInstance): MergedEasterEgg => {
 			if (meshes.length < 2) {
 				continue;
 			}
-			const placed = meshes.map((mesh) =>
-				mesh.geometry.clone().applyMatrix4(mesh.matrix),
+			const [first] = meshes;
+			// Parts that share a material keep it. Parts that only look alike
+			// get their colours in the geometry, and a white copy of it.
+			const isTinted = meshes.some(
+				(mesh) => mesh.material !== first.material,
 			);
+			const placed = meshes.map((mesh) => placedGeometry(mesh, isTinted));
 			const geometry = mergeGeometries(placed);
 			for (const clone of placed) {
 				clone.dispose();
 			}
-			const [first] = meshes;
-			const merged = new Mesh(geometry, first.material);
+			let ownMaterial: Material | undefined;
+			if (isTinted) {
+				ownMaterial = first.material.clone();
+				if (ownMaterial instanceof MeshStandardMaterial) {
+					ownMaterial.color.set(0xff_ff_ff);
+					ownMaterial.vertexColors = true;
+				}
+			}
+			const merged = new Mesh(geometry, ownMaterial ?? first.material);
 			merged.castShadow = first.castShadow;
 			merged.receiveShadow = first.receiveShadow;
 			parent.add(merged);
@@ -150,16 +245,21 @@ export const mergeStill = (instance: EasterEggInstance): MergedEasterEgg => {
 					quaternion: mesh.quaternion.clone(),
 					scale: mesh.scale.clone(),
 					isVisible: mesh.visible,
+					color:
+						isTinted && isTintable(mesh.material)
+							? mesh.material.color.clone()
+							: undefined,
 				};
 			});
-			merges.push({ parent, merged, originals });
+			merges.push({ parent, merged, originals, ownMaterial });
 		}
 	}
 
 	const split = (merge: Merge): void => {
-		const { parent, merged, originals } = merge;
+		const { parent, merged, originals, ownMaterial } = merge;
 		parent.remove(merged);
 		merged.geometry.dispose();
+		ownMaterial?.dispose();
 		for (const { mesh } of originals) {
 			parent.add(mesh);
 		}

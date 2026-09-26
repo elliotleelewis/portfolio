@@ -61,7 +61,7 @@
     "globals": "^17.0.0",
     "happy-dom": "^20.0.0",
     "husky": "^9.0.0",
-    "oxc-transform-react": "^0.145.0",
+    "oxc-transform-react": "^0.151.0",
     "prettier": "~3.9.0",
     "prettier-plugin-astro": "^1.0.0",
     "typescript": "~6.0.0",

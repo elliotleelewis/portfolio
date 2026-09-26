@@ -19,6 +19,7 @@ import {
 	SCORE_ATOM,
 	STAGE_SCENE_ATOM,
 	type ShownScene,
+	WAITING_ATOM,
 } from './atoms';
 import { readingDirection } from './direction';
 import { addHit, readHits } from './easter-egg-hits';
@@ -31,12 +32,20 @@ export type HeldInput = Exclude<keyof GameInput, 'steer' | 'throttle'>;
 // How long the photo takes to fade back in.
 const sceneFadeOut = 1500;
 
+export interface HeroOptions {
+	// Whether the game has a start screen of its own (on the game's own
+	// page), rather than starting from the photo. Leaving a run goes back to
+	// the start screen, not the photo.
+	hasStartScreen?: boolean;
+}
+
 /**
  * Runs the scenes in the hero's stage (the game and the easter egg gallery)
  * and mirrors what they report into the Jotai store for the UI to show.
  */
 export class HeroController {
 	private readonly _store: Store;
+	private readonly _hasStartScreen: boolean;
 	// Whichever scene is in the stage: the game or the gallery.
 	private _scene: StageScene | undefined;
 	// Scenes on their way out, torn down once the next has been drawn.
@@ -45,16 +54,21 @@ export class HeroController {
 	private _gallery: Gallery | undefined;
 	private _calloutTimeout: ReturnType<typeof setTimeout> | undefined;
 
-	public constructor(store: Store) {
+	public constructor(store: Store, options: HeroOptions = {}) {
 		this._store = store;
+		this._hasStartScreen = options.hasStartScreen ?? false;
 	}
 
 	/**
 	 * Creates a game in the stage. The previous scene (if any) is torn down
 	 * once the new one has been drawn, so there's no flash between them.
 	 * @param shouldSkipIntro - Jump straight to the roll, for restarts.
+	 * @param isHeld - Hold me at the start until I press start.
 	 */
-	private async launch(shouldSkipIntro: boolean): Promise<void> {
+	private async launch(
+		shouldSkipIntro: boolean,
+		isHeld = false,
+	): Promise<void> {
 		const gameModule = await import('../game/game');
 		const store = this._store;
 		const next = new gameModule.Game(
@@ -84,7 +98,11 @@ export class HeroController {
 					this.finish(trees, metres);
 				},
 			},
-			{ skipIntro: shouldSkipIntro, direction: readingDirection() },
+			{
+				skipIntro: shouldSkipIntro,
+				isHeld,
+				direction: readingDirection(),
+			},
 		);
 		this.show({ kind: 'game', scene: next });
 		this._game = next;
@@ -95,6 +113,7 @@ export class HeroController {
 		}
 		store.set(SCENE_ATOM, 'game');
 		store.set(MODE_ATOM, 'game');
+		store.set(WAITING_ATOM, isHeld);
 		this.resetHud();
 	}
 
@@ -147,6 +166,15 @@ export class HeroController {
 	}
 
 	/**
+	 * Whether the game has a start screen of its own, which leaving a run goes
+	 * back to (rather than the photo).
+	 * @returns True on the game's own page.
+	 */
+	public get hasStartScreen(): boolean {
+		return this._hasStartScreen;
+	}
+
+	/**
 	 * Whether a scene is in the stage.
 	 * @returns True while the game or the gallery is up.
 	 */
@@ -155,11 +183,16 @@ export class HeroController {
 	}
 
 	/**
-	 * Whether the game is taking steering input (not over, not the gallery).
+	 * Whether the game is taking steering input (started, not over, not the
+	 * gallery).
 	 * @returns True while a run is in play.
 	 */
 	public get isSteerable(): boolean {
-		return this._game !== undefined && !this._store.get(GAME_OVER_ATOM);
+		return (
+			this._game !== undefined &&
+			!this._game.isHeld &&
+			!this._store.get(GAME_OVER_ATOM)
+		);
 	}
 
 	/**
@@ -189,6 +222,51 @@ export class HeroController {
 		} catch (error) {
 			console.error(error);
 			this._store.set(PHASE_ATOM, 'idle');
+		}
+	}
+
+	/**
+	 * Puts the game in the stage, waiting on its start screen. For the game's
+	 * own page, which has no photo to start from.
+	 */
+	public async ready(): Promise<void> {
+		if (
+			this._game?.isHeld ||
+			(!this._scene && this._store.get(PHASE_ATOM) === 'loading')
+		) {
+			return;
+		}
+		if (!this._scene) {
+			this._store.set(PHASE_ATOM, 'loading');
+		}
+		try {
+			await this.launch(false, true);
+		} catch (error) {
+			console.error(error);
+			this._store.set(PHASE_ATOM, 'idle');
+		}
+	}
+
+	/**
+	 * Starts the run waiting on the start screen.
+	 */
+	public begin(): void {
+		if (!this._game?.isHeld) {
+			return;
+		}
+		this._game.release();
+		this._store.set(WAITING_ATOM, false);
+	}
+
+	/**
+	 * Leaves the game or the gallery: back to the start screen on the game's
+	 * own page, or back to the photo.
+	 */
+	public leave(): void {
+		if (this._hasStartScreen) {
+			void this.ready();
+		} else {
+			this.stop();
 		}
 	}
 
@@ -226,6 +304,7 @@ export class HeroController {
 		this.show({ kind: 'gallery', scene: next });
 		this._gallery = next;
 		this._game = undefined;
+		this._store.set(WAITING_ATOM, false);
 		this._store.set(GAME_OVER_ATOM, false);
 		this._store.set(GALLERY_ATOM, (view) => ({
 			...view,
@@ -249,6 +328,7 @@ export class HeroController {
 		this._gallery = undefined;
 		this._store.set(PHASE_ATOM, 'idle');
 		this._store.set(SCENE_ATOM, undefined);
+		this._store.set(WAITING_ATOM, false);
 		this._store.set(HINT_ATOM, false);
 		this._store.set(GAME_OVER_ATOM, false);
 		this._retiring.push(scene);

@@ -14,7 +14,7 @@ interface HeroHandle {
 
 /**
  * Starts a run from the photo and skips the intro.
- * @param page - The page, already on the home page or the game page.
+ * @param page - The page, already on the home page.
  */
 export const startRun = async (page: Page): Promise<void> => {
 	const hero = page.locator('#hero');
@@ -23,6 +23,20 @@ export const startRun = async (page: Page): Promise<void> => {
 		timeout: 60_000,
 	});
 	await advance(page, 8);
+};
+
+/**
+ * Starts a run from the game page's start screen, and gets it rolling.
+ * @param page - The page, already on the game page.
+ */
+export const startFromStartScreen = async (page: Page): Promise<void> => {
+	const start = page.locator('#hero-start');
+	await expect(start).toBeEnabled({ timeout: 60_000 });
+	await start.click();
+	await expect(page.locator('#hero-start-screen')).not.toHaveAttribute(
+		'data-show',
+	);
+	await advance(page, 4);
 };
 
 /**

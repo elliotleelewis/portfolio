@@ -43,7 +43,7 @@ The end-to-end tests start their own dev server. To use a Chromium you already h
 
 ```text
 src/
-  pages/        The home page, and the game on its own, full-window, at /game.
+  pages/        The home page, and the game on its own at /game.
   layout/       The HTML shell and analytics.
   content/      The page's sections: hero, intro, trail, pack list, base camp, footer.
   components/   Smaller pieces those sections share.
@@ -61,6 +61,7 @@ The game is split so most of it can be tested without a browser:
 
 - **The hero** (`src/hero/`) is a React island. `HeroController` starts and stops the scenes and copies what they report (score, distance, game over, the gallery's position) into Jotai atoms for the UI to show. The best score and easter egg smash counts are atoms with storage, so they're kept between visits.
 - **The scenes** (`src/game/game.ts` and `src/game/gallery.ts`) are plain classes. Each part of the game is its own class with its own tests, for example `Player`, `Forest`, `Bears`, `EasterEggTrail`, `Effects` and `ChaseCamera`. On each step these run as systems, in the order set by `SYSTEM_ORDER`.
+- **The game page** (`src/pages/game.astro`, at `/game`) is the same island on its own, filling the window. There's no photo: the game loads straight away and waits on a start screen of its own, and leaving a run goes back there.
 - **The worlds** (`src/game/components/`) are React Three Fiber components that add the sky, light, mountains, ground and trees to a scene and hook into its systems with `useSystem`.
 
 ### Adding an easter egg

@@ -47,6 +47,7 @@ Import types with `import type { … }`, not `import { type … }`. With `verbat
   - `HeroController` runs the scenes and copies what they report into the Jotai atoms in `atoms.ts`. Components read those atoms.
   - Anything kept between visits is an `atomWithStorage` read with `getOnInit: true`, for example `BEST_ATOM` and `EASTER_EGG_HITS_ATOM`. Storage can hold anything, so validate what you read (see `readHits`).
   - The game code is lazily imported, so it stays out of the page's first load.
+  - `/game` (`src/pages/game.astro`) is the hero on its own, with `isGamePage`. It has no photo: `controller.ready()` loads a held `Game`, which loops me looking around until `begin()` releases it. Leaving (`controller.leave()`) goes back to the start screen there, and to the photo on the home page.
 - **Scenes:** `Game` and `Gallery` in `src/game/` implement `StageScene`. The stage canvas (`src/hero/scene-canvas.tsx`) steps a scene and draws it once per frame.
 - **Game parts** are plain classes, such as `Player`, `Forest`, `Bears`, `EasterEggTrail`, `Effects` and `ChaseCamera`.
   - They don't touch React, so they can be unit-tested directly.

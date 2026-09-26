@@ -16,6 +16,7 @@ import { EasterEggTrail, type PlacedEasterEgg } from './easter-egg-trail';
 import type { EasterEggInstance } from './easter-eggs';
 import { Effects } from './effects';
 import type { Forest, ForestHooks, Tree } from './forest';
+import { fadeIntoHaze } from './haze';
 import { Player, type PlayerControls, STAR_END } from './player';
 import { bearBlastPoints, nextCombo } from './scoring';
 import type { StageScene } from './stage-scene';
@@ -109,6 +110,8 @@ export class Game implements StageScene {
 
 	public constructor(callbacks: GameCallbacks, options: GameOptions = {}) {
 		this._callbacks = callbacks;
+		// Before anything is drawn, so every material picks it up.
+		fadeIntoHaze();
 		if (options.skipIntro) {
 			this._time = STAR_END - 0.4;
 		}

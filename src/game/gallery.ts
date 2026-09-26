@@ -5,9 +5,10 @@ import { damp } from './easing';
 import {
 	ALL_EASTER_EGGS,
 	type EasterEgg,
-	type EasterEggInstance,
 	type EasterEggShowcase,
+	type MergedEasterEgg,
 	disposeObject,
+	mergeStill,
 } from './easter-eggs';
 import { fadeIntoHaze } from './haze';
 import { MYSTERY_SHOWCASE, createMystery } from './mystery';
@@ -26,7 +27,7 @@ interface Station {
 	hits: number;
 	// Not found yet, so hidden behind a mystery.
 	isLocked: boolean;
-	instance: EasterEggInstance;
+	instance: MergedEasterEgg;
 	position: Vector3;
 	// How the camera shows it: where it sits and looks, and the caption.
 	shot: Shot;
@@ -212,8 +213,8 @@ export class Gallery implements StageScene {
 		egg: EasterEgg,
 		isLocked: boolean,
 		position: Vector3,
-	): EasterEggInstance {
-		const instance = isLocked ? createMystery() : egg.create();
+	): MergedEasterEgg {
+		const instance = mergeStill(isLocked ? createMystery() : egg.create());
 		instance.object.position.copy(position);
 		this.easterEggs.add(instance.object);
 		return instance;
@@ -357,6 +358,7 @@ export class Gallery implements StageScene {
 		this._rate = glideRate;
 		const station = this._stations[this._index];
 		// Start its moment over, fresh.
+		station.instance.unmerge();
 		station.instance.object.removeFromParent();
 		disposeObject(station.instance.object);
 		station.instance = this.place(
@@ -454,7 +456,11 @@ export class Gallery implements StageScene {
 	}
 
 	public dispose(): void {
-		// The world's components free theirs.
+		// The world's components free theirs. Every part back in place first,
+		// so none is missed.
+		for (const { instance } of this._stations) {
+			instance.unmerge();
+		}
 		disposeObject(this.easterEggs);
 	}
 }

@@ -4,7 +4,9 @@ import {
 	EASTER_EGGS,
 	type EasterEgg,
 	type EasterEggInstance,
+	type MergedEasterEgg,
 	disposeObject,
+	mergeStill,
 } from './easter-eggs';
 import { TREE_WINDOW } from './forest';
 import type { Player } from './player';
@@ -22,8 +24,9 @@ export interface PlacedEasterEgg {
 	x: number;
 	z: number;
 	yaw: number;
-	// Created once it's close enough to matter.
-	instance: EasterEggInstance | undefined;
+	// Created once it's close enough to matter, with its still parts merged
+	// to take fewer draw calls.
+	instance: MergedEasterEgg | undefined;
 	// Whether I've barrelled through it.
 	isSmashed: boolean;
 }
@@ -82,7 +85,7 @@ export class EasterEggTrail {
 
 	private updateEgg(
 		placed: PlacedEasterEgg,
-		instance: EasterEggInstance,
+		instance: MergedEasterEgg,
 		dt: number,
 		time: number,
 	): void {
@@ -108,6 +111,8 @@ export class EasterEggTrail {
 			return;
 		}
 		placed.isSmashed = true;
+		// Every part separate again, so each flies off on its own.
+		instance.unmerge();
 		this._hooks.onSmash(placed, instance);
 		object.removeFromParent();
 	}
@@ -157,6 +162,7 @@ export class EasterEggTrail {
 		);
 		for (const placed of behind) {
 			if (placed.instance) {
+				placed.instance.unmerge();
 				placed.instance.object.removeFromParent();
 				disposeObject(placed.instance.object);
 			}
@@ -165,7 +171,7 @@ export class EasterEggTrail {
 
 		for (const placed of this._eggs) {
 			if (!placed.instance && placed.z > player.z - TREE_WINDOW) {
-				placed.instance = placed.egg.create();
+				placed.instance = mergeStill(placed.egg.create());
 				const { object } = placed.instance;
 				object.position.set(
 					placed.x,
@@ -184,9 +190,11 @@ export class EasterEggTrail {
 
 	public dispose(): void {
 		for (const { instance } of this._eggs) {
-			if (instance) {
-				disposeObject(instance.object);
+			if (!instance) {
+				continue;
 			}
+			instance.unmerge();
+			disposeObject(instance.object);
 		}
 	}
 }

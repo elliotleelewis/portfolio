@@ -76,13 +76,14 @@ export const createMystery = (): EasterEggInstance => {
 		opacity: 0.92,
 	});
 	const puffGeometry = new IcosahedronGeometry(1, 1);
-	for (const [x, y, z, size] of puffs) {
+	const puffMeshes = puffs.map(([x, y, z, size]) => {
 		const puff = new Mesh(puffGeometry, puffMaterial);
 		puff.position.set(x, y, z);
 		puff.scale.setScalar(size);
 		puff.rotation.set(x, y, z);
 		cloud.add(puff);
-	}
+		return puff;
+	});
 	root.add(cloud);
 
 	return {
@@ -92,7 +93,7 @@ export const createMystery = (): EasterEggInstance => {
 			mark.position.y = Math.sin(time * 1.6) * 0.08;
 			mark.rotation.y = Math.sin(time * 0.8) * 0.5;
 			cloud.rotation.y = time * 0.08;
-			for (const [i, puff] of cloud.children.entries()) {
+			for (const [i, puff] of puffMeshes.entries()) {
 				const [, y, , size] = puffs[i];
 				puff.scale.setScalar(
 					size * (1 + Math.sin(time * 0.9 + i) * 0.04),

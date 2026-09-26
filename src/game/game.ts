@@ -17,7 +17,13 @@ import type { EasterEggInstance } from './easter-eggs';
 import { Effects } from './effects';
 import type { Forest, ForestHooks, Tree } from './forest';
 import { fadeIntoHaze } from './haze';
-import { Player, type PlayerControls, STAR_END } from './player';
+import {
+	LOOK_START,
+	Player,
+	type PlayerControls,
+	STAR_END,
+	STAR_START,
+} from './player';
 import { bearBlastPoints, nextCombo } from './scoring';
 import type { StageScene } from './stage-scene';
 import { SYSTEM_ORDER, Systems } from './systems';
@@ -40,6 +46,8 @@ export interface GameCallbacks {
 export interface GameOptions {
 	// Skip straight to the star pose, for a quick restart.
 	skipIntro?: boolean;
+	// Hold me at the start, looking around, until release() is called.
+	isHeld?: boolean;
 	// Which way the page reads, which way I roll across the screen.
 	direction?: ReadingDirection;
 }
@@ -59,6 +67,9 @@ export interface GameInput {
 const blastReach = 12;
 // How long after being caught before the game-over screen shows.
 const gameOverDelay = 1.6;
+// How much faster I finish looking around once released from the start, so
+// I set off promptly without snapping my head round.
+const hurry = 4;
 
 /**
  * A little mountain-rolling game: I look around, strike a star pose, then
@@ -76,6 +87,9 @@ export class Game implements StageScene {
 	private readonly _trail: EasterEggTrail;
 
 	private _time = 0;
+	private _isHeld: boolean;
+	// Released while still looking around: hurry on to the star pose.
+	private _isHurrying = false;
 	private _score = 0;
 	private _combo = 0;
 	private _lastHit = -10;
@@ -115,6 +129,7 @@ export class Game implements StageScene {
 		if (options.skipIntro) {
 			this._time = STAR_END - 0.4;
 		}
+		this._isHeld = options.isHeld ?? false;
 
 		// The sky, light, mountains and ground are components (see
 		// ./components/world.tsx); everything else lives on the slope.
@@ -397,6 +412,22 @@ export class Game implements StageScene {
 	}
 
 	/**
+	 * Lets a held game go: on from looking around to the star pose, and away.
+	 */
+	public release(): void {
+		this._isHurrying = this._isHeld && this._time < STAR_START;
+		this._isHeld = false;
+	}
+
+	/**
+	 * Whether the game is holding me at the start.
+	 * @returns True until released.
+	 */
+	public get isHeld(): boolean {
+		return this._isHeld;
+	}
+
+	/**
 	 * Ends the run as though a bear had got me.
 	 */
 	public catchPlayer(): void {
@@ -439,7 +470,12 @@ export class Game implements StageScene {
 	 * @param dt - Seconds since the last step.
 	 */
 	public step(dt: number): void {
-		this._time += dt;
+		this._isHurrying &&= this._time < STAR_START;
+		this._time += this._isHurrying ? dt * hurry : dt;
+		// Held at the start: keep looking around, rather than strike the pose.
+		if (this._isHeld && this._time >= STAR_START) {
+			this._time -= STAR_START - LOOK_START;
+		}
 		this.systems.run(dt);
 
 		if (

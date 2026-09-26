@@ -71,10 +71,12 @@ export const GameOver = () => {
 						type="button"
 						className="cursor-pointer rounded-full border border-slate-900/20 px-5 py-2.5 font-semibold hover:bg-slate-900/5 focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none"
 						onClick={() => {
-							controller.stop();
+							controller.leave();
 						}}
 					>
-						Back to the trail
+						{controller.hasStartScreen
+							? 'Back to the start'
+							: 'Back to the trail'}
 					</button>
 				</div>
 			</div>

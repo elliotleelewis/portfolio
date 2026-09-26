@@ -26,6 +26,20 @@ export const startRun = async (page: Page): Promise<void> => {
 };
 
 /**
+ * Starts a run from the game page's start screen, and gets it rolling.
+ * @param page - The page, already on the game page.
+ */
+export const startFromStartScreen = async (page: Page): Promise<void> => {
+	const start = page.locator('#hero-start');
+	await expect(start).toBeEnabled({ timeout: 60_000 });
+	await start.click();
+	await expect(page.locator('#hero-start-screen')).not.toHaveAttribute(
+		'data-show',
+	);
+	await advance(page, 4);
+};
+
+/**
  * Runs the game forward, faster than real time.
  * @param page - The page with a run in progress.
  * @param seconds - Game time to simulate.

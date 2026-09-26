@@ -5,9 +5,11 @@ import { damp } from './easing';
 import { disposeObject } from './easter-eggs';
 import { LANE_HALF_WIDTH, terrainHeight } from './world';
 
-// Intro timeline, in seconds.
-const lookStart = 1.5;
-const starStart = 5;
+// Intro timeline, in seconds. I look around from LOOK_START to STAR_START,
+// starting and ending facing the camera, so it can loop while the game
+// waits to start.
+export const LOOK_START = 1.5;
+export const STAR_START = 5;
 // When I've struck the star pose (a restart skips to just before this).
 export const STAR_END = 5.8;
 // When I've turned side-on and start to roll.
@@ -18,7 +20,7 @@ const contactOffset = 0.05;
 
 // Head yaw/pitch keyframes while looking around: [time, yaw, pitch].
 const lookKeys: [number, number, number][] = [
-	[lookStart, 0, 0],
+	[LOOK_START, 0, 0],
 	[2.1, 0.8, 0.05],
 	[2.8, 0.8, 0.1],
 	[3.4, -0.8, 0.02],
@@ -189,7 +191,7 @@ export class Player {
 		c.body.rotation.y = yaw * 0.15;
 
 		// Hands up in the air, legs out: a star.
-		const star = MathUtils.smootherstep(t, starStart, STAR_END);
+		const star = MathUtils.smootherstep(t, STAR_START, STAR_END);
 		c.leftArm.rotation.z = MathUtils.lerp(0.08, 2.35, star);
 		c.rightArm.rotation.z = -c.leftArm.rotation.z;
 		c.leftLeg.rotation.z = MathUtils.lerp(0, 0.5, star);

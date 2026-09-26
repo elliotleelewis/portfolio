@@ -1,5 +1,5 @@
 import { useAtomValue } from 'jotai';
-import { type RefObject, useEffect } from 'react';
+import { type RefObject, useEffect, useSyncExternalStore } from 'react';
 
 import { SCENE_ATOM } from './atoms';
 import { useController } from './context';
@@ -20,7 +20,8 @@ const keys = new Map<string, HeldInput>([
 
 /**
  * Keyboard controls while a scene is up: arrows (or WASD) steer the game or
- * move through the gallery, and Escape goes back to the photo.
+ * move through the gallery, and Escape leaves (back to the photo, or to the
+ * start screen on the game's own page).
  */
 export const useKeyboardControls = (): void => {
 	const controller = useController();
@@ -32,7 +33,7 @@ export const useKeyboardControls = (): void => {
 		}
 		const onKey = (event: KeyboardEvent): void => {
 			if (event.code === 'Escape') {
-				controller.stop();
+				controller.leave();
 				return;
 			}
 			if (scene === 'gallery') {
@@ -108,3 +109,21 @@ export const usePreventTouchZoom = (
 		};
 	}, [controller, element]);
 };
+
+const unsubscribe = (): void => {
+	// Nothing to clean up: hydration only happens once.
+};
+const subscribe = (): (() => void) => unsubscribe;
+
+/**
+ * Whether React has hydrated the page yet: event handlers are live, and
+ * what only the browser knows (like what's in storage) can show without
+ * the page no longer matching what the server rendered.
+ * @returns False while server-rendered, true once hydrated.
+ */
+export const useIsHydrated = (): boolean =>
+	useSyncExternalStore(
+		subscribe,
+		() => true,
+		() => false,
+	);

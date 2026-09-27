@@ -45,3 +45,44 @@ test('loads without errors', async ({ page }) => {
 	await page.goto('/');
 	await page.waitForLoadState('networkidle');
 });
+
+test('loads a sharp enough photo for how big it is drawn', async ({ page }) => {
+	await page.goto('/');
+	const photo = page.locator('#hero img');
+	await expect(photo).toHaveJSProperty('complete', true);
+	const picked = await photo.evaluate((element) => {
+		if (!(element instanceof HTMLImageElement)) {
+			throw new TypeError('Expected the photo');
+		}
+		// Every candidate the page offers, and the one the browser chose.
+		const candidates = [
+			...(element.parentElement?.querySelectorAll('source') ?? []),
+			element,
+		].flatMap((node) =>
+			(node.getAttribute('srcset') ?? '').split(', ').map((entry) => {
+				const [url = '', width = '0w'] = entry.split(' ', 2);
+				return {
+					url: new URL(url, location.href).href,
+					// "1280w" and the like.
+					width: Number(width.slice(0, -1)),
+				};
+			}),
+		);
+		const chosen = candidates.find(({ url }) => url === element.currentSrc);
+		const box = element.getBoundingClientRect();
+		// The photo covers the hero, so it's drawn at least as wide as it is.
+		const shape = element.naturalWidth / element.naturalHeight;
+		const drawn = Math.max(box.width, box.height * shape);
+		return {
+			url: element.currentSrc,
+			width: chosen?.width ?? 0,
+			needed: Math.ceil(drawn * devicePixelRatio),
+			largest: Math.max(...candidates.map(({ width }) => width)),
+		};
+	});
+	expect(picked.url).toMatch(/avif/);
+	// As many pixels as it's drawn with, or the most there are.
+	expect(picked.width).toBeGreaterThanOrEqual(
+		Math.min(picked.needed, picked.largest),
+	);
+});

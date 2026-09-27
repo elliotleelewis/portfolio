@@ -42,6 +42,7 @@ Import types with `import type { … }`, not `import { type … }`. With `verbat
 ## How the code fits together
 
 - **Page:** `src/pages/index.astro` puts the sections from `src/content/` together. Everything is static Astro, except for the hero.
+- **Hero photo:** `src/media/hero.webp` is a lossless, full-resolution crop of the original, in Display P3. Astro converts it to sRGB and encodes each size as AVIF, with WebP as a fallback, at the qualities set in `astro.config.mjs`. Astro's image cache (`node_modules/.astro`) ignores those settings, so delete it after changing them, or builds keep the old images. The `sizes` in `src/content/Hero.astro` works out how wide the photo is drawn from the hero's layout, so update it if the layout changes. The e2e test "loads a sharp enough photo" checks it.
 - **Hero** (`src/hero/`):
   - A React island (`client:load`).
   - `HeroController` runs the scenes and copies what they report into the Jotai atoms in `atoms.ts`. Components read those atoms.

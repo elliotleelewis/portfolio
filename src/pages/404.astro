@@ -1,0 +1,42 @@
+---
+// Anything not on the site. Cloudflare Pages serves this with a 404 status.
+// Without it, Pages would treat the site as a single-page app and answer
+// every unknown path with the home page, so crawlers looking for files like
+// /llms.txt would get the home page instead of "not found".
+import Layout from '../layout/Layout.astro';
+
+import '../styles/global.css';
+---
+
+<Layout title="Off the trail · Elliot Lewis" isIndexed={false}>
+	<main class="mx-auto flex min-h-svh max-w-3xl flex-col justify-center px-5 py-16 sm:px-8">
+		<p class="font-mono text-xs tracking-[0.25em] text-accent uppercase">
+			404 · Not found
+		</p>
+		<h1 class="mt-4 font-display text-5xl font-semibold tracking-tight sm:text-7xl">
+			Off the trail<span class="text-accent">.</span>
+		</h1>
+		<p class="mt-6 max-w-xl text-lg/relaxed text-ink/85">
+			There’s nothing at this address. It may have moved, or never been
+			here at all.
+		</p>
+		<ul class="mt-8 flex flex-wrap gap-3">
+			<li>
+				<a
+					href="/"
+					class="inline-block rounded-full bg-ink px-5 py-2.5 font-semibold text-paper hover:bg-ink/85 focus-visible:ring-4 focus-visible:ring-accent/50 focus-visible:outline-none"
+				>
+					Back to the trailhead
+				</a>
+			</li>
+			<li>
+				<a
+					href="/game"
+					class="inline-block rounded-full border border-line px-5 py-2.5 font-semibold hover:bg-surface focus-visible:ring-4 focus-visible:ring-accent/50 focus-visible:outline-none"
+				>
+					Take the quick way down ⛰️
+				</a>
+			</li>
+		</ul>
+	</main>
+</Layout>

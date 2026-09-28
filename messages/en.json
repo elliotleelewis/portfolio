@@ -88,5 +88,120 @@
   "cookies_game_empty": "There’s nothing to clear.",
   "cookies_analytics_heading": "Analytics",
   "cookies_analytics_body": "I count visits with Cloudflare Web Analytics, which sets no cookies, stores nothing on your device and doesn’t fingerprint you.",
-  "back_to_trailhead": "Back to the trailhead"
+  "back_to_trailhead": "Back to the trailhead",
+  "site_description": "Elliot Lewis: Staff Software Engineer, front-end. Los Angeles, CA.",
+  "site_preview_alt": "Elliot smiling among pine trees, with a mountain behind him",
+  "hero_photo_alt": "Elliot smiling on a hiking trail, with pine trees and mountains behind him",
+  "game_title": "The quick way down · Elliot Lewis",
+  "game_description": "Cartwheel down a low-poly mountain as Elliot, flattening every tree you can, and don’t get caught by a bear.",
+  "socials_label": "Find me elsewhere",
+  "opens_in_new_tab": "(opens in a new tab)",
+  "intro_location": "Los Angeles, California",
+  "intro_role": "Staff Software Engineer at StubHub",
+  "intro_bio": "I’m a front-end engineer with nearly a decade of building enterprise and consumer web apps, from factory-floor systems at Jabil to Lens creator tools at Snap. I like leading projects and teams, launching products people actually use, and leaving codebases easier to work in than I found them.",
+  "section_heading": "{marker} · {kicker}",
+  "trail_kicker": "The trail",
+  "trail_title": "Where I’ve worked",
+  "trail_years": [
+    {
+      "declarations": [
+        "input from",
+        "input to",
+        "local fromYear = from: datetime year=numeric timeZone=UTC",
+        "local toYear = to: datetime year=numeric timeZone=UTC"
+      ],
+      "selectors": [],
+      "match": {
+        "": "{fromYear} – {toYear}"
+      }
+    }
+  ],
+  "trail_years_current": [
+    {
+      "declarations": [
+        "input from",
+        "local fromYear = from: datetime year=numeric timeZone=UTC"
+      ],
+      "selectors": [],
+      "match": {
+        "": "{fromYear} – now"
+      }
+    }
+  ],
+  "role_dates": [
+    {
+      "declarations": [
+        "input from",
+        "input to",
+        "input place",
+        "local fromMonth = from: datetime month=short year=numeric timeZone=UTC",
+        "local toMonth = to: datetime month=short year=numeric timeZone=UTC"
+      ],
+      "selectors": [],
+      "match": {
+        "": "{fromMonth} – {toMonth} · {place}"
+      }
+    }
+  ],
+  "role_dates_current": [
+    {
+      "declarations": [
+        "input from",
+        "input place",
+        "local fromMonth = from: datetime month=short year=numeric timeZone=UTC"
+      ],
+      "selectors": [],
+      "match": {
+        "": "{fromMonth} – Present · {place}"
+      }
+    }
+  ],
+  "role_more": "More",
+  "role_less": "Less",
+  "role_staff_engineer": "Staff Software Engineer",
+  "role_senior_engineer": "Senior Software Engineer",
+  "role_engineer": "Software Engineer",
+  "place_los_angeles": "Los Angeles, CA",
+  "place_st_petersburg": "St Petersburg, FL",
+  "place_livingston": "Livingston, Scotland",
+  "place_manchester": "Manchester, UK",
+  "trail_snap_event_insights": "Led Event Insights end to end across three teams: {#strong}patented{/strong} ({#link}US11894989B2{/link}) and launched at Snap Partner Summit 2022, giving Lens creators new metrics on their lenses.",
+  "trail_snap_payouts": "Led a four-team effort to build an engagement-based monthly payout program for Lens creators, driving Lens submissions up {#strong}300%{/strong} in its first month.",
+  "trail_snap_load_times": "Cut My Lenses load times by {#strong}~40%{/strong} and grew end-to-end coverage of our P0 test cases from {#strong}20% to 75%{/strong}, so we could release faster.",
+  "trail_snap_digital_goods": "Built tooling in My Lenses for creators to manage their digital goods, plus an internal payout system, letting some creators earn thousands of dollars a month.",
+  "trail_snap_alerting": "Set up real-time error reporting and alerting, bringing mean time to resolve production issues under two hours.",
+  "trail_snap_mentoring": "Mentored junior engineers, including an apprentice assigned to work on My Lenses.",
+  "trail_jabil_architect": "Became the de facto front-end architect for {#strong}10+ teams{/strong}, merging a fleet of on-prem front ends into a single regional cloud application.",
+  "trail_jabil_redesign": "Led a team of 7 engineers redesigning every screen of our {#strong}450k+ line{/strong} flagship application.",
+  "trail_jabil_inner_source": "Started Jabil’s first inner-source project: an Angular component library for any team in the company.",
+  "trail_jabil_jemsmm": "Joined a sprint team on JEMSmm (part of the Factory of the Future initiative) as a full-stack developer, building Angular front ends and ASP.NET Core APIs.",
+  "trail_jabil_ui_ux": "Revived our UI/UX community group and became one of the UI/UX leads for the whole Factory of the Future initiative.",
+  "trail_jabil_cio": "Recognised by Jabil’s CIO, May Yap, for technical expertise.",
+  "trail_jabil_ui_library": "Built an Angular UI package library that our team used across every front end in iFactory.",
+  "trail_jabil_microsoft": "Partnered with a Microsoft team, building an Angular front end for the ASP.NET Core API they’d built.",
+  "pack_kicker": "The pack",
+  "pack_title": "What I carry",
+  "pack_languages": "Languages",
+  "pack_frameworks": "Frameworks & styling",
+  "pack_apis": "APIs & runtime",
+  "pack_tooling": "Testing & tooling",
+  "camp_kicker": "Base camp",
+  "camp_title": "Where it started",
+  "camp_degree": "Computer Science BSc (Hons)",
+  "camp_university": "Manchester Metropolitan University, with a sandwich year",
+  "camp_first_class": "First Class Honours",
+  "camp_excellence": "Academic Excellence · Years 1 & 2",
+  "footer_title": "End of the trail.",
+  "footer_cookies": "Cookies",
+  "not_found_eyebrow": "404 · Not found",
+  "not_found_title": "Off the trail",
+  "not_found_page_title": "Off the trail · Elliot Lewis",
+  "not_found_body": "There’s nothing at this address. It may have moved, or never been here at all.",
+  "egg_outhouse": "Fresh out of the log cabin loo",
+  "egg_jailbreak": "Slipping the cuffs",
+  "egg_keepy_uppies": "Keepy-uppies in the Everton kit",
+  "egg_money_rain": "Making it rain (Canadian dollars)",
+  "egg_tahoe_reader": "Reading in the back of the Tahoe",
+  "egg_battlestation": "Working from the woods",
+  "egg_wood_stove": "Man make fire"
 }

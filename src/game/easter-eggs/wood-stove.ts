@@ -15,6 +15,8 @@ import {
 	Vector3,
 } from 'three';
 
+import { m } from '../../paraglide/messages';
+
 import { canvasTexture, joint, part, standard } from './parts';
 import type { EasterEgg, EasterEggFrame } from './types';
 
@@ -609,7 +611,7 @@ export const WOOD_STOVE: EasterEgg = {
 	clearingRadius: 12,
 	footprint: { halfWidth: 1, halfDepth: 0.9 },
 	gallery: {
-		caption: 'Man make fire',
+		caption: m.egg_wood_stove(),
 		camera: [1.4, 1.9, 4.4],
 		target: [-0.25, 1, 0.2],
 	},

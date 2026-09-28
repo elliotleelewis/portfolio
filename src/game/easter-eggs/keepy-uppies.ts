@@ -14,6 +14,8 @@ import {
 	Vector3,
 } from 'three';
 
+import { m } from '../../paraglide/messages';
+
 import { joint, part, standard } from './parts';
 import type { EasterEgg, EasterEggFrame } from './types';
 
@@ -307,7 +309,7 @@ export const KEEPY_UPPIES: EasterEgg = {
 	clearingRadius: 10.5,
 	footprint: { halfWidth: 0.5, halfDepth: 0.5 },
 	gallery: {
-		caption: 'Keepy-uppies in the Everton kit',
+		caption: m.egg_keepy_uppies(),
 		camera: [1.3, 1.5, 4.3],
 		target: [0, 1, 0],
 	},

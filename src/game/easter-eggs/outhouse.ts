@@ -12,6 +12,8 @@ import {
 	TorusGeometry,
 } from 'three';
 
+import { m } from '../../paraglide/messages';
+
 import { joint, part, standard } from './parts';
 import type { EasterEgg, EasterEggFrame } from './types';
 
@@ -407,7 +409,7 @@ export const OUTHOUSE: EasterEgg = {
 	clearingRadius: 12,
 	footprint: { halfWidth: halfSize + 0.2, halfDepth: halfSize + 0.2 },
 	gallery: {
-		caption: 'Fresh out of the log cabin loo',
+		caption: m.egg_outhouse(),
 		camera: [2.4, 1.9, 5.4],
 		target: [0, 1.2, 0.6],
 	},

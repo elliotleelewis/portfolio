@@ -14,6 +14,8 @@ import {
 	Vector3,
 } from 'three';
 
+import { m } from '../../paraglide/messages';
+
 import { canvasTexture, joint, part, standard } from './parts';
 import type { EasterEgg, EasterEggFrame } from './types';
 
@@ -370,7 +372,7 @@ export const JAILBREAK: EasterEgg = {
 	clearingRadius: 12,
 	footprint: { halfWidth: circleRadius + 0.4, halfDepth: circleRadius + 0.4 },
 	gallery: {
-		caption: 'Slipping the cuffs',
+		caption: m.egg_jailbreak(),
 		camera: [2.6, 3.2, 7.8],
 		target: [0, 0.9, 0],
 	},

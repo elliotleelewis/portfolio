@@ -1,4 +1,6 @@
 ---
+import { m } from '../paraglide/messages';
+
 interface Props {
 	href: string;
 	label: string;
@@ -18,5 +20,5 @@ const { href, label } = Astro.props;
 		<slot />
 	</span>
 	{label}
-	<span class="sr-only">(opens in a new tab)</span>
+	<span class="sr-only">{m.opens_in_new_tab()}</span>
 </a>

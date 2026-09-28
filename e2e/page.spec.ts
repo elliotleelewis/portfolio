@@ -161,7 +161,7 @@ test('loads each font, in the styles each page uses', async ({ page }) => {
 	]);
 	await page.goto('/game');
 	expect(await loaded()).toEqual([
-		'Fraunces 700 normal',
+		'Fraunces 600 normal',
 		'Inter 400 900 normal',
 		'JetBrains Mono 400 normal',
 	]);

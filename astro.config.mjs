@@ -49,10 +49,8 @@ export default defineConfig({
 	// Every font comes from Google Fonts, and the build hosts it with the
 	// site. A browser only downloads the styles a page uses.
 	fonts: [
-		// Headings are semibold, the game page's title bold, and one line
-		// italic.
+		// Headings are semibold, and one line italic.
 		fraunces(600, 'normal'),
-		fraunces(700, 'normal'),
 		fraunces(400, 'italic'),
 		// Body text, from regular to black: one variable font.
 		{

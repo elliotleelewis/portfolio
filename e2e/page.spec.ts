@@ -128,3 +128,25 @@ test('describes the site for AI agents in llms.txt', async ({ request }) => {
 		expect(page.status()).toBe(200);
 	}
 });
+
+test('loads Fraunces, in the styles each page uses', async ({ page }) => {
+	// The build downloads Fraunces from Google Fonts, and carries on without
+	// it if that fails. Headings would then quietly fall back to Georgia.
+	const loaded = async (): Promise<string[]> =>
+		page.evaluate(async () => {
+			const { fonts } = globalThis.document;
+			await fonts.ready;
+			return [...fonts]
+				.filter(
+					({ family, status }) =>
+						family.replaceAll('"', '').startsWith('Fraunces') &&
+						status === 'loaded',
+				)
+				.map(({ weight, style }) => `${weight} ${style}`)
+				.toSorted((a, b) => a.localeCompare(b));
+		});
+	await page.goto('/');
+	expect(await loaded()).toEqual(['400 italic', '600 normal']);
+	await page.goto('/game');
+	expect(await loaded()).toEqual(['700 normal']);
+});

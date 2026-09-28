@@ -2,10 +2,17 @@ import partytown from '@astrojs/partytown';
 import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
+import type { AstroUserConfig } from 'astro';
 import { defineConfig, fontProviders, sharpImageService } from 'astro/config';
 import robotsTxt from 'astro-robots-txt';
 
 const google = fontProviders.google();
+
+// A font family from Google Fonts, with its options. Astro doesn't export the
+// type on its own.
+type GoogleFontFamily = NonNullable<
+	AstroUserConfig<never, never, [typeof google]>['fonts']
+>[0];
 
 /**
  * One style of Fraunces from Google Fonts: a single weight, with the
@@ -16,7 +23,10 @@ const google = fontProviders.google();
  * @param style - Upright or italic.
  * @returns The font family entry.
  */
-const fraunces = (weight, style) => ({
+const fraunces = (
+	weight: number,
+	style: 'normal' | 'italic',
+): GoogleFontFamily => ({
 	provider: google,
 	name: 'Fraunces',
 	// Entries with the same variable, name and provider make one family.

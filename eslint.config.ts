@@ -1,10 +1,9 @@
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-import { includeIgnoreFile } from '@eslint/compat';
 import { FlatCompat } from '@eslint/eslintrc';
 import eslint from '@eslint/js';
 import comments from '@eslint-community/eslint-plugin-eslint-comments/configs';
+import { defineConfig, includeIgnoreFile } from 'eslint/config';
 import configPrettier from 'eslint-config-prettier';
 import astro from 'eslint-plugin-astro';
 import tailwind from 'eslint-plugin-better-tailwindcss';
@@ -15,10 +14,8 @@ import unicorn from 'eslint-plugin-unicorn';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const compat = new FlatCompat({
-	baseDirectory: __dirname,
+	baseDirectory: import.meta.dirname,
 	recommendedConfig: eslint.configs.recommended,
 });
 
@@ -28,6 +25,13 @@ const namingConvention = [
 		format: ['camelCase'],
 		leadingUnderscore: 'forbid',
 		trailingUnderscore: 'forbid',
+	},
+	// Keys that have to be quoted, like 'import/order' or 'Content-Type',
+	// name something outside the code.
+	{
+		selector: ['objectLiteralProperty', 'typeProperty'],
+		modifiers: ['requiresQuotes'],
+		format: null,
 	},
 	{
 		selector: 'typeLike',
@@ -69,8 +73,8 @@ const namingConvention = [
 	},
 ];
 
-export default tseslint.config(
-	includeIgnoreFile(path.resolve(__dirname, '.gitignore')),
+export default defineConfig(
+	includeIgnoreFile(path.resolve(import.meta.dirname, '.gitignore')),
 	{
 		extends: [eslint.configs.recommended],
 		languageOptions: {
@@ -89,7 +93,7 @@ export default tseslint.config(
 			...compat.extends('plugin:import/recommended'),
 			...compat.extends('plugin:import/typescript'),
 			jsdoc.configs['flat/recommended-typescript-error'],
-			unicorn.configs['flat/recommended'],
+			unicorn.configs.recommended,
 		],
 		languageOptions: {
 			parserOptions: {

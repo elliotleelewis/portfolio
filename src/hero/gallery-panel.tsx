@@ -1,6 +1,8 @@
 import { useAtomValue } from 'jotai';
 import { useEffect, useRef } from 'react';
 
+import { m } from '../paraglide/messages';
+
 import { GALLERY_ATOM, SCENE_ATOM } from './atoms';
 import { useController } from './context';
 import { hitsMessage } from './easter-egg-hits';
@@ -28,14 +30,14 @@ export const GalleryPanel = () => {
 			id="hero-gallery"
 			className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 px-4 pb-6 opacity-0 transition-opacity duration-500 group-data-[mode=gallery]:group-data-[state=playing]:pointer-events-auto group-data-[mode=gallery]:group-data-[state=playing]:opacity-100"
 			role="region"
-			aria-label="Easter egg gallery"
-			aria-roledescription="carousel"
+			aria-label={m.gallery_label()}
+			aria-roledescription={m.gallery_carousel()}
 		>
 			<div className="flex w-full max-w-md items-center gap-2">
 				<button
 					id="hero-gallery-prev"
 					type="button"
-					aria-label="Previous easter egg"
+					aria-label={m.gallery_previous()}
 					className="size-11 shrink-0 cursor-pointer rounded-full bg-white/85 text-xl font-bold text-slate-900 shadow-lg backdrop-blur-md hover:bg-white focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none"
 					onClick={() => {
 						controller.previousEgg();
@@ -57,14 +59,14 @@ export const GalleryPanel = () => {
 					>
 						{smashes > 0
 							? hitsMessage(smashes)
-							: 'Barrel into it on the trail to find out'}
+							: m.gallery_find_out()}
 					</p>
 				</div>
 				<button
 					id="hero-gallery-next"
 					ref={next}
 					type="button"
-					aria-label="Next easter egg"
+					aria-label={m.gallery_next()}
 					className="size-11 shrink-0 cursor-pointer rounded-full bg-white/85 text-xl font-bold text-slate-900 shadow-lg backdrop-blur-md hover:bg-white focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none"
 					onClick={() => {
 						controller.nextEgg();
@@ -78,9 +80,11 @@ export const GalleryPanel = () => {
 					<button
 						key={i}
 						type="button"
-						aria-label={`Easter egg ${String(i + 1)}${
-							(hits[i] ?? 0) > 0 ? '' : ', not found yet'
-						}`}
+						aria-label={
+							(hits[i] ?? 0) > 0
+								? m.gallery_egg({ number: i + 1 })
+								: m.gallery_egg_unfound({ number: i + 1 })
+						}
 						aria-current={i === index}
 						data-active={i === index ? '' : undefined}
 						// Bigger than the dot, so it's easy to tap.
@@ -101,7 +105,7 @@ export const GalleryPanel = () => {
 					controller.rollAgain();
 				}}
 			>
-				Roll again
+				{m.hero_roll_again()}
 			</button>
 		</div>
 	);

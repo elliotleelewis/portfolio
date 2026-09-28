@@ -10,6 +10,7 @@ The hero photo doubles as a game. Press play and the photo fades into a low-poly
 
 - [Astro](https://astro.build) for the page, with [Tailwind CSS](https://tailwindcss.com) for styles.
 - A [React](https://react.dev) island for the hero, with its state in [Jotai](https://jotai.org) atoms.
+- [Paraglide](https://paraglidejs.com) for text, shared by the Astro pages and the React island, in `messages/`.
 - [three.js](https://threejs.org) and [React Three Fiber](https://r3f.docs.pmnd.rs) for the game, loaded only when you press play.
 - [Vitest](https://vitest.dev) for unit tests and [Playwright](https://playwright.dev) for end-to-end tests.
 - Hosted on [Cloudflare Pages](https://pages.cloudflare.com).
@@ -52,6 +53,8 @@ src/
     components/ The React Three Fiber components that build their worlds.
     easter-eggs/ One module per easter egg.
 e2e/            The Playwright tests.
+messages/       The site's text, one file per language, for Paraglide.
+project.inlang/ Paraglide's settings.
 public/         Static files, like the favicons.
 ```
 

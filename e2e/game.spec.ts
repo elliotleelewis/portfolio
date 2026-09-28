@@ -148,16 +148,14 @@ test.describe('gallery', () => {
 		// it until the fade has finished, counting anything with an opacity of
 		// 0 (on it or around it) as unseen.
 		const wasSeen = await page.evaluate(async () => {
-			const element = globalThis.document.querySelector('#hero-score');
+			const element = document.querySelector('#hero-score');
 			const start = performance.now();
 			let isSeen = false;
 			while (performance.now() - start < 2500) {
 				isSeen ||=
 					element?.checkVisibility({ opacityProperty: true }) ??
 					false;
-				await new Promise((resolve) =>
-					globalThis.requestAnimationFrame(resolve),
-				);
+				await new Promise((resolve) => requestAnimationFrame(resolve));
 			}
 			return isSeen;
 		});
@@ -214,7 +212,7 @@ test.describe('on a phone', () => {
 		await page.evaluate(() => {
 			const prevented: boolean[] = [];
 			Object.assign(globalThis, { touchendsPrevented: prevented });
-			globalThis.document.addEventListener(
+			document.addEventListener(
 				'touchend',
 				(event) => {
 					prevented.push(event.defaultPrevented);
@@ -248,7 +246,7 @@ test.describe('on a phone', () => {
 		// scrolling the page.
 		const blocksScrolling = async (): Promise<boolean[]> =>
 			page.evaluate(() => {
-				const hero = globalThis.document.querySelector('#hero');
+				const hero = document.querySelector('#hero');
 				if (!hero) {
 					throw new Error('No hero');
 				}
@@ -257,15 +255,15 @@ test.describe('on a phone', () => {
 				const blocked: boolean[] = [];
 				for (const fx of [0.1, 0.5, 0.9]) {
 					for (const fy of [0.1, 0.5, 0.9]) {
-						let element = globalThis.document.elementFromPoint(
+						let element = document.elementFromPoint(
 							left + width * fx,
 							top + height * fy,
 						);
 						let isBlocked = false;
 						while (element) {
 							isBlocked ||=
-								globalThis.getComputedStyle(element)
-									.touchAction === 'none';
+								getComputedStyle(element).touchAction ===
+								'none';
 							element = element.parentElement;
 						}
 						blocked.push(isBlocked);

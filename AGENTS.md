@@ -14,7 +14,7 @@ pnpm build
 pnpm test:e2e
 ```
 
-- **Check `pnpm lint` by its exit code, not by scanning the output.** When imports are out of order, the `import/order` rule crashes with `TypeError: sourceCode.getTokenOrCommentBefore is not a function`. The crash hides every other error in the file. See [Imports](#imports).
+- `pnpm lint` fails on warnings as well as errors.
 - `pnpm lint:fix` and `pnpm format:fix` fix most style problems, including Tailwind class order.
 - The end-to-end tests start their own dev server. If Playwright's own browser isn't installed, point `PLAYWRIGHT_CHROMIUM_EXECUTABLE` at a Chromium you have.
 - For changes to the game or the page's look, also look at the result in a browser. The tests can't tell you whether it looks right.
@@ -35,7 +35,7 @@ ESLint enforces most of this, with strict TypeScript, unicorn, jsdoc, jsx-a11y a
 
 ### Imports
 
-Imports go in groups separated by a blank line: packages first, then parent paths (`../`), then siblings (`./`). Within each group they're sorted by path, character by character, so `./difficulty` comes before `./direction` and `./controller` before `./direction`. Get this wrong and the lint run crashes (see above).
+Imports go in groups separated by a blank line: packages first, then parent paths (`../`), then siblings (`./`). Within each group they're sorted by path, character by character, so `./difficulty` comes before `./direction` and `./controller` before `./direction`, and the names inside the braces are sorted too. `pnpm lint:fix` puts them in order.
 
 Import types with `import type { … }`, not `import { type … }`. With `verbatimModuleSyntax` on, the second form still loads the module when the page runs. For example, `src/hero/` importing a type from `src/game/` that way pulled all of three.js into the first page load. The `@typescript-eslint/no-import-type-side-effects` rule catches it.
 

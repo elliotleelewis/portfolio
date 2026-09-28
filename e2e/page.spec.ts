@@ -157,7 +157,7 @@ test('loads each font, in the styles each page uses', async ({ page }) => {
 	// fonts.
 	const loaded = async (): Promise<string[]> =>
 		page.evaluate(async () => {
-			const { fonts } = globalThis.document;
+			const { fonts } = document;
 			await fonts.ready;
 			return (
 				[...fonts]

@@ -3,8 +3,6 @@ import { Font, getImage } from 'astro:assets';
 
 import hero from '../media/hero.webp';
 
-import Analytics from './Analytics.astro';
-
 interface Props {
 	title: string;
 	// What the page is, for search results and link previews.
@@ -109,6 +107,5 @@ const previewUrl = new URL(preview.src, url).href;
 				observer.observe(element);
 			}
 		</script>
-		{import.meta.env.PROD && <Analytics />}
 	</body>
 </html>

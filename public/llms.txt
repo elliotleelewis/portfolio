@@ -19,6 +19,7 @@ Education: Computer Science BSc (Hons), First Class Honours, Manchester Metropol
 
 - [Home page](https://elliotleelewis.com/): Work history, skills and education, with the game in the hero.
 - [The game](https://elliotleelewis.com/game): "The quick way down", the game on its own, filling the window.
+- [Cookies](https://elliotleelewis.com/cookies): The one cookie the site's host may set, and what the game remembers.
 
 ## Elsewhere
 

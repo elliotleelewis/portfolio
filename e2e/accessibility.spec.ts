@@ -55,6 +55,11 @@ for (const colorScheme of ['light', 'dark'] as const) {
 			await expectNoViolations(page);
 		});
 
+		test('the cookies page is accessible', async ({ page }) => {
+			await page.goto('/cookies');
+			await expectNoViolations(page);
+		});
+
 		test('the 404 page is accessible', async ({ page }) => {
 			await page.goto('/no-such-page');
 			await expectNoViolations(page);

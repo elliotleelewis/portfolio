@@ -166,9 +166,6 @@ importers:
 
   .:
     dependencies:
-      '@astrojs/partytown':
-        specifier: ^2.0.0
-        version: 2.1.8
       '@astrojs/react':
         specifier: ^7.0.0
         version: 7.0.0(@types/node@24.19.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(esbuild@0.28.2)(jiti@2.7.0)(oxc-transform-react@0.151.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(yaml@2.9.1)
@@ -474,9 +471,6 @@ packages:
 
   '@astrojs/markdown-satteri@0.4.2':
     resolution: {integrity: sha512-g4QehXnB/MzxQWnSf17NciFInMqEJy9948p8cc7zGg/r7995m0Ln5PMr3Xlnj24iey1LchaoZ3SzTOa3D4P/3w==}
-
-  '@astrojs/partytown@2.1.8':
-    resolution: {integrity: sha512-iCRNNPqvdQEORyAYC8jN8nTCN2wW66WS+Pft2fhqq52cj3GcWvzlAZlyfjtpCeiEYI0op6u5OtWqqItiS7INDA==}
 
   '@astrojs/prism@4.0.2':
     resolution: {integrity: sha512-KTivpmnz6lDsC6o9H4+DNm2SrE/GHzw8cNAvEJwAvUT+eoaEnn/4NtbDNfRRaxaJHdp15gf+tfHAWiXR4wB3BA==}
@@ -1378,11 +1372,6 @@ packages:
 
   '@prettier/parse-srcset@3.1.0':
     resolution: {integrity: sha512-FIRv2rZotO9NP/r66taYqD1zICpPiBbrECqjKV/xqNotqDxF7fLzzUeK+1RSRx9Tenk0DajR/GcRmTJ2qtHaKQ==}
-
-  '@qwik.dev/partytown@0.14.4':
-    resolution: {integrity: sha512-XGBgDuxgG7CsAs4PZ32GUmbD029nAeCR4VGyJRJnNp3r3uVjbZt8Dkxe8cw+f8xY6Dh8VI5cb3ygEZCqSftwtA==}
-    engines: {node: '>=18.0.0'}
-    hasBin: true
 
   '@react-three/fiber@9.8.1':
     resolution: {integrity: sha512-GbNP4r6F/gpclFKkLGHzXcuwFWAzLyKsmrQGcDuwK3wQnwLH6F1TfGtEYjHy8OQoGsajwT19B9jtVLLjjfH09w==}
@@ -4639,11 +4628,6 @@ snapshots:
       github-slugger: 2.0.0
       satteri: 0.10.5
 
-  '@astrojs/partytown@2.1.8':
-    dependencies:
-      '@qwik.dev/partytown': 0.14.4
-      mrmime: 2.0.1
-
   '@astrojs/prism@4.0.2':
     dependencies:
       prismjs: 1.30.0
@@ -5462,8 +5446,6 @@ snapshots:
       playwright: 1.63.0
 
   '@prettier/parse-srcset@3.1.0': {}
-
-  '@qwik.dev/partytown@0.14.4': {}
 
   '@react-three/fiber@9.8.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(three@0.186.1)':
     dependencies:

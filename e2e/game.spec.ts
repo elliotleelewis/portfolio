@@ -12,21 +12,14 @@ test.beforeEach(async ({ page }) => {
 	await page.goto('/');
 });
 
-test(
-	'fades from the photo into a run down the mountain',
-	{ tag: '@phone' },
-	async ({ page }) => {
-		await startRun(page);
-		await expect(page.locator('#hero-stage canvas')).toBeVisible();
-		await expect(page.locator('#hero-hint')).toHaveAttribute(
-			'data-show',
-			'',
-		);
-		await advance(page, 3);
-		const { metres } = await readHud(page);
-		expect(metres).toBeGreaterThan(0);
-	},
-);
+test('fades from the photo into a run down the mountain', async ({ page }) => {
+	await startRun(page);
+	await expect(page.locator('#hero-stage canvas')).toBeVisible();
+	await expect(page.locator('#hero-hint')).toHaveAttribute('data-show', '');
+	await advance(page, 3);
+	const { metres } = await readHud(page);
+	expect(metres).toBeGreaterThan(0);
+});
 
 test('ends the run when a bear catches me', async ({ page }) => {
 	await startRun(page);
@@ -171,6 +164,8 @@ test.describe('gallery', () => {
 });
 
 test.describe('on a desktop', () => {
+	test.skip(({ isMobile }) => isMobile, 'Keyboard controls');
+
 	test('steers and changes speed with the arrow keys', async ({ page }) => {
 		await startRun(page);
 		await page.keyboard.down('ArrowLeft');
@@ -188,7 +183,7 @@ test.describe('on a desktop', () => {
 	});
 });
 
-test.describe('on a phone', { tag: '@phone' }, () => {
+test.describe('on a phone', () => {
 	test.skip(({ isMobile }) => !isMobile, 'Touch controls');
 
 	test('steers and changes speed with the stick', async ({ page }) => {

@@ -29,10 +29,7 @@ export default defineConfig({
 			use: { ...devices['Desktop Chrome'], launchOptions },
 		},
 		{
-			// Only what's different on a phone: the layout, touch controls and
-			// accessibility. The rest would only repeat the desktop's run.
 			name: 'mobile',
-			grep: /@phone/,
 			use: { ...devices['Pixel 7'], launchOptions },
 		},
 	],

@@ -15,7 +15,7 @@
     "format": "prettier --check \"**/*.{md,ts,tsx,js,cjs,mjs,scss,html,json,yml,astro}\" --ignore-path .gitignore",
     "format:fix": "pnpm run format --write",
     "test": "vitest run --dir src",
-    "test:e2e": "playwright test"
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@astrojs/react": "^7.0.0",

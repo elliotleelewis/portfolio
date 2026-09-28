@@ -11,12 +11,12 @@ pnpm lint
 pnpm format
 pnpm test
 pnpm build
-pnpm test:e2e
+pnpm e2e
 ```
 
 - `pnpm lint` fails on warnings as well as errors.
 - `pnpm lint:fix` and `pnpm format:fix` fix most style problems, including Tailwind class order.
-- The end-to-end tests start their own dev server. If Playwright's own browser isn't installed, point `PLAYWRIGHT_CHROMIUM_EXECUTABLE` at a Chromium you have.
+- The end-to-end tests build the site and serve it themselves. If Playwright's own browser isn't installed, point `PLAYWRIGHT_CHROMIUM_EXECUTABLE` at a Chromium you have.
 - For changes to the game or the page's look, also look at the result in a browser. The tests can't tell you whether it looks right.
 
 ## Code style
@@ -77,8 +77,9 @@ Import types with `import type { … }`, not `import { type … }`. With `verbat
   - Avoid randomness that can make a test flaky: put things exactly where the test needs them.
 - **End-to-end tests** are in `e2e/`. They run on a desktop and a phone-sized browser.
   - Every test fails if the page throws an error (`e2e/fixtures.ts`).
-  - In development builds, the game is exposed on `globalThis.heroTest`, so tests can fast-forward it (`advance(seconds)`) or end a run (`catchPlayer()`). The helpers are in `e2e/hero.ts`.
-  - Playwright runs `astro dev` itself, with `ASTRO_DEV_BACKGROUND=1`. Otherwise Astro sends the server to the background when it detects an AI agent, and Playwright thinks it has quit.
+  - They run on the site as it's deployed: `astro build`, served by `astro preview`. That's much faster than the dev server. In CI, the e2e job tests the `dist/` the build job made instead of building it again.
+  - The game in play is on `globalThis.hero.game` (`expose()` in `controller.ts`), so tests can fast-forward it (`advance(seconds)`) or end a run (`catchPlayer()`). The helpers are in `e2e/hero.ts`. It's there on the live site too, for anyone curious enough to open the console. It reads the controller's current game each time, so it never keeps a finished one in memory.
+  - Playwright runs `astro preview` with `ASTRO_PREVIEW_BACKGROUND=1`. Otherwise Astro sends the server to the background when it detects an AI agent, and Playwright thinks it has quit.
 
 ## Commits and pull requests
 

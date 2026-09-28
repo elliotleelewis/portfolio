@@ -33,9 +33,9 @@ export const GameOver = () => {
 				<p className="text-5xl" aria-hidden="true">
 					🐻
 				</p>
-				<h3 id="hero-over-title" className="mt-2 text-2xl font-black">
+				<h2 id="hero-over-title" className="mt-2 text-2xl font-black">
 					Caught by a bear!
-				</h3>
+				</h2>
 				<p className="mt-2">
 					You flattened <strong id="hero-over-score">{trees}</strong>{' '}
 					{trees === 1 ? 'tree' : 'trees'} and rolled{' '}

@@ -73,7 +73,7 @@ export const GalleryPanel = () => {
 					<span className="inline-block rtl:-scale-x-100">→</span>
 				</button>
 			</div>
-			<div id="hero-gallery-dots" className="flex gap-2">
+			<div id="hero-gallery-dots" className="flex">
 				{Array.from({ length: count }, (_value, i) => (
 					<button
 						key={i}
@@ -83,11 +83,14 @@ export const GalleryPanel = () => {
 						}`}
 						aria-current={i === index}
 						data-active={i === index ? '' : undefined}
-						className="size-2.5 cursor-pointer rounded-full bg-white/60 shadow-sm transition-all data-active:w-6 data-active:bg-white"
+						// Bigger than the dot, so it's easy to tap.
+						className="group flex h-6 min-w-6 cursor-pointer items-center justify-center px-1"
 						onClick={() => {
 							controller.selectEgg(i);
 						}}
-					/>
+					>
+						<span className="size-2.5 rounded-full bg-white/60 shadow-sm transition-all group-data-active:w-6 group-data-active:bg-white" />
+					</button>
 				))}
 			</div>
 			<button

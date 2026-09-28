@@ -1,4 +1,4 @@
-import { m } from '../paraglide/messages.js';
+import { m } from '../paraglide/messages';
 
 // How many times each easter egg (by id) has been smashed on this device.
 export type EasterEggHits = Readonly<Record<string, number>>;

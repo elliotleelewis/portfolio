@@ -2,7 +2,7 @@ import { ParaglideMessage } from '@inlang/paraglide-js-react';
 import { useAtomValue } from 'jotai';
 import { useEffect, useRef } from 'react';
 
-import { m } from '../paraglide/messages.js';
+import { m } from '../paraglide/messages';
 
 import { GAME_OVER_ATOM, RESULT_ATOM } from './atoms';
 import { bestMessage } from './best';

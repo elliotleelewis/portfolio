@@ -1,7 +1,7 @@
 import { useAtomValue } from 'jotai';
 import { useEffect, useRef } from 'react';
 
-import { m } from '../paraglide/messages.js';
+import { m } from '../paraglide/messages';
 
 import { BEST_ATOM, PHASE_ATOM, WAITING_ATOM } from './atoms';
 import { useController } from './context';

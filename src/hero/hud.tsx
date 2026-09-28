@@ -1,6 +1,6 @@
 import { useAtomValue } from 'jotai';
 
-import { m } from '../paraglide/messages.js';
+import { m } from '../paraglide/messages';
 
 import {
 	CALLOUT_ATOM,

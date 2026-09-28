@@ -43,7 +43,7 @@ Import types with `import type { … }`, not `import { type … }`. With `verbat
 
 - **Page:** `src/pages/index.astro` puts the sections from `src/content/` together. Everything is static Astro, except for the hero.
 - **Text** goes through [Paraglide](https://paraglidejs.com), so the Astro pages and the React island share one set of messages:
-  - Each message is in `messages/en.json`, and is called as a typed function, like `m.hero_play()`, from `../paraglide/messages.js`. Paraglide compiles them into `src/paraglide/`, which isn't committed. `pnpm install` compiles them (`prepare`), and so does every build and dev server (the Vite plugin in `astro.config.ts`).
+  - Each message is in `messages/en.json`, and is called as a typed function, like `m.hero_play()`, from `../paraglide/messages`. Paraglide compiles them into `src/paraglide/`, which isn't committed. `pnpm install` compiles them (`prepare`), and so does every build and dev server (the Vite plugin in `astro.config.ts`).
   - Name keys by where they're shown, in `snake_case`: `hero_…`, `start_…`, `gallery_…`, `cookies_…`.
   - Counts use plural variants (see `hero_best`), and numbers are formatted with `: number` (see `gallery_smashed`), rather than choosing words or formatting in code.
   - Bold or links inside a sentence are markup, like `{#score}…{/score}` in `hero_result`, rendered in React with `ParaglideMessage` from `@inlang/paraglide-js-react`. Astro has no renderer for markup, so on Astro pages, make the whole sentence the link.

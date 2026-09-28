@@ -1,4 +1,4 @@
-import { m } from '../paraglide/messages.js';
+import { m } from '../paraglide/messages';
 
 /**
  * The line under the score on the game-over card.

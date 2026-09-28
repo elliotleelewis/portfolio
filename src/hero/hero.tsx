@@ -1,7 +1,7 @@
 import { Provider, createStore, useAtomValue } from 'jotai';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
-import { m } from '../paraglide/messages.js';
+import { m } from '../paraglide/messages';
 
 import { MODE_ATOM, PHASE_ATOM } from './atoms';
 import { ControllerContext, useController } from './context';

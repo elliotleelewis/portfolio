@@ -3,7 +3,7 @@ import type { createStore } from 'jotai';
 import type { Gallery } from '../game/gallery';
 import type { Game, GameInput } from '../game/game';
 import type { StageScene } from '../game/stage-scene';
-import { m } from '../paraglide/messages.js';
+import { m } from '../paraglide/messages';
 
 import {
 	BEST_ATOM,

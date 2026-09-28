@@ -35,9 +35,9 @@ pnpm start
 | `pnpm lint`     | Lints everything with ESLint. `pnpm lint:fix` fixes what it can.   |
 | `pnpm format`   | Checks formatting with Prettier. `pnpm format:fix` fixes it.       |
 | `pnpm test`     | Runs the unit tests.                                               |
-| `pnpm test:e2e` | Runs the end-to-end tests on desktop and phone-sized Chromium.     |
+| `pnpm test:e2e` | Builds the site and runs the end-to-end tests on it in Chromium.   |
 
-The end-to-end tests start their own dev server. To use a Chromium you already have instead of Playwright's, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to its path.
+The end-to-end tests build the site in test mode and serve it themselves. They run on a desktop browser, and those tagged `@phone` on a phone-sized one too. To use a Chromium you already have instead of Playwright's, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to its path.
 
 ## How it's laid out
 

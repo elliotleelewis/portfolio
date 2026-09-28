@@ -107,8 +107,9 @@ export class HeroController {
 		this.show({ kind: 'game', scene: next });
 		this._game = next;
 		this._gallery = undefined;
-		// A handle for the end-to-end tests, in development only.
-		if (import.meta.env.DEV) {
+		// A handle for the end-to-end tests, which run on a test build. The
+		// live site's production build leaves it out.
+		if (import.meta.env.MODE !== 'production') {
 			Object.assign(globalThis, { heroTest: { game: next } });
 		}
 		store.set(SCENE_ATOM, 'game');

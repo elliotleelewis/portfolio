@@ -15,6 +15,7 @@ export default defineConfig({
 	// Software WebGL is slow; the game tests fast-forward, but still take time.
 	timeout: 90_000,
 	expect: { timeout: 15_000 },
+	fullyParallel: true,
 	workers: isCi ? 2 : undefined,
 	forbidOnly: isCi,
 	reporter: isCi ? [['github'], ['list']] : 'list',
@@ -28,22 +29,29 @@ export default defineConfig({
 			use: { ...devices['Desktop Chrome'], launchOptions },
 		},
 		{
+			// Only what's different on a phone: the layout, touch controls and
+			// accessibility. The rest would only repeat the desktop's run.
 			name: 'mobile',
+			grep: /@phone/,
 			use: { ...devices['Pixel 7'], launchOptions },
 		},
 	],
-	// The dev server, which exposes a test handle on the game.
+	// A production build, like the live site's, but in test mode, which keeps
+	// a test handle on the game. Much faster to load than the dev server,
+	// which sends every module separately.
 	webServer: {
-		command: 'astro dev --port 4321',
+		command:
+			'astro build --mode test --outDir dist-e2e && astro preview --outDir dist-e2e --port 4321',
 		url: 'http://localhost:4321',
-		reuseExistingServer: !isCi,
-		timeout: 120_000,
-		// Astro backgrounds the dev server when it detects an AI agent, which
-		// Playwright would take as the server exiting. This keeps it in the
-		// foreground.
+		// Never an old build left running.
+		reuseExistingServer: false,
+		timeout: 300_000,
+		// Astro backgrounds the preview server when it detects an AI agent,
+		// which Playwright would take as the server exiting. This keeps it in
+		// the foreground.
 		env: {
 			// eslint-disable-next-line @typescript-eslint/naming-convention -- Astro's own variable.
-			ASTRO_DEV_BACKGROUND: '1',
+			ASTRO_PREVIEW_BACKGROUND: '1',
 		},
 	},
 });

@@ -16,7 +16,7 @@ pnpm test:e2e
 
 - `pnpm lint` fails on warnings as well as errors.
 - `pnpm lint:fix` and `pnpm format:fix` fix most style problems, including Tailwind class order.
-- The end-to-end tests start their own dev server. If Playwright's own browser isn't installed, point `PLAYWRIGHT_CHROMIUM_EXECUTABLE` at a Chromium you have.
+- The end-to-end tests build the site and serve it themselves. If Playwright's own browser isn't installed, point `PLAYWRIGHT_CHROMIUM_EXECUTABLE` at a Chromium you have.
 - For changes to the game or the page's look, also look at the result in a browser. The tests can't tell you whether it looks right.
 
 ## Code style
@@ -75,10 +75,11 @@ Import types with `import type { … }`, not `import { type … }`. With `verbat
 - **Unit tests** sit next to the code, as `*.test.ts`, and run in Node.
   - Anything that draws on a canvas, such as the bears' "!" badge or the easter eggs' textures, needs a DOM. Add `// @vitest-environment happy-dom` at the top of that test file.
   - Avoid randomness that can make a test flaky: put things exactly where the test needs them.
-- **End-to-end tests** are in `e2e/`. They run on a desktop and a phone-sized browser.
+- **End-to-end tests** are in `e2e/`. They run on a desktop browser, and the ones tagged `@phone` also run on a phone-sized one. Tag a test `@phone` if it checks something that differs on a phone, like the layout, touch controls or accessibility.
   - Every test fails if the page throws an error (`e2e/fixtures.ts`).
-  - In development builds, the game is exposed on `globalThis.heroTest`, so tests can fast-forward it (`advance(seconds)`) or end a run (`catchPlayer()`). The helpers are in `e2e/hero.ts`.
-  - Playwright runs `astro dev` itself, with `ASTRO_DEV_BACKGROUND=1`. Otherwise Astro sends the server to the background when it detects an AI agent, and Playwright thinks it has quit.
+  - They run on a production build in test mode (`astro build --mode test`, into `dist-e2e/`), served by `astro preview`. That's much faster than the dev server, and closer to the live site.
+  - In any build that isn't the live site's, the game is exposed on `globalThis.heroTest`, so tests can fast-forward it (`advance(seconds)`) or end a run (`catchPlayer()`). The helpers are in `e2e/hero.ts`.
+  - Playwright runs `astro preview` with `ASTRO_PREVIEW_BACKGROUND=1`. Otherwise Astro sends the server to the background when it detects an AI agent, and Playwright thinks it has quit.
 
 ## Commits and pull requests
 

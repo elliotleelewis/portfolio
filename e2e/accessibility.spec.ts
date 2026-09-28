@@ -42,40 +42,56 @@ for (const colorScheme of ['light', 'dark'] as const) {
 	test.describe(`in ${colorScheme} mode`, () => {
 		test.use({ colorScheme });
 
-		test('the home page is accessible', async ({ page }) => {
-			await page.goto('/');
-			// Every section, not only what has faded in so far.
-			await page
-				.locator('[data-reveal]')
-				.evaluateAll((elements: HTMLElement[]) => {
-					for (const element of elements) {
-						element.dataset.visible = '';
-					}
+		test(
+			'the home page is accessible',
+			{ tag: '@phone' },
+			async ({ page }) => {
+				await page.goto('/');
+				// Every section, not only what has faded in so far.
+				await page
+					.locator('[data-reveal]')
+					.evaluateAll((elements: HTMLElement[]) => {
+						for (const element of elements) {
+							element.dataset.visible = '';
+						}
+					});
+				await expectNoViolations(page);
+			},
+		);
+
+		test(
+			'the cookies page is accessible',
+			{ tag: '@phone' },
+			async ({ page }) => {
+				await page.goto('/cookies');
+				await expectNoViolations(page);
+			},
+		);
+
+		test(
+			'the 404 page is accessible',
+			{ tag: '@phone' },
+			async ({ page }) => {
+				await page.goto('/no-such-page');
+				await expectNoViolations(page);
+			},
+		);
+
+		test(
+			'the game page is accessible',
+			{ tag: '@phone' },
+			async ({ page }) => {
+				await page.goto('/game');
+				await expect(page.locator('#hero-start')).toBeEnabled({
+					timeout: 60_000,
 				});
-			await expectNoViolations(page);
-		});
-
-		test('the cookies page is accessible', async ({ page }) => {
-			await page.goto('/cookies');
-			await expectNoViolations(page);
-		});
-
-		test('the 404 page is accessible', async ({ page }) => {
-			await page.goto('/no-such-page');
-			await expectNoViolations(page);
-		});
-
-		test('the game page is accessible', async ({ page }) => {
-			await page.goto('/game');
-			await expect(page.locator('#hero-start')).toBeEnabled({
-				timeout: 60_000,
-			});
-			await expectNoViolations(page);
-			await startFromStartScreen(page);
-			await expectNoViolations(page);
-			await crash(page);
-			await expectNoViolations(page);
-		});
+				await expectNoViolations(page);
+				await startFromStartScreen(page);
+				await expectNoViolations(page);
+				await crash(page);
+				await expectNoViolations(page);
+			},
+		);
 
 		test('the easter egg gallery is accessible', async ({ page }) => {
 			await page.goto('/game');

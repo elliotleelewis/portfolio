@@ -11,7 +11,7 @@ pnpm lint
 pnpm format
 pnpm test
 pnpm build
-pnpm test:e2e
+pnpm e2e
 ```
 
 - `pnpm lint` fails on warnings as well as errors.

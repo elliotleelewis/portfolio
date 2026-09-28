@@ -27,15 +27,15 @@ pnpm start
 
 ## Scripts
 
-| Script          | What it does                                                                       |
-| --------------- | ---------------------------------------------------------------------------------- |
-| `pnpm start`    | Runs the dev server.                                                               |
-| `pnpm build`    | Type-checks with `astro check`, then builds the site into `dist/`.                 |
-| `pnpm preview`  | Serves the built site.                                                             |
-| `pnpm lint`     | Lints everything with ESLint. `pnpm lint:fix` fixes what it can.                   |
-| `pnpm format`   | Checks formatting with Prettier. `pnpm format:fix` fixes it.                       |
-| `pnpm test`     | Runs the unit tests.                                                               |
-| `pnpm test:e2e` | Builds the site and runs the end-to-end tests on desktop and phone-sized Chromium. |
+| Script         | What it does                                                                       |
+| -------------- | ---------------------------------------------------------------------------------- |
+| `pnpm start`   | Runs the dev server.                                                               |
+| `pnpm build`   | Type-checks with `astro check`, then builds the site into `dist/`.                 |
+| `pnpm preview` | Serves the built site.                                                             |
+| `pnpm lint`    | Lints everything with ESLint. `pnpm lint:fix` fixes what it can.                   |
+| `pnpm format`  | Checks formatting with Prettier. `pnpm format:fix` fixes it.                       |
+| `pnpm test`    | Runs the unit tests.                                                               |
+| `pnpm e2e`     | Builds the site and runs the end-to-end tests on desktop and phone-sized Chromium. |
 
 The end-to-end tests build the site and serve it themselves. They run on desktop and phone-sized Chromium. To use a Chromium you already have instead of Playwright's, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to its path.
 

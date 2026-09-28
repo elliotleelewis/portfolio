@@ -1,9 +1,5 @@
 ---
-import '@fontsource-variable/fraunces/standard.css';
-import '@fontsource-variable/fraunces/standard-italic.css';
-import '@fontsource-variable/inter';
-import '@fontsource/jetbrains-mono/400.css';
-import '@fontsource/jetbrains-mono/500.css';
+import { Font } from 'astro:assets';
 
 import Analytics from './Analytics.astro';
 
@@ -44,6 +40,9 @@ const { title, path = '', isIndexed = true } = Astro.props;
 		) : (
 			<meta name="robots" content="noindex" />
 		)}
+		<Font cssVariable="--font-inter" />
+		<Font cssVariable="--font-fraunces" />
+		<Font cssVariable="--font-jetbrains-mono" />
 		<title>{title}</title>
 		<script is:inline>
 			document.documentElement.classList.add('js');

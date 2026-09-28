@@ -87,6 +87,28 @@ test('loads a sharp enough photo for how big it is drawn', async ({ page }) => {
 	);
 });
 
+test('has a link preview, with a picture of me', async ({ page, request }) => {
+	await page.goto('/');
+	const meta = async (property: string) =>
+		page.locator(`meta[property="${property}"]`).getAttribute('content');
+	expect(await meta('og:title')).toBe('Elliot Lewis');
+	expect(await meta('og:description')).toBeTruthy();
+	expect(await meta('og:url')).toBe('https://elliotleelewis.com');
+	await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute(
+		'content',
+		'summary_large_image',
+	);
+	// Previews need a full URL. Here it's the live site's, so fetch the
+	// picture from the server under test instead.
+	const image = new URL((await meta('og:image')) ?? '');
+	expect(image.origin).toBe('https://elliotleelewis.com');
+	const response = await request.get(image.pathname + image.search);
+	expect(response.ok()).toBe(true);
+	expect(response.headers()['content-type']).toBe('image/jpeg');
+	expect(await meta('og:image:width')).toBe('1200');
+	expect(await meta('og:image:height')).toBe('630');
+});
+
 test('answers paths that are not on the site with a 404 page', async ({
 	page,
 }) => {

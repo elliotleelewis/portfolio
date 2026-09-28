@@ -1,4 +1,3 @@
-import partytown from '@astrojs/partytown';
 import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
@@ -83,16 +82,7 @@ export default defineConfig({
 			fallbacks: ['ui-monospace', 'SFMono-Regular', 'monospace'],
 		},
 	],
-	integrations: [
-		partytown({
-			config: {
-				forward: ['dataLayer.push'],
-			},
-		}),
-		react({ compiler: true }),
-		robotsTxt(),
-		sitemap(),
-	],
+	integrations: [react({ compiler: true }), robotsTxt(), sitemap()],
 	vite: {
 		plugins: [tailwindcss()],
 	},

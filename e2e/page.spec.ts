@@ -109,6 +109,17 @@ test('has a link preview, with a picture of me', async ({ page, request }) => {
 	expect(await meta('og:image:height')).toBe('630');
 });
 
+test('sets no cookies, so needs no consent banner', async ({
+	context,
+	page,
+}) => {
+	for (const path of ['/', '/game', '/no-such-page']) {
+		await page.goto(path);
+		await page.waitForLoadState('networkidle');
+	}
+	expect(await context.cookies()).toEqual([]);
+});
+
 test('answers paths that are not on the site with a 404 page', async ({
 	page,
 }) => {

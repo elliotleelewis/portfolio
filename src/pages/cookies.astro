@@ -53,6 +53,26 @@ const link =
 			{m.cookies_game_heading()}
 		</h2>
 		<p class="mt-4 leading-relaxed text-ink/85">{m.cookies_game_body()}</p>
+		<div
+			id="storage"
+			class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2"
+			hidden
+		>
+			<button
+				id="storage-clear"
+				type="button"
+				class="cursor-pointer rounded-full border border-line px-5 py-2.5 font-semibold focus-visible:ring-4 focus-visible:ring-accent/50 focus-visible:outline-none enabled:hover:bg-surface disabled:cursor-default disabled:opacity-60"
+			>
+				{m.cookies_game_clear()}
+			</button>
+			<p
+				id="storage-status"
+				class="text-sm text-ink/70"
+				aria-live="polite"
+				data-cleared={m.cookies_game_cleared()}
+				data-empty={m.cookies_game_empty()}
+			></p>
+		</div>
 
 		<h2 class="mt-12 font-display text-3xl font-semibold">
 			{m.cookies_analytics_heading()}
@@ -71,3 +91,33 @@ const link =
 		</p>
 	</main>
 </Layout>
+
+<script>
+	// Clear what the site keeps in local storage. It's all the game's, so a
+	// visitor can start it afresh. Storage can be blocked, so without it the
+	// button stays hidden.
+	const storage = document.querySelector('#storage');
+	const button = document.querySelector('#storage-clear');
+	const status = document.querySelector('#storage-status');
+	if (
+		storage instanceof HTMLElement &&
+		button instanceof HTMLButtonElement &&
+		status instanceof HTMLElement
+	) {
+		try {
+			// Reading it first, as it throws where storage is blocked.
+			if (localStorage.length === 0) {
+				button.disabled = true;
+				status.textContent = status.dataset.empty ?? '';
+			}
+			button.addEventListener('click', () => {
+				localStorage.clear();
+				button.disabled = true;
+				status.textContent = status.dataset.cleared ?? '';
+			});
+			storage.hidden = false;
+		} catch {
+			// No storage, so nothing to clear.
+		}
+	}
+</script>

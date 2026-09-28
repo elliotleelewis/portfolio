@@ -1,6 +1,6 @@
 ---
-// What the site stores on a visitor's device, and why none of it needs
-// their consent. Linked from the footer.
+// What the site stores on a visitor's device, and why. Linked from the
+// footer.
 import Layout from '../layout/Layout.astro';
 
 import '../styles/global.css';
@@ -13,7 +13,7 @@ const link =
 
 <Layout
 	title="Cookies · Elliot Lewis"
-	description="The one cookie elliotleelewis.com's host may set, what the game remembers, and why none of it needs your consent."
+	description="The one cookie elliotleelewis.com's host may set, and what the game remembers."
 	path="/cookies"
 >
 	<main class="mx-auto max-w-3xl px-5 py-16 sm:px-8 sm:py-24">
@@ -26,8 +26,7 @@ const link =
 		<p class="mt-6 text-lg/relaxed text-ink/85">
 			This site doesn’t set any cookies of its own, and nothing on it
 			tracks you. The only cookie you might get comes from Cloudflare,
-			which hosts the site, and only to keep it secure. That’s why there’s
-			no banner: nothing here needs your consent.
+			which hosts the site, and only to keep it secure.
 		</p>
 
 		<h2 class="mt-12 font-display text-3xl font-semibold">
@@ -51,11 +50,6 @@ const link =
 			</dd>
 			<dt class="font-semibold">Kept for</dt>
 			<dd>As long as the check lasts, 30 minutes by default</dd>
-			<dt class="font-semibold">Consent</dt>
-			<dd>
-				Not needed. It’s strictly necessary to keep the site secure,
-				which the ePrivacy Directive and the UK’s PECR exempt.
-			</dd>
 		</dl>
 		<p class="mt-4 leading-relaxed text-ink/85">
 			<a href={CLOUDFLARE_COOKIES} class={link}>
@@ -69,11 +63,9 @@ const link =
 		</h2>
 		<p class="mt-4 leading-relaxed text-ink/85">
 			The game keeps your best score and the easter eggs you’ve found in
-			your browser’s local storage, as{' '}
-			<code class="font-mono text-sm">hero-best-trees</code> and{' '}
-			<code class="font-mono text-sm">hero-easter-egg-hits</code>, so
-			they’re still there next time you play. They never leave your
-			device, and clearing your browser’s data for this site removes them.
+			your browser’s local storage, so they’re still there next time you
+			play. They never leave your device, and clearing your browser’s data
+			for this site removes them.
 		</p>
 
 		<h2 class="mt-12 font-display text-3xl font-semibold">Analytics</h2>

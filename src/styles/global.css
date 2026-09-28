@@ -1,6 +1,37 @@
 @import 'tailwindcss';
 
 /*
+ * Fraunces, cut down to the three styles the site uses (see
+ * scripts/fraunces.py). Each keeps its optical-size axis, so large headings
+ * get the display design. A browser only downloads a style a page uses: the
+ * bold is just for /game.
+ */
+@font-face {
+	font-family: 'Fraunces';
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url('../fonts/fraunces-latin-600-normal.woff2') format('woff2');
+	unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+	font-family: 'Fraunces';
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src: url('../fonts/fraunces-latin-700-normal.woff2') format('woff2');
+	unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+	font-family: 'Fraunces';
+	font-style: italic;
+	font-weight: 400;
+	font-display: swap;
+	src: url('../fonts/fraunces-latin-400-italic.woff2') format('woff2');
+	unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/*
  * A palette lifted from the mountain: misty fog, pine, slate rock and bark,
  * with the wood stove's amber glow as the one accent. Light mode is a misty
  * morning; dark mode is night on the mountain.
@@ -22,7 +53,7 @@
 	--color-on-accent: var(--on-accent);
 	--color-snow: oklch(95.4% 0.007 132.4);
 
-	--font-display: 'Fraunces Variable', 'Iowan Old Style', Georgia, serif;
+	--font-display: 'Fraunces', 'Iowan Old Style', Georgia, serif;
 	--font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
 	--font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
 }

@@ -1,23 +1,18 @@
 import path from 'node:path';
 
-import { FlatCompat } from '@eslint/eslintrc';
 import eslint from '@eslint/js';
 import comments from '@eslint-community/eslint-plugin-eslint-comments/configs';
 import { defineConfig, includeIgnoreFile } from 'eslint/config';
-import configPrettier from 'eslint-config-prettier';
+import prettier from 'eslint-config-prettier';
 import astro from 'eslint-plugin-astro';
 import tailwind from 'eslint-plugin-better-tailwindcss';
-import jsdoc from 'eslint-plugin-jsdoc';
+import { createNodeResolver, importX } from 'eslint-plugin-import-x';
+import { jsdoc } from 'eslint-plugin-jsdoc';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import reactHooks from 'eslint-plugin-react-hooks';
 import unicorn from 'eslint-plugin-unicorn';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
-
-const compat = new FlatCompat({
-	baseDirectory: import.meta.dirname,
-	recommendedConfig: eslint.configs.recommended,
-});
 
 const namingConvention = [
 	{
@@ -26,7 +21,7 @@ const namingConvention = [
 		leadingUnderscore: 'forbid',
 		trailingUnderscore: 'forbid',
 	},
-	// Keys that have to be quoted, like 'import/order' or 'Content-Type',
+	// Keys that have to be quoted, like 'import-x/order' or 'Content-Type',
 	// name something outside the code.
 	{
 		selector: ['objectLiteralProperty', 'typeProperty'],
@@ -75,119 +70,53 @@ const namingConvention = [
 
 export default defineConfig(
 	includeIgnoreFile(path.resolve(import.meta.dirname, '.gitignore')),
-	{
-		extends: [eslint.configs.recommended],
-		languageOptions: {
-			globals: {
-				...globals.node,
-			},
-		},
-	},
+	eslint.configs.recommended,
 	{
 		files: ['**/*.ts', '**/*.tsx'],
 		extends: [
-			eslint.configs.recommended,
-			...tseslint.configs.strictTypeChecked,
-			...tseslint.configs.stylisticTypeChecked,
+			tseslint.configs.strictTypeChecked,
+			tseslint.configs.stylisticTypeChecked,
 			comments.recommended,
-			...compat.extends('plugin:import/recommended'),
-			...compat.extends('plugin:import/typescript'),
-			jsdoc.configs['flat/recommended-typescript-error'],
+			importX.flatConfigs.recommended,
+			importX.flatConfigs.typescript,
+			jsdoc({ config: 'flat/recommended-typescript-error' }),
 			unicorn.configs.recommended,
 		],
-		languageOptions: {
-			parserOptions: {
-				project: './tsconfig.json',
-			},
-		},
 		settings: {
-			'import/resolver': {
-				typescript: {
-					alwaysTryTypes: true,
-					project: './tsconfig.json',
-				},
-			},
-			'better-tailwindcss': {
-				entryPoint: 'src/styles/global.css',
-			},
-		},
-		plugins: {
-			'better-tailwindcss': tailwind,
+			// Every import of mine is relative, so Node's own resolution is
+			// enough, and unlike TypeScript's, it keeps jotai and jotai/utils
+			// apart.
+			'import-x/resolver-next': [
+				createNodeResolver({
+					extensions: ['.ts', '.tsx', '.js', '.mjs', '.json'],
+				}),
+			],
 		},
 		rules: {
-			...tailwind.configs['recommended-error'].rules,
-			'@angular-eslint/prefer-standalone': 'off',
-			'@angular-eslint/prefer-standalone-component': 'off',
 			'@typescript-eslint/naming-convention': [
 				'error',
 				...namingConvention,
 			],
-			'@typescript-eslint/no-extraneous-class': 'off',
 			// With verbatimModuleSyntax, `import { type X } from 'y'` still
 			// loads 'y' for its side effects; `import type { X }` doesn't.
 			// That matters for code that should only load on demand, like the
 			// game.
 			'@typescript-eslint/no-import-type-side-effects': 'error',
-			'better-tailwindcss/enforce-consistent-line-wrapping': 'off',
-			'import/first': 'error',
-			'import/no-duplicates': [
+			// TypeScript checks this already.
+			'import-x/no-named-as-default-member': 'off',
+			// Packages, then parents, then siblings, each sorted.
+			'import-x/order': [
 				'error',
 				{
-					'prefer-inline': true,
-				},
-			],
-			'import/order': [
-				'error',
-				{
-					alphabetize: {
-						order: 'asc',
-					},
+					alphabetize: { order: 'asc' },
+					named: true,
 					'newlines-between': 'always',
-					pathGroups: [
-						{
-							pattern: '@app-*/**',
-							group: 'external',
-							position: 'after',
-						},
-					],
-					pathGroupsExcludedImportTypes: ['builtin'],
 				},
 			],
+			// Too keen: it would rename `props`, `ref` and `i`.
 			'unicorn/name-replacements': 'off',
-			'unicorn/no-array-reduce': 'off',
+			// React, JSON and three.js all use null.
 			'unicorn/no-null': 'off',
-			'unicorn/prefer-top-level-await': 'off',
-			'unicorn/prevent-abbreviations': 'off',
-			curly: 'error',
-			eqeqeq: ['error', 'always'],
-			'lines-between-class-members': [
-				'error',
-				'always',
-				{
-					exceptAfterSingleLine: true,
-				},
-			],
-			'max-classes-per-file': ['error', 1],
-			'no-empty': 'error',
-			'no-restricted-imports': [
-				'error',
-				{
-					paths: ['rxjs/Rx', 'subsink/dist/subsink'],
-					patterns: ['app/*', 'rxjs/internal/*'],
-				},
-			],
-			'sort-imports': [
-				'error',
-				{
-					ignoreDeclarationSort: true,
-				},
-			],
-
-			// TODO: Enable once rules support ESLint 9
-			'import/namespace': 'off',
-			'import/newline-after-import': 'off',
-			'import/no-named-as-default': 'off',
-			'import/no-named-as-default-member': 'off',
 		},
 	},
 	{
@@ -214,30 +143,35 @@ export default defineConfig(
 			],
 		},
 	},
-	...astro.configs.recommended,
-	...astro.configs['jsx-a11y-strict'],
 	{
-		files: ['**/*.astro'],
+		// What tests run in the page, with `page.evaluate`.
+		files: ['e2e/**'],
+		languageOptions: {
+			globals: globals.browser,
+		},
+	},
+	astro.configs.recommended,
+	astro.configs['jsx-a11y-strict'],
+	{
+		files: ['**/*.ts', '**/*.tsx', '**/*.astro'],
+		extends: [tailwind.configs['recommended-error']],
 		settings: {
 			'better-tailwindcss': {
 				entryPoint: 'src/styles/global.css',
 			},
 		},
-		plugins: {
-			'better-tailwindcss': tailwind,
-		},
 		rules: {
-			...tailwind.configs['recommended-error'].rules,
+			// Prettier wraps lines.
 			'better-tailwindcss/enforce-consistent-line-wrapping': 'off',
 		},
 	},
 	{
 		languageOptions: {
 			parserOptions: {
-				project: true,
+				projectService: true,
 				tsconfigRootDir: import.meta.dirname,
 			},
 		},
 	},
-	configPrettier,
+	prettier,
 );

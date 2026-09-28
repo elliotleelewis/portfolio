@@ -1,0 +1,32 @@
+# Elliot Lewis
+
+> Elliot Lewis is a Staff Software Engineer at StubHub, based in Los Angeles, California. He's a front-end engineer with nearly a decade of building enterprise and consumer web apps, from factory-floor systems at Jabil to Lens creator tools at Snap.
+
+He likes leading projects and teams, launching products people actually use, and leaving codebases easier to work in than he found them. His site is a single page styled like a hiking trail. Its hero photo doubles as a 3D game: press play, and a low-poly version of him cartwheels down a mountain, flattening trees and dodging bears.
+
+Work history:
+
+- StubHub, Los Angeles, CA: Staff Software Engineer (from Oct 2026), and Senior Software Engineer (Apr 2024 - Sep 2026).
+- Snap Inc, Los Angeles, CA: Software Engineer (Aug 2021 - Feb 2024). Led Event Insights end to end across three teams, patented (US11894989B2) and launched at Snap Partner Summit 2022. Led a four-team effort to build an engagement-based monthly payout program for Lens creators, which drove Lens submissions up 300% in its first month. Cut My Lenses load times by about 40%, and grew end-to-end coverage of P0 test cases from 20% to 75%.
+- Jabil, St Petersburg, FL: Senior Software Engineer (May 2019 - Aug 2021). The de facto front-end architect for 10+ teams, merging a fleet of on-prem front ends into a single regional cloud application. Led a team of 7 engineers redesigning every screen of a 450k+ line flagship application, and started Jabil's first inner-source project, an Angular component library.
+- Jabil, Livingston, Scotland: Software Engineer (May 2017 - Sep 2018). Built an Angular UI package library used across every front end in iFactory, and partnered with a Microsoft team on an Angular front end for their ASP.NET Core API.
+
+Skills: TypeScript, JavaScript and SCSS; React, Angular, Tailwind and Styled Components; GraphQL, gRPC and Node.js; Vitest, Jest, Playwright, Vite and Git.
+
+Education: Computer Science BSc (Hons), First Class Honours, Manchester Metropolitan University (Sep 2015 - May 2019), with a sandwich year and Academic Excellence awards in years 1 and 2.
+
+## Site
+
+- [Home page](https://elliotleelewis.com/): Work history, skills and education, with the game in the hero.
+- [The game](https://elliotleelewis.com/game): "The quick way down", the game on its own, filling the window.
+
+## Elsewhere
+
+- [LinkedIn](https://www.linkedin.com/in/elliotleelewis): Full work history.
+- [GitHub](https://github.com/elliotleelewis): Code, including this site's source.
+
+## Optional
+
+- [X](https://www.twitter.com/elliotleelewis)
+- [Instagram](https://www.instagram.com/elliotleelewis)
+- [Snap patent US11894989B2](https://patents.google.com/patent/US11894989B2/en): Event Insights for Lens creators.

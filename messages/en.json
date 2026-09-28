@@ -1,0 +1,89 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "hero_label": "Elliot on a mountain",
+  "hero_greeting": "Hi, I’m Elliot 👋",
+  "hero_play": "Take the quick way down ⛰️",
+  "hero_getting_ready": "Getting ready…",
+  "hero_back_to_start": "Back to the start",
+  "hero_back_to_trail": "Back to the trail",
+  "hero_hint_keys": "Use ← → to flatten trees · ↑ ↓ for speed · watch out for bears 🐻",
+  "hero_hint_stick": "Steer and speed up with the stick · dodge the bears 🐻",
+  "hero_combo": "{combo}× combo!",
+  "hero_bear_blast": "{bears} ×{count} +{points}!",
+  "hero_caught": "Caught by a bear!",
+  "hero_result": [
+    {
+      "declarations": [
+        "input trees",
+        "local treesPlural = trees: plural",
+        "input metres"
+      ],
+      "selectors": ["treesPlural"],
+      "match": {
+        "treesPlural=one": "You flattened {#score}{trees}{/score} tree and rolled {#distance}{metres}{/distance}m.",
+        "treesPlural=*": "You flattened {#score}{trees}{/score} trees and rolled {#distance}{metres}{/distance}m."
+      }
+    }
+  ],
+  "hero_best_new": "A new personal best! 🎉",
+  "hero_best": [
+    {
+      "declarations": ["input best", "local bestPlural = best: plural"],
+      "selectors": ["bestPlural"],
+      "match": {
+        "bestPlural=one": "Your best: {best} tree",
+        "bestPlural=*": "Your best: {best} trees"
+      }
+    }
+  ],
+  "hero_best_none": "Flatten some trees before they get you!",
+  "hero_roll_again": "Roll again",
+  "hero_see_easter_eggs": "See the easter eggs",
+  "start_title": "The quick way down",
+  "start_intro": "Cartwheel down the mountain, flatten every tree you can, and don’t get caught by a bear 🐻",
+  "start_keys": "← → to steer · ↑ ↓ for speed",
+  "start_stick": "Steer and speed up with the stick",
+  "start_rolling": "Start rolling ⛰️",
+  "gallery_label": "Easter egg gallery",
+  "gallery_carousel": "carousel",
+  "gallery_previous": "Previous easter egg",
+  "gallery_next": "Next easter egg",
+  "gallery_egg": "Easter egg {number}",
+  "gallery_egg_unfound": "Easter egg {number}, not found yet",
+  "gallery_find_out": "Barrel into it on the trail to find out",
+  "gallery_smashed": [
+    {
+      "declarations": [
+        "input hits",
+        "local hitsPlural = hits: plural",
+        "local hitsFormatted = hits: number"
+      ],
+      "selectors": ["hitsPlural"],
+      "match": {
+        "hitsPlural=one": "Smashed once",
+        "hitsPlural=*": "Smashed {hitsFormatted} times"
+      }
+    }
+  ],
+  "gallery_smashed_many": "Smashed many times",
+  "cookies_title": "Cookies · Elliot Lewis",
+  "cookies_description": "The one cookie elliotleelewis.com’s host may set, and what the game remembers.",
+  "cookies_eyebrow": "Privacy",
+  "cookies_heading": "Cookies",
+  "cookies_intro": "This site doesn’t set any cookies of its own, and nothing on it tracks you. The only cookie you might get comes from Cloudflare, which hosts the site, and only to keep it secure.",
+  "cookies_cloudflare_heading": "Cloudflare’s security cookie",
+  "cookies_cloudflare_body": "When Cloudflare’s bot protection can’t tell whether a visit comes from a person, it asks your browser to pass a quick check. This cookie remembers that you passed, so you aren’t checked again on every page.",
+  "cookies_name": "Name",
+  "cookies_set_by": "Set by",
+  "cookies_set_by_value": "Cloudflare, only if you’re asked to pass a check",
+  "cookies_purpose": "Purpose",
+  "cookies_purpose_value": "Security: telling people from bots. It isn’t used to identify or follow you.",
+  "cookies_kept_for": "Kept for",
+  "cookies_kept_for_value": "As long as the check lasts, 30 minutes by default",
+  "cookies_cloudflare_more": "Read more in Cloudflare’s own list of its cookies",
+  "cookies_game_heading": "What the game remembers",
+  "cookies_game_body": "The game keeps your best score and the easter eggs you’ve found in your browser’s local storage, so they’re still there next time you play. They never leave your device, and clearing your browser’s data for this site removes them.",
+  "cookies_analytics_heading": "Analytics",
+  "cookies_analytics_body": "I count visits with Cloudflare Web Analytics, which sets no cookies, stores nothing on your device and doesn’t fingerprint you.",
+  "back_to_trailhead": "Back to the trailhead"
+}

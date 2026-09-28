@@ -1,5 +1,8 @@
+import { ParaglideMessage } from '@inlang/paraglide-js-react';
 import { useAtomValue } from 'jotai';
 import { useEffect, useRef } from 'react';
+
+import { m } from '../paraglide/messages';
 
 import { GAME_OVER_ATOM, RESULT_ATOM } from './atoms';
 import { bestMessage } from './best';
@@ -34,12 +37,23 @@ export const GameOver = () => {
 					🐻
 				</p>
 				<h2 id="hero-over-title" className="mt-2 text-2xl font-black">
-					Caught by a bear!
+					{m.hero_caught()}
 				</h2>
 				<p className="mt-2">
-					You flattened <strong id="hero-over-score">{trees}</strong>{' '}
-					{trees === 1 ? 'tree' : 'trees'} and rolled{' '}
-					<strong id="hero-over-distance">{metres}</strong>m.
+					<ParaglideMessage
+						message={m.hero_result}
+						inputs={{ trees, metres }}
+						markup={{
+							score: ({ children }) => (
+								<strong id="hero-over-score">{children}</strong>
+							),
+							distance: ({ children }) => (
+								<strong id="hero-over-distance">
+									{children}
+								</strong>
+							),
+						}}
+					/>
 				</p>
 				<p id="hero-over-best" className="mt-1 text-sm text-slate-600">
 					{bestMessage(trees, best)}
@@ -54,7 +68,7 @@ export const GameOver = () => {
 							controller.rollAgain();
 						}}
 					>
-						Roll again
+						{m.hero_roll_again()}
 					</button>
 					<button
 						id="hero-gallery-open"
@@ -64,7 +78,7 @@ export const GameOver = () => {
 							void controller.openGallery();
 						}}
 					>
-						See the easter eggs
+						{m.hero_see_easter_eggs()}
 					</button>
 					<button
 						id="hero-over-exit"
@@ -75,8 +89,8 @@ export const GameOver = () => {
 						}}
 					>
 						{controller.hasStartScreen
-							? 'Back to the start'
-							: 'Back to the trail'}
+							? m.hero_back_to_start()
+							: m.hero_back_to_trail()}
 					</button>
 				</div>
 			</div>

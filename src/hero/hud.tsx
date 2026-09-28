@@ -1,5 +1,7 @@
 import { useAtomValue } from 'jotai';
 
+import { m } from '../paraglide/messages';
+
 import {
 	CALLOUT_ATOM,
 	HINT_ATOM,
@@ -50,8 +52,9 @@ export const Hud = () => {
 				}}
 			>
 				{controller.hasStartScreen
-					? 'Back to the start ✕'
-					: 'Back to the trail ✕'}
+					? m.hero_back_to_start()
+					: m.hero_back_to_trail()}{' '}
+				✕
 			</button>
 			<div
 				id="hero-combo"
@@ -66,11 +69,10 @@ export const Hud = () => {
 				className="absolute inset-x-0 bottom-6 text-center text-sm font-semibold text-slate-900 opacity-0 transition-opacity duration-500 group-data-[mode=gallery]:hidden data-show:opacity-100 sm:text-base any-pointer-coarse:bottom-38"
 			>
 				<span className="rounded-full bg-white/70 px-4 py-2 backdrop-blur-sm any-pointer-coarse:hidden">
-					Use ← → to flatten trees · ↑ ↓ for speed · watch out for
-					bears 🐻
+					{m.hero_hint_keys()}
 				</span>
 				<span className="mx-4 hidden rounded-2xl bg-white/70 px-4 py-2 backdrop-blur-sm any-pointer-coarse:inline-block">
-					Steer and speed up with the stick · dodge the bears 🐻
+					{m.hero_hint_stick()}
 				</span>
 			</p>
 			<Stick />

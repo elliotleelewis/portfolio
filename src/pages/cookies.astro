@@ -2,6 +2,7 @@
 // What the site stores on a visitor's device, and why. Linked from the
 // footer.
 import Layout from '../layout/Layout.astro';
+import { m } from '../paraglide/messages';
 
 import '../styles/global.css';
 
@@ -12,66 +13,52 @@ const link =
 ---
 
 <Layout
-	title="Cookies · Elliot Lewis"
-	description="The one cookie elliotleelewis.com's host may set, and what the game remembers."
+	title={m.cookies_title()}
+	description={m.cookies_description()}
 	path="/cookies"
 >
 	<main class="mx-auto max-w-3xl px-5 py-16 sm:px-8 sm:py-24">
 		<p class="font-mono text-xs tracking-[0.25em] text-accent uppercase">
-			Privacy
+			{m.cookies_eyebrow()}
 		</p>
 		<h1 class="mt-4 font-display text-5xl font-semibold tracking-tight sm:text-7xl">
-			Cookies<span class="text-accent">.</span>
+			{m.cookies_heading()}
+			<span class="text-accent">.</span>
 		</h1>
-		<p class="mt-6 text-lg/relaxed text-ink/85">
-			This site doesn’t set any cookies of its own, and nothing on it
-			tracks you. The only cookie you might get comes from Cloudflare,
-			which hosts the site, and only to keep it secure.
-		</p>
+		<p class="mt-6 text-lg/relaxed text-ink/85">{m.cookies_intro()}</p>
 
 		<h2 class="mt-12 font-display text-3xl font-semibold">
-			Cloudflare’s security cookie
+			{m.cookies_cloudflare_heading()}
 		</h2>
 		<p class="mt-4 leading-relaxed text-ink/85">
-			When Cloudflare’s bot protection can’t tell whether a visit comes
-			from a person, it asks your browser to pass a quick check. This
-			cookie remembers that you passed, so you aren’t checked again on
-			every page.
+			{m.cookies_cloudflare_body()}
 		</p>
 		<dl class="mt-6 grid gap-x-6 gap-y-3 rounded-2xl border border-line bg-surface p-5 sm:grid-cols-[auto_1fr]">
-			<dt class="font-semibold">Name</dt>
+			<dt class="font-semibold">{m.cookies_name()}</dt>
 			<dd class="font-mono text-sm">cf_clearance</dd>
-			<dt class="font-semibold">Set by</dt>
-			<dd>Cloudflare, only if you’re asked to pass a check</dd>
-			<dt class="font-semibold">Purpose</dt>
-			<dd>
-				Security: telling people from bots. It isn’t used to identify or
-				follow you.
-			</dd>
-			<dt class="font-semibold">Kept for</dt>
-			<dd>As long as the check lasts, 30 minutes by default</dd>
+			<dt class="font-semibold">{m.cookies_set_by()}</dt>
+			<dd>{m.cookies_set_by_value()}</dd>
+			<dt class="font-semibold">{m.cookies_purpose()}</dt>
+			<dd>{m.cookies_purpose_value()}</dd>
+			<dt class="font-semibold">{m.cookies_kept_for()}</dt>
+			<dd>{m.cookies_kept_for_value()}</dd>
 		</dl>
-		<p class="mt-4 leading-relaxed text-ink/85">
+		<p class="mt-4 leading-relaxed">
 			<a href={CLOUDFLARE_COOKIES} class={link}>
-				Cloudflare’s own list
-			</a>{' '}
-			explains it in more detail.
+				{m.cookies_cloudflare_more()}
+			</a>
 		</p>
 
 		<h2 class="mt-12 font-display text-3xl font-semibold">
-			What the game remembers
+			{m.cookies_game_heading()}
+		</h2>
+		<p class="mt-4 leading-relaxed text-ink/85">{m.cookies_game_body()}</p>
+
+		<h2 class="mt-12 font-display text-3xl font-semibold">
+			{m.cookies_analytics_heading()}
 		</h2>
 		<p class="mt-4 leading-relaxed text-ink/85">
-			The game keeps your best score and the easter eggs you’ve found in
-			your browser’s local storage, so they’re still there next time you
-			play. They never leave your device, and clearing your browser’s data
-			for this site removes them.
-		</p>
-
-		<h2 class="mt-12 font-display text-3xl font-semibold">Analytics</h2>
-		<p class="mt-4 leading-relaxed text-ink/85">
-			I count visits with Cloudflare Web Analytics, which sets no cookies,
-			stores nothing on your device and doesn’t fingerprint you.
+			{m.cookies_analytics_body()}
 		</p>
 
 		<p class="mt-12">
@@ -79,7 +66,7 @@ const link =
 				href="/"
 				class="inline-block rounded-full bg-ink px-5 py-2.5 font-semibold text-paper hover:bg-ink/85 focus-visible:ring-4 focus-visible:ring-accent/50 focus-visible:outline-none"
 			>
-				Back to the trailhead
+				{m.back_to_trailhead()}
 			</a>
 		</p>
 	</main>

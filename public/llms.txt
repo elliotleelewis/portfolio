@@ -11,7 +11,7 @@ Work history:
 - Jabil, St Petersburg, FL: Senior Software Engineer (May 2019 - Aug 2021). The de facto front-end architect for 10+ teams, merging a fleet of on-prem front ends into a single regional cloud application. Led a team of 7 engineers redesigning every screen of a 450k+ line flagship application, and started Jabil's first inner-source project, an Angular component library.
 - Jabil, Livingston, Scotland: Software Engineer (May 2017 - Sep 2018). Built an Angular UI package library used across every front end in iFactory, and partnered with a Microsoft team on an Angular front end for their ASP.NET Core API.
 
-Skills: TypeScript, JavaScript and SCSS; React, Angular, Tailwind and Styled Components; GraphQL, gRPC and Node.js; Vitest, Jest, Playwright, Vite and Git.
+Skills: TypeScript, C# and SCSS; React, Angular, Astro, Tailwind, Panda CSS and Styled Components; GraphQL, gRPC, Node.js and .NET; Vite, Vitest, Playwright and Oxlint.
 
 Education: Computer Science BSc (Hons), First Class Honours, Manchester Metropolitan University (Sep 2015 - May 2019), with a sandwich year and Academic Excellence awards in years 1 and 2.
 

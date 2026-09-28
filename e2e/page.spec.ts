@@ -137,6 +137,33 @@ test('explains cookies on a page linked from the footer', async ({ page }) => {
 	);
 });
 
+test('clears what the game remembers from the cookies page', async ({
+	page,
+}) => {
+	await page.goto('/cookies');
+	const clear = page.getByRole('button', {
+		name: 'Clear what the game remembers',
+	});
+	const status = page.locator('#storage-status');
+	// Nothing saved yet.
+	await expect(clear).toBeDisabled();
+	await expect(status).toHaveText('There’s nothing to clear.');
+
+	await page.evaluate(() => {
+		localStorage.setItem('hero-best-trees', '12');
+		localStorage.setItem(
+			'hero-easter-egg-hits',
+			JSON.stringify({ outhouse: 3 }),
+		);
+	});
+	await page.reload();
+	await expect(status).toBeEmpty();
+	await clear.click();
+	await expect(status).toHaveText('Cleared. The game will start afresh.');
+	await expect(clear).toBeDisabled();
+	expect(await page.evaluate(() => localStorage.length)).toBe(0);
+});
+
 test('answers paths that are not on the site with a 404 page', async ({
 	page,
 }) => {

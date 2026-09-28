@@ -82,7 +82,10 @@
   "cookies_kept_for_value": "As long as the check lasts, 30 minutes by default",
   "cookies_cloudflare_more": "Read more in Cloudflare’s own list of its cookies",
   "cookies_game_heading": "What the game remembers",
-  "cookies_game_body": "The game keeps your best score and the easter eggs you’ve found in your browser’s local storage, so they’re still there next time you play. They never leave your device, and clearing your browser’s data for this site removes them.",
+  "cookies_game_body": "The game keeps your best score and the easter eggs you’ve found in your browser’s local storage, so they’re still there next time you play. They never leave your device. You can clear them here, or by clearing your browser’s data for this site.",
+  "cookies_game_clear": "Clear what the game remembers",
+  "cookies_game_cleared": "Cleared. The game will start afresh.",
+  "cookies_game_empty": "There’s nothing to clear.",
   "cookies_analytics_heading": "Analytics",
   "cookies_analytics_body": "I count visits with Cloudflare Web Analytics, which sets no cookies, stores nothing on your device and doesn’t fingerprint you.",
   "back_to_trailhead": "Back to the trailhead"

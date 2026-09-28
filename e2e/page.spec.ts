@@ -113,11 +113,28 @@ test('sets no cookies, so needs no consent banner', async ({
 	context,
 	page,
 }) => {
-	for (const path of ['/', '/game', '/no-such-page']) {
+	for (const path of ['/', '/game', '/cookies', '/no-such-page']) {
 		await page.goto(path);
 		await page.waitForLoadState('networkidle');
 	}
 	expect(await context.cookies()).toEqual([]);
+});
+
+test('explains cookies on a page linked from the footer', async ({ page }) => {
+	await page.goto('/');
+	await page
+		.getByRole('contentinfo')
+		.getByRole('link', { name: 'Cookies' })
+		.click();
+	await expect(page).toHaveURL('/cookies');
+	await expect(
+		page.getByRole('heading', { level: 1, name: 'Cookies.' }),
+	).toBeVisible();
+	await expect(page.getByText('cf_clearance')).toBeVisible();
+	await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+		'href',
+		'https://elliotleelewis.com/cookies',
+	);
 });
 
 test('answers paths that are not on the site with a 404 page', async ({
@@ -155,7 +172,7 @@ test('describes the site for AI agents in llms.txt', async ({ request }) => {
 		.matchAll(/\]\((https:\/\/elliotleelewis\.com[^)]*)\)/g)
 		.map(([, url = '']) => new URL(url).pathname)
 		.toArray();
-	expect(pages).toEqual(['/', '/game']);
+	expect(pages).toEqual(['/', '/game', '/cookies']);
 	for (const path of pages) {
 		const page = await request.get(path);
 		expect(page.status()).toBe(200);

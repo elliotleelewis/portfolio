@@ -42,6 +42,8 @@ Import types with `import type { … }`, not `import { type … }`. With `verbat
 ## How the code fits together
 
 - **Page:** `src/pages/index.astro` puts the sections from `src/content/` together. Everything is static Astro, except for the hero.
+- **`public/llms.txt`** describes me and the site for AI agents, in the [llmstxt.org](https://llmstxt.org) format. It restates what `src/content/` says, so update it when that changes. Keep links in the `##` sections only, and the text plain ASCII.
+- **`src/pages/404.astro`** answers anything not on the site. Without a `404.html`, Cloudflare Pages would answer every unknown path with the home page.
 - **Hero photo:** `src/media/hero.webp` is a lossless, full-resolution crop of the original, in Display P3. Astro converts it to sRGB and encodes each size as AVIF, with WebP as a fallback, at the qualities set in `astro.config.mjs`. Astro's image cache (`node_modules/.astro`) ignores those settings, so delete it after changing them, or builds keep the old images. The `sizes` in `src/content/Hero.astro` works out how wide the photo is drawn from the hero's layout, so update it if the layout changes. The e2e test "loads a sharp enough photo" checks it.
 - **Hero** (`src/hero/`):
   - A React island (`client:load`).

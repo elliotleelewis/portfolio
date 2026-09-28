@@ -86,3 +86,45 @@ test('loads a sharp enough photo for how big it is drawn', async ({ page }) => {
 		Math.min(picked.needed, picked.largest),
 	);
 });
+
+test('answers paths that are not on the site with a 404 page', async ({
+	page,
+}) => {
+	// Crawlers and agents look for files like these. They should hear "not
+	// found", not get the home page.
+	for (const path of ['/ai-catalog.json', '/no-such-page']) {
+		const response = await page.goto(path);
+		expect(response?.status()).toBe(404);
+		await expect(
+			page.getByRole('heading', { level: 1, name: 'Off the trail.' }),
+		).toBeVisible();
+	}
+	await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+		'content',
+		'noindex',
+	);
+	await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);
+	await page.getByRole('link', { name: 'Back to the trailhead' }).click();
+	await expect(page).toHaveURL('/');
+});
+
+test('describes the site for AI agents in llms.txt', async ({ request }) => {
+	const response = await request.get('/llms.txt');
+	expect(response.status()).toBe(200);
+	expect(response.headers()['content-type']).toMatch(/^text\/plain/);
+	const text = await response.text();
+	// The llmstxt.org layout: a title, then a one-line summary.
+	const [title, , summary] = text.split('\n', 3);
+	expect(title).toBe('# Elliot Lewis');
+	expect(summary).toMatch(/^> /);
+	// Every page of this site it links to is there.
+	const pages = text
+		.matchAll(/\]\((https:\/\/elliotleelewis\.com[^)]*)\)/g)
+		.map(([, url = '']) => new URL(url).pathname)
+		.toArray();
+	expect(pages).toEqual(['/', '/game']);
+	for (const path of pages) {
+		const page = await request.get(path);
+		expect(page.status()).toBe(200);
+	}
+});

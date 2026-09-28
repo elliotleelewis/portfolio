@@ -11,9 +11,11 @@ interface Props {
 	title: string;
 	// Where the page lives on the site, for its canonical link.
 	path?: string;
+	// Whether search engines should index the page (not, say, the 404 page).
+	isIndexed?: boolean;
 }
 
-const { title, path = '' } = Astro.props;
+const { title, path = '', isIndexed = true } = Astro.props;
 ---
 
 <!doctype html>
@@ -37,7 +39,11 @@ const { title, path = '' } = Astro.props;
 		/>
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-		<link rel="canonical" href={`https://elliotleelewis.com${path}`} />
+		{isIndexed ? (
+			<link rel="canonical" href={`https://elliotleelewis.com${path}`} />
+		) : (
+			<meta name="robots" content="noindex" />
+		)}
 		<title>{title}</title>
 		<script is:inline>
 			document.documentElement.classList.add('js');

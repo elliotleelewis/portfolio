@@ -14,7 +14,7 @@ jobs:
       - uses: amannn/action-semantic-pull-request@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  build:
+  check:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7
@@ -29,8 +29,7 @@ jobs:
       - run: pnpm lint
       - run: pnpm format
       - run: pnpm test
-      - run: pnpm build
-  e2e:
+  build:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7
@@ -42,6 +41,29 @@ jobs:
           node-version: 24.x
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+  # Tests the site the build job made, rather than building it again.
+  e2e:
+    needs: build
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.x
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
       - if: failure()

@@ -35,9 +35,11 @@ export default defineConfig({
 	],
 	// The site as it's deployed: built, then served as static files. Much
 	// faster to load than the dev server, which sends every module
-	// separately.
+	// separately. In CI, the build job has already built it.
 	webServer: {
-		command: 'astro build && astro preview --port 4321',
+		command: isCi
+			? 'astro preview --port 4321'
+			: 'astro build && astro preview --port 4321',
 		url: 'http://localhost:4321',
 		// Never an old build left running.
 		reuseExistingServer: false,

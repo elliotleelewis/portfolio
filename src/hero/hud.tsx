@@ -1,4 +1,5 @@
 import { useAtomValue } from 'jotai';
+import type { FC } from 'react';
 
 import { m } from '../paraglide/messages';
 
@@ -17,7 +18,7 @@ import { Stick } from './stick';
  * controls hint and (on touch screens) the stick.
  * @returns The HUD.
  */
-export const Hud = () => {
+export const Hud: FC = () => {
 	const controller = useController();
 	const score = useAtomValue(SCORE_ATOM);
 	const metres = useAtomValue(METRES_ATOM);

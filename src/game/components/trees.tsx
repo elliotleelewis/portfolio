@@ -1,5 +1,5 @@
 import { createPortal } from '@react-three/fiber';
-import { useLayoutEffect, useState } from 'react';
+import { type FC, useLayoutEffect, useState } from 'react';
 
 import { Forest } from '../forest';
 import { SYSTEM_ORDER } from '../systems';
@@ -10,7 +10,7 @@ import { useGame, useSystem } from './game-context';
  * The trees down the mountainside, plus a few framing the opening shot.
  * @returns The trees.
  */
-export const Trees = () => {
+export const Trees: FC = () => {
 	const game = useGame();
 	const [forest] = useState(() => new Forest(game.forestHooks));
 

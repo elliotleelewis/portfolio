@@ -1,6 +1,6 @@
 import { ParaglideMessage } from '@inlang/paraglide-js-react';
 import { useAtomValue } from 'jotai';
-import { useEffect, useRef } from 'react';
+import { type FC, useEffect, useRef } from 'react';
 
 import { m } from '../paraglide/messages';
 
@@ -12,7 +12,7 @@ import { useController } from './context';
  * The card when a bear catches me: how the run went, and what next.
  * @returns The card.
  */
-export const GameOver = () => {
+export const GameOver: FC = () => {
 	const controller = useController();
 	const isShown = useAtomValue(GAME_OVER_ATOM);
 	const { trees, metres, best } = useAtomValue(RESULT_ATOM);

@@ -1,5 +1,5 @@
 import { useAtomValue } from 'jotai';
-import { useEffect, useRef } from 'react';
+import { type FC, useEffect, useRef } from 'react';
 
 import { m } from '../paraglide/messages';
 
@@ -12,7 +12,7 @@ import { hitsMessage } from './easter-egg-hits';
  * for each egg, and a way back into the game.
  * @returns The panel.
  */
-export const GalleryPanel = () => {
+export const GalleryPanel: FC = () => {
 	const controller = useController();
 	const scene = useAtomValue(SCENE_ATOM);
 	const { index, caption, count, hits } = useAtomValue(GALLERY_ATOM);

@@ -28,6 +28,7 @@ ESLint enforces most of this, with strict TypeScript, unicorn, jsdoc, jsx-a11y a
   - Exported constants are `UPPER_CASE`, but exported functions are `camelCase`.
   - Private members start with `_`, like `_player`.
 - **Comments and docs:** functions need JSDoc with `@param` and `@returns`. Game code is written in the first person, from the player's side ("where I am", "a bear got me"), and comments say why rather than what. Match the surrounding code.
+- **React components** are typed with `FC`: `const Foo: FC<Props> = ({ bar }) => …`, or `FC` alone when a component takes no props.
 - **Type assertions:** avoid `as` and non-null `!`. Narrow the type, or restructure the code, instead.
 - **Tailwind:**
   - Use the canonical class names the linter asks for, like `inset-s-4` rather than `start-4`.

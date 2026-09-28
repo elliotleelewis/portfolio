@@ -1,4 +1,5 @@
 import { createPortal } from '@react-three/fiber';
+import type { FC } from 'react';
 import type { Object3D } from 'three';
 
 import { useGame } from './game-context';
@@ -14,7 +15,7 @@ interface Props {
  * @param props.object - What to put there.
  * @returns The object, on the slope.
  */
-export const OnSlope = ({ object }: Props) => {
+export const OnSlope: FC<Props> = ({ object }) => {
 	const game = useGame();
 	return createPortal(<primitive object={object} />, game.slope);
 };

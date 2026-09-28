@@ -1,5 +1,5 @@
 import { ParaglideMessage } from '@inlang/paraglide-js-react';
-import type { ReactNode } from 'react';
+import type { FC, ReactNode } from 'react';
 
 import type { m } from '../paraglide/messages';
 
@@ -25,7 +25,7 @@ interface Props {
  * @param props.href - Where a link in the message goes.
  * @returns The message.
  */
-export const RichText = ({ message, href }: Props) => {
+export const RichText: FC<Props> = ({ message, href }) => {
 	// Every message gets both, whether or not it uses them.
 	const markup = {
 		strong: ({ children }: { children?: ReactNode }) => (

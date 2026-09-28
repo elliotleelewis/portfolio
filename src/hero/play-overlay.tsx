@@ -1,5 +1,5 @@
 import { useAtomValue } from 'jotai';
-import { useEffect, useRef } from 'react';
+import { type FC, useEffect, useRef } from 'react';
 
 import { m } from '../paraglide/messages';
 
@@ -16,7 +16,7 @@ interface Props {
  * @param props.onPlay - Starts a run.
  * @returns The overlay.
  */
-export const PlayOverlay = ({ onPlay }: Props) => {
+export const PlayOverlay: FC<Props> = ({ onPlay }) => {
 	const scene = useAtomValue(SCENE_ATOM);
 	const isHydrated = useIsHydrated();
 	const button = useRef<HTMLButtonElement>(null);

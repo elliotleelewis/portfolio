@@ -5,6 +5,7 @@ on:
   pull_request:
     branches:
       - main
+  merge_group:
 jobs:
   commit-message:
     name: semantic-pull-request
@@ -72,6 +73,9 @@ jobs:
           name: playwright-report
           path: test-results/
   deploy:
+    # The merge queue's branches are temporary, so there's nothing to
+    # preview. Main deploys once the merge lands.
+    if: github.event_name != 'merge_group'
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7

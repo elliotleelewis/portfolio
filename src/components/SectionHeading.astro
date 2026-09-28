@@ -1,4 +1,6 @@
 ---
+import { m } from '../paraglide/messages';
+
 interface Props {
 	id: string;
 	// Numbered like a trail marker, e.g. "01".
@@ -12,7 +14,7 @@ const { id, marker, kicker, title } = Astro.props;
 
 <header class="mb-10">
 	<p class="font-mono text-xs tracking-[0.25em] text-accent uppercase">
-		{marker} · {kicker}
+		{m.section_heading({ marker, kicker })}
 	</p>
 	<h2
 		id={id}

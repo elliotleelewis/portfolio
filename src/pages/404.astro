@@ -9,17 +9,17 @@ import { m } from '../paraglide/messages';
 import '../styles/global.css';
 ---
 
-<Layout title="Off the trail · Elliot Lewis" isIndexed={false}>
+<Layout title={m.not_found_page_title()} isIndexed={false}>
 	<main class="mx-auto flex min-h-svh max-w-3xl flex-col justify-center px-5 py-16 sm:px-8">
 		<p class="font-mono text-xs tracking-[0.25em] text-accent uppercase">
-			404 · Not found
+			{m.not_found_eyebrow()}
 		</p>
 		<h1 class="mt-4 font-display text-5xl font-semibold tracking-tight sm:text-7xl">
-			Off the trail<span class="text-accent">.</span>
+			{m.not_found_title()}
+			<span class="text-accent">.</span>
 		</h1>
 		<p class="mt-6 max-w-xl text-lg/relaxed text-ink/85">
-			There’s nothing at this address. It may have moved, or never been
-			here at all.
+			{m.not_found_body()}
 		</p>
 		<ul class="mt-8 flex flex-wrap gap-3">
 			<li>
@@ -35,7 +35,7 @@ import '../styles/global.css';
 					href="/game"
 					class="inline-block rounded-full border border-line px-5 py-2.5 font-semibold hover:bg-surface focus-visible:ring-4 focus-visible:ring-accent/50 focus-visible:outline-none"
 				>
-					Take the quick way down ⛰️
+					{m.hero_play()}
 				</a>
 			</li>
 		</ul>

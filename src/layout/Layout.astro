@@ -2,6 +2,8 @@
 import { Font, getImage } from 'astro:assets';
 
 import hero from '../media/hero.webp';
+import { m } from '../paraglide/messages';
+import { getLocale } from '../paraglide/runtime';
 
 interface Props {
 	title: string;
@@ -13,9 +15,14 @@ interface Props {
 	isIndexed?: boolean;
 }
 
+// The page's language, and which way it reads. The game mirrors itself
+// for right-to-left pages (src/game/direction.ts).
+const lang = getLocale();
+const dir = new Intl.Locale(lang).getTextInfo().direction ?? 'ltr';
+
 const {
 	title,
-	description = 'Elliot Lewis: Staff Software Engineer, front-end. Los Angeles, CA.',
+	description = m.site_description(),
 	path = '',
 	isIndexed = true,
 } = Astro.props;
@@ -37,7 +44,7 @@ const previewUrl = new URL(preview.src, url).href;
 ---
 
 <!doctype html>
-<html lang="en" dir="ltr">
+<html lang={lang} dir={dir}>
 	<head>
 		<meta charset="utf8" />
 		<meta name="description" content={description} />
@@ -74,10 +81,7 @@ const previewUrl = new URL(preview.src, url).href;
 			property="og:image:height"
 			content={String(preview.attributes.height)}
 		/>
-		<meta
-			property="og:image:alt"
-			content="Elliot smiling among pine trees, with a mountain behind him"
-		/>
+		<meta property="og:image:alt" content={m.site_preview_alt()} />
 		<meta name="twitter:card" content="summary_large_image" />
 		<meta name="twitter:creator" content="@elliotleelewis" />
 		<Font cssVariable="--font-inter" />

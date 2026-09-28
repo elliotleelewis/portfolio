@@ -1,5 +1,5 @@
 import { Canvas, useFrame } from '@react-three/fiber';
-import { useRef } from 'react';
+import { type FC, useRef } from 'react';
 
 import { GalleryWorld } from '../game/components/gallery-world';
 import { GameWorld } from '../game/components/world';
@@ -16,7 +16,7 @@ interface FrameProps {
 	onFirstFrame: (scene: StageScene) => void;
 }
 
-const Frame = ({ scene, onFirstFrame }: FrameProps) => {
+const Frame: FC<FrameProps> = ({ scene, onFirstFrame }) => {
 	const prepared = useRef<StageScene | undefined>(undefined);
 	const drawn = useRef<StageScene | undefined>(undefined);
 	const fittedSize = useRef('');
@@ -62,7 +62,7 @@ interface Props {
  * @param props.onFirstFrame - Called once a scene has first been drawn.
  * @returns The canvas.
  */
-export const SceneCanvas = ({ shown, onFirstFrame }: Props) => (
+export const SceneCanvas: FC<Props> = ({ shown, onFirstFrame }) => (
 	// `flat` keeps three's default (no) tone mapping, and "percentage" is its
 	// PCF shadow map, so the scenes look as they were designed.
 	<Canvas

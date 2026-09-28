@@ -1,5 +1,5 @@
 import { useAtomValue } from 'jotai';
-import { useEffect, useRef } from 'react';
+import { type FC, useEffect, useRef } from 'react';
 
 import { m } from '../paraglide/messages';
 
@@ -13,7 +13,7 @@ import { useIsHydrated } from './hooks';
  * over the game as I stand waiting at the top of the mountain.
  * @returns The start screen.
  */
-export const StartScreen = () => {
+export const StartScreen: FC = () => {
 	const controller = useController();
 	const phase = useAtomValue(PHASE_ATOM);
 	const isWaiting = useAtomValue(WAITING_ATOM);

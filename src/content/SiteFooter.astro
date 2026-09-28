@@ -1,6 +1,8 @@
 ---
 import { SOCIALS } from './socials';
 
+import { m } from '../paraglide/messages';
+
 // A low-poly mountain skyline like the game's backdrop, with a treeline in
 // front. Deterministic, so it's the same on every build.
 const width = 1440;
@@ -61,9 +63,9 @@ const year = new Date().getFullYear();
 	<div class="bg-ridge-near">
 		<div class="mx-auto flex max-w-3xl flex-col items-center gap-8 px-5 pt-6 pb-12 text-center sm:px-8">
 			<h2 id="footer-title" class="font-display text-3xl font-semibold">
-				End of the trail.
+				{m.footer_title()}
 			</h2>
-			<ul class="flex gap-6" aria-label="Find me elsewhere">
+			<ul class="flex gap-6" aria-label={m.socials_label()}>
 				{SOCIALS.map(({ label, href, viewBox, path }) => (
 					<li>
 						<a
@@ -81,7 +83,7 @@ const year = new Date().getFullYear();
 								<path d={path} />
 							</svg>
 							<span class="sr-only">
-								{label} (opens in a new tab)
+								{label} {m.opens_in_new_tab()}
 							</span>
 						</a>
 					</li>
@@ -93,7 +95,7 @@ const year = new Date().getFullYear();
 					href="/cookies"
 					class="underline underline-offset-4 hover:text-accent focus-visible:text-accent focus-visible:outline-none"
 				>
-					Cookies
+					{m.footer_cookies()}
 				</a>
 			</p>
 		</div>

@@ -1,4 +1,4 @@
-import { type PointerEvent, useRef, useState } from 'react';
+import { type FC, type PointerEvent, useRef, useState } from 'react';
 
 import { readStick } from '../game/stick';
 
@@ -13,7 +13,7 @@ interface Knob {
  * A thumbstick for touch screens: left/right steers, up/down sets the pace.
  * @returns The stick.
  */
-export const Stick = () => {
+export const Stick: FC = () => {
 	const controller = useController();
 	const pointer = useRef<number | undefined>(undefined);
 	// Where the knob is while it's held, or undefined at rest.

@@ -17,6 +17,8 @@ import {
 	Vector3,
 } from 'three';
 
+import { m } from '../../paraglide/messages';
+
 import { canvasTexture, joint, part, standard } from './parts';
 import type { EasterEgg, EasterEggFrame } from './types';
 
@@ -690,7 +692,7 @@ export const BATTLESTATION: EasterEgg = {
 	clearingRadius: 13.5,
 	footprint: { halfWidth: 1.5, halfDepth: 0.9 },
 	gallery: {
-		caption: 'Working from the woods',
+		caption: m.egg_battlestation(),
 		camera: [1.9, 1.9, 4],
 		target: [0, 0.8, -0.3],
 	},

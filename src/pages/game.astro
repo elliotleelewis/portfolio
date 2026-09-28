@@ -2,14 +2,11 @@
 // Just the game, filling the window, with a start screen of its own.
 import { Hero } from '../hero/hero';
 import Layout from '../layout/Layout.astro';
+import { m } from '../paraglide/messages';
 
 import '../styles/global.css';
 ---
 
-<Layout
-	title="The quick way down · Elliot Lewis"
-	description="Cartwheel down a low-poly mountain as Elliot, flattening every tree you can, and don’t get caught by a bear."
-	path="/game"
->
+<Layout title={m.game_title()} description={m.game_description()} path="/game">
 	<Hero client:load isGamePage />
 </Layout>

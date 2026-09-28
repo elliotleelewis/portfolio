@@ -1,11 +1,13 @@
 ---
 import SectionHeading from '../components/SectionHeading.astro';
 
+import { m } from '../paraglide/messages';
+
 // Skills, grouped like a packing list.
 const pack = [
-	{ heading: 'Languages', items: ['TypeScript', 'C#', 'SCSS'] },
+	{ heading: m.pack_languages(), items: ['TypeScript', 'C#', 'SCSS'] },
 	{
-		heading: 'Frameworks & styling',
+		heading: m.pack_frameworks(),
 		items: [
 			'React',
 			'Angular',
@@ -16,11 +18,11 @@ const pack = [
 		],
 	},
 	{
-		heading: 'APIs & runtime',
+		heading: m.pack_apis(),
 		items: ['GraphQL', 'gRPC', 'Node.js', '.NET'],
 	},
 	{
-		heading: 'Testing & tooling',
+		heading: m.pack_tooling(),
 		items: ['Vite', 'Vitest', 'Playwright', 'Oxlint'],
 	},
 ];
@@ -30,8 +32,8 @@ const pack = [
 	<SectionHeading
 		id="pack-title"
 		marker="02"
-		kicker="The pack"
-		title="What I carry"
+		kicker={m.pack_kicker()}
+		title={m.pack_title()}
 	/>
 	<div class="grid gap-4 sm:grid-cols-2" data-reveal>
 		{pack.map(({ heading, items }) => (

@@ -3,6 +3,7 @@ import { Picture } from 'astro:assets';
 
 import { Hero } from '../hero/hero';
 import hero from '../media/hero.webp';
+import { m } from '../paraglide/messages';
 
 // The photo covers the hero, so it's drawn at whichever is wider: the hero's
 // width, or its height (85svh, at least 30rem) times the photo's shape
@@ -21,7 +22,7 @@ const sizes = [
 		src={hero}
 		formats={['avif']}
 		fallbackFormat="webp"
-		alt="Elliot smiling on a hiking trail, with pine trees and mountains behind him"
+		alt={m.hero_photo_alt()}
 		class="absolute inset-0 size-full object-cover object-[50%_45%] transition-opacity duration-1500 ease-in-out group-data-[state=playing]:opacity-0"
 		widths={[640, 960, 1280, 1717]}
 		sizes={sizes}

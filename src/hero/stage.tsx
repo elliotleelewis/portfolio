@@ -1,5 +1,5 @@
 import { useAtomValue } from 'jotai';
-import { type PointerEvent, Suspense, lazy, useRef } from 'react';
+import { type FC, type PointerEvent, Suspense, lazy, useRef } from 'react';
 
 import { SCENE_ATOM, STAGE_SCENE_ATOM } from './atoms';
 import { useController } from './context';
@@ -29,7 +29,7 @@ const SceneCanvas = lazy(async () => {
  * game is steered with the keyboard or the on-screen stick.
  * @returns The stage.
  */
-export const Stage = () => {
+export const Stage: FC = () => {
 	const controller = useController();
 	const scene = useAtomValue(SCENE_ATOM);
 	const stageScene = useAtomValue(STAGE_SCENE_ATOM);

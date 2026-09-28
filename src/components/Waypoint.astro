@@ -2,15 +2,18 @@
 import type { ImageMetadata } from 'astro';
 import { Image } from 'astro:assets';
 
+import { m } from '../paraglide/messages';
+
 interface Props {
 	company: string;
-	// When I was there, e.g. "2024 – now".
-	span: string;
+	// When I was there, as years, like "2024". No `to` means I'm still there.
+	from: string;
+	to?: string;
 	logo: ImageMetadata;
 	logoBackground: string;
 }
 
-const { company, span, logo, logoBackground } = Astro.props;
+const { company, from, to, logo, logoBackground } = Astro.props;
 ---
 
 <!-- One stop on the trail: a company, with its roles and highlights. -->
@@ -19,7 +22,11 @@ const { company, span, logo, logoBackground } = Astro.props;
 		class="absolute -inset-s-[calc(2rem+9px)] top-1.5 size-4 rounded-full border-4 border-paper bg-accent ring-2 ring-accent sm:-inset-s-[calc(3rem+9px)]"
 		aria-hidden="true"
 	></span>
-	<p class="font-mono text-xs tracking-widest text-muted uppercase">{span}</p>
+	<p class="font-mono text-xs tracking-widest text-muted uppercase">
+		{to === undefined
+			? m.trail_years_current({ from })
+			: m.trail_years({ from, to })}
+	</p>
 	<div class="mt-3 flex items-center gap-3">
 		<div
 			class="grid size-10 shrink-0 place-items-center rounded-md p-1.5"

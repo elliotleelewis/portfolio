@@ -1,5 +1,5 @@
 import { Provider, createStore, useAtomValue } from 'jotai';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type FC, type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { m } from '../paraglide/messages';
 
@@ -22,7 +22,7 @@ interface Props {
 	isGamePage?: boolean;
 }
 
-const HeroSection = ({ children, isGamePage = false }: Props) => {
+const HeroSection: FC<Props> = ({ children, isGamePage = false }) => {
 	const controller = useController();
 	const phase = useAtomValue(PHASE_ATOM);
 	const mode = useAtomValue(MODE_ATOM);
@@ -82,7 +82,7 @@ const HeroSection = ({ children, isGamePage = false }: Props) => {
  * @param props.isGamePage - Whether this is the game's own page.
  * @returns The hero.
  */
-export const Hero = ({ children, isGamePage = false }: Props) => {
+export const Hero: FC<Props> = ({ children, isGamePage = false }) => {
 	const [store] = useState(() => createStore());
 	const [controller] = useState(
 		() => new HeroController(store, { hasStartScreen: isGamePage }),

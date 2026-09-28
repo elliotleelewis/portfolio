@@ -1,5 +1,5 @@
 import { createPortal } from '@react-three/fiber';
-import { useEffect, useMemo } from 'react';
+import { type FC, useEffect, useMemo } from 'react';
 import type { Object3D, Vector3 } from 'three';
 
 import type { Mirror } from '../direction';
@@ -27,7 +27,7 @@ interface SceneryProps {
  * @param props.mirror - -1 to mirror it.
  * @returns The scenery.
  */
-const Scenery = ({ count, create, mirror }: SceneryProps) => {
+const Scenery: FC<SceneryProps> = ({ count, create, mirror }) => {
 	const scenery = useMemo(() => {
 		const object = create(count);
 		// three.js turns mirrored faces back round itself.
@@ -56,7 +56,7 @@ interface Props {
  * @param props.gallery - The gallery to build the world for.
  * @returns The world.
  */
-export const GalleryWorld = ({ gallery }: Props) => {
+export const GalleryWorld: FC<Props> = ({ gallery }) => {
 	// The sun lights whatever the camera is looking at.
 	const focus = (into: Vector3): Vector3 => into.copy(gallery.focus);
 	return (

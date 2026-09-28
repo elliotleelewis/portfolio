@@ -13,6 +13,8 @@ import {
 	TorusGeometry,
 } from 'three';
 
+import { m } from '../../paraglide/messages';
+
 import { joint, part, standard } from './parts';
 import type { EasterEgg, EasterEggFrame } from './types';
 
@@ -354,7 +356,7 @@ export const TAHOE_READER: EasterEgg = {
 	clearingRadius: 13.5,
 	footprint: { halfWidth: 1.1, halfDepth: 2.7 },
 	gallery: {
-		caption: 'Reading in the back of the Tahoe',
+		caption: m.egg_tahoe_reader(),
 		camera: [3.4, 2.3, 7.4],
 		target: [0, 1.2, 1.3],
 	},

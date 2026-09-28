@@ -3,6 +3,7 @@ import { Image } from 'astro:assets';
 
 import SectionHeading from '../components/SectionHeading.astro';
 import mmu from '../media/mmu.svg';
+import { m } from '../paraglide/messages';
 ---
 
 <!-- Education: where the trail started. -->
@@ -10,8 +11,8 @@ import mmu from '../media/mmu.svg';
 	<SectionHeading
 		id="camp-title"
 		marker="03"
-		kicker="Base camp"
-		title="Where it started"
+		kicker={m.camp_kicker()}
+		title={m.camp_title()}
 	/>
 	<div
 		class="flex flex-col gap-5 rounded-xl border border-line bg-surface p-6 sm:flex-row sm:items-start sm:p-8"
@@ -22,20 +23,22 @@ import mmu from '../media/mmu.svg';
 		</div>
 		<div class="flex-1">
 			<p class="font-mono text-xs tracking-widest text-muted uppercase">
-				Sep 2015 – May 2019 · Manchester, UK
+				{m.role_dates({
+					from: '2015-09',
+					to: '2019-05',
+					place: m.place_manchester(),
+				})}
 			</p>
 			<h3 class="mt-2 font-display text-2xl font-semibold tracking-tight">
-				Computer Science BSc (Hons)
+				{m.camp_degree()}
 			</h3>
-			<p class="mt-1 text-muted">
-				Manchester Metropolitan University, with a sandwich year
-			</p>
+			<p class="mt-1 text-muted">{m.camp_university()}</p>
 			<ul class="mt-5 flex flex-wrap gap-2">
 				<li class="rounded-lg border border-accent/40 px-3 py-1 text-sm font-medium text-accent">
-					First Class Honours
+					{m.camp_first_class()}
 				</li>
 				<li class="rounded-lg border border-accent/40 px-3 py-1 text-sm font-medium text-accent">
-					Academic Excellence · Years 1 & 2
+					{m.camp_excellence()}
 				</li>
 			</ul>
 		</div>

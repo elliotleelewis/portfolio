@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { type FC, useEffect, useMemo, useState } from 'react';
 import { DirectionalLight, Vector3 } from 'three';
 
 import type { Mirror } from '../direction';
@@ -24,7 +24,7 @@ interface SkyProps {
  * @param props.far - Where it hides everything.
  * @returns The sky.
  */
-export const Sky = ({ near, far }: SkyProps) => (
+export const Sky: FC<SkyProps> = ({ near, far }) => (
 	<>
 		<color attach="background" args={[FOG_COLOR]} />
 		<fog attach="fog" args={[FOG_COLOR, near, far]} />
@@ -56,7 +56,12 @@ interface LightingProps {
  * @param props.mirror - -1 to put the sun on the other side.
  * @returns The lights.
  */
-export const Lighting = ({ reach, depth, focus, mirror }: LightingProps) => {
+export const Lighting: FC<LightingProps> = ({
+	reach,
+	depth,
+	focus,
+	mirror,
+}) => {
 	const [offset] = useState(() =>
 		sunOffset.clone().setX(sunOffset.x * mirror),
 	);
@@ -103,7 +108,7 @@ export const Lighting = ({ reach, depth, focus, mirror }: LightingProps) => {
  * A ring of distant peaks that stays on the horizon.
  * @returns The mountains.
  */
-export const Mountains = () => {
+export const Mountains: FC = () => {
 	const stage = useStage();
 	const [mountains] = useState(() => createMountains(FOG_COLOR));
 

@@ -1,5 +1,5 @@
 import { createPortal } from '@react-three/fiber';
-import { useEffect, useMemo } from 'react';
+import { type FC, useEffect, useMemo } from 'react';
 import { type Mesh, MeshLambertMaterial, type Vector3 } from 'three';
 
 import { disposeObject } from '../easter-eggs';
@@ -32,7 +32,7 @@ interface GroundPieces {
  * The ground: a flat ledge to start on, then the mountainside.
  * @returns The ground.
  */
-const Ground = () => {
+const Ground: FC = () => {
 	const game = useGame();
 	const ground = useMemo((): GroundPieces => {
 		const material = new MeshLambertMaterial({
@@ -100,7 +100,7 @@ interface Props {
  * @param props.game - The game to build the world for.
  * @returns The world.
  */
-export const GameWorld = ({ game }: Props) => {
+export const GameWorld: FC<Props> = ({ game }) => {
 	// The sun follows me down the mountain.
 	const focus = (into: Vector3): Vector3 =>
 		game.slope.localToWorld(into.copy(game.player));

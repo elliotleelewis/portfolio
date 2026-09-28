@@ -16,6 +16,8 @@ import {
 	Vector3,
 } from 'three';
 
+import { m } from '../../paraglide/messages';
+
 import { canvasTexture, joint, part, standard } from './parts';
 import type { EasterEgg, EasterEggFrame } from './types';
 
@@ -387,7 +389,7 @@ export const MONEY_RAIN: EasterEgg = {
 	clearingRadius: 10.5,
 	footprint: { halfWidth: 0.5, halfDepth: 0.5 },
 	gallery: {
-		caption: 'Making it rain (Canadian dollars)',
+		caption: m.egg_money_rain(),
 		camera: [1.6, 2.3, 6],
 		target: [0, 1.7, 0],
 	},

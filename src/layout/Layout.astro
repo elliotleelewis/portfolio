@@ -3,6 +3,7 @@ import { Font, getImage } from 'astro:assets';
 
 import hero from '../media/hero.webp';
 import { m } from '../paraglide/messages';
+import { getLocale } from '../paraglide/runtime';
 
 interface Props {
 	title: string;
@@ -13,6 +14,11 @@ interface Props {
 	// Whether search engines should index the page (not, say, the 404 page).
 	isIndexed?: boolean;
 }
+
+// The page's language, and which way it reads. The game mirrors itself
+// for right-to-left pages (src/game/direction.ts).
+const lang = getLocale();
+const dir = new Intl.Locale(lang).getTextInfo().direction ?? 'ltr';
 
 const {
 	title,
@@ -38,7 +44,7 @@ const previewUrl = new URL(preview.src, url).href;
 ---
 
 <!doctype html>
-<html lang="en" dir="ltr">
+<html lang={lang} dir={dir}>
 	<head>
 		<meta charset="utf8" />
 		<meta name="description" content={description} />

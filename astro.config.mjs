@@ -46,12 +46,34 @@ export default defineConfig({
 			webp: { quality: 90 },
 		}),
 	},
-	// Headings are semibold, the game page's title bold, and one line italic.
-	// A browser only downloads the styles a page uses.
+	// Every font comes from Google Fonts, and the build hosts it with the
+	// site. A browser only downloads the styles a page uses.
 	fonts: [
+		// Headings are semibold, the game page's title bold, and one line
+		// italic.
 		fraunces(600, 'normal'),
 		fraunces(700, 'normal'),
 		fraunces(400, 'italic'),
+		// Body text, from regular to black: one variable font.
+		{
+			provider: google,
+			name: 'Inter',
+			cssVariable: '--font-inter',
+			weights: ['400 900'],
+			styles: ['normal'],
+			subsets: ['latin'],
+			fallbacks: ['ui-sans-serif', 'system-ui', 'sans-serif'],
+		},
+		// Labels and the game's score, only ever regular.
+		{
+			provider: google,
+			name: 'JetBrains Mono',
+			cssVariable: '--font-jetbrains-mono',
+			weights: [400],
+			styles: ['normal'],
+			subsets: ['latin'],
+			fallbacks: ['ui-monospace', 'SFMono-Regular', 'monospace'],
+		},
 	],
 	integrations: [
 		partytown({

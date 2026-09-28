@@ -23,8 +23,8 @@
 	--color-snow: oklch(95.4% 0.007 132.4);
 
 	--font-display: var(--font-fraunces);
-	--font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
-	--font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
+	--font-sans: var(--font-inter);
+	--font-mono: var(--font-jetbrains-mono);
 }
 
 :root {

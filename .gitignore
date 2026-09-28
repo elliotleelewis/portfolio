@@ -1,5 +1,10 @@
 # build output
 dist/
+# Compiled from messages/ by Paraglide.
+src/paraglide/
+# Paraglide's cache and bookkeeping. Only the settings are source.
+project.inlang/*
+!project.inlang/settings.json
 
 # generated types
 .astro/

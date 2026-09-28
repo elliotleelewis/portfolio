@@ -1,6 +1,8 @@
 import { useAtomValue } from 'jotai';
 import { useEffect, useRef } from 'react';
 
+import { m } from '../paraglide/messages.js';
+
 import { SCENE_ATOM } from './atoms';
 import { useIsHydrated } from './hooks';
 
@@ -31,7 +33,7 @@ export const PlayOverlay = ({ onPlay }: Props) => {
 	return (
 		<div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 bg-linear-to-t from-slate-950/70 to-transparent px-6 pt-24 pb-8 text-center text-white transition-opacity duration-500 group-data-[state=playing]:opacity-0">
 			<p className="text-sm tracking-widest text-white/80 uppercase">
-				Hi, I’m Elliot 👋
+				{m.hero_greeting()}
 			</p>
 			<button
 				id="hero-play"
@@ -43,10 +45,10 @@ export const PlayOverlay = ({ onPlay }: Props) => {
 				onClick={onPlay}
 			>
 				<span className="group-data-[state=loading]:hidden">
-					Take the quick way down ⛰️
+					{m.hero_play()}
 				</span>
 				<span className="hidden group-data-[state=loading]:inline">
-					Getting ready…
+					{m.hero_getting_ready()}
 				</span>
 			</button>
 		</div>

@@ -4,6 +4,7 @@
 // every unknown path with the home page, so crawlers looking for files like
 // /ai-catalog.json would get the home page instead of "not found".
 import Layout from '../layout/Layout.astro';
+import { m } from '../paraglide/messages.js';
 
 import '../styles/global.css';
 ---
@@ -26,7 +27,7 @@ import '../styles/global.css';
 					href="/"
 					class="inline-block rounded-full bg-ink px-5 py-2.5 font-semibold text-paper hover:bg-ink/85 focus-visible:ring-4 focus-visible:ring-accent/50 focus-visible:outline-none"
 				>
-					Back to the trailhead
+					{m.back_to_trailhead()}
 				</a>
 			</li>
 			<li>

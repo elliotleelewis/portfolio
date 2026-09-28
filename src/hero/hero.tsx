@@ -1,6 +1,8 @@
 import { Provider, createStore, useAtomValue } from 'jotai';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
+import { m } from '../paraglide/messages.js';
+
 import { MODE_ATOM, PHASE_ATOM } from './atoms';
 import { ControllerContext, useController } from './context';
 import { HeroController } from './controller';
@@ -47,7 +49,7 @@ const HeroSection = ({ children, isGamePage = false }: Props) => {
 					? 'group fixed inset-0 overflow-hidden bg-[#dde3e5] select-none'
 					: 'group relative h-[85svh] min-h-120 overflow-hidden rounded-3xl bg-[#dde3e5] shadow-2xl ring-1 shadow-pine/20 ring-line select-none'
 			}
-			aria-label="Elliot on a mountain"
+			aria-label={m.hero_label()}
 		>
 			{children}
 			<Stage />

@@ -5,7 +5,7 @@
   "license": "UNLICENSED",
   "type": "module",
   "scripts": {
-    "prepare": "husky",
+    "prepare": "husky && paraglide-js compile --strategy baseLocale",
     "astro": "astro",
     "start": "astro dev --host",
     "build": "astro check && astro build",
@@ -38,6 +38,9 @@
     "@commitlint/types": "^21.0.0",
     "@eslint-community/eslint-plugin-eslint-comments": "^4.0.0",
     "@eslint/js": "^10.0.0",
+    "@inlang/paraglide-js": "^2.0.0",
+    "@inlang/paraglide-js-react": "^1.0.0",
+    "@inlang/plugin-message-format": "^4.0.0",
     "@playwright/test": "^1.0.0",
     "@tailwindcss/vite": "^4.0.0",
     "@types/eslint-plugin-jsx-a11y": "^6.0.0",

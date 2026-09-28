@@ -10,6 +10,7 @@ describe('bestMessage', () => {
 
 	it('shows the best to beat', () => {
 		expect(bestMessage(3, 8)).toBe('Your best: 8 trees');
+		expect(bestMessage(0, 1)).toBe('Your best: 1 tree');
 	});
 
 	it('encourages a first-timer who flattened nothing', () => {

@@ -1,5 +1,6 @@
 import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
+import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import tailwindcss from '@tailwindcss/vite';
 import type { AstroUserConfig } from 'astro';
 import { defineConfig, fontProviders, sharpImageService } from 'astro/config';
@@ -84,6 +85,17 @@ export default defineConfig({
 	],
 	integrations: [react({ compiler: true }), robotsTxt(), sitemap()],
 	vite: {
-		plugins: [tailwindcss()],
+		plugins: [
+			// Compiles messages/ into typed functions in src/paraglide/, for
+			// the Astro pages and the React island alike. English is the only
+			// language so far. Keep the strategy in step with `prepare` in
+			// package.json.
+			paraglideVitePlugin({
+				project: './project.inlang',
+				outdir: './src/paraglide',
+				strategy: ['baseLocale'],
+			}),
+			tailwindcss(),
+		],
 	},
 });

@@ -1,6 +1,8 @@
 import { useAtomValue } from 'jotai';
 import { useEffect, useRef } from 'react';
 
+import { m } from '../paraglide/messages.js';
+
 import { BEST_ATOM, PHASE_ATOM, WAITING_ATOM } from './atoms';
 import { useController } from './context';
 import { useIsHydrated } from './hooks';
@@ -36,21 +38,20 @@ export const StartScreen = () => {
 			className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center bg-linear-to-t from-slate-950/70 to-transparent px-6 pt-24 pb-8 text-center text-white opacity-0 transition-opacity duration-500 data-show:pointer-events-auto data-show:opacity-100"
 		>
 			<h1 className="font-display text-4xl font-semibold sm:text-5xl">
-				The quick way down
+				{m.start_title()}
 			</h1>
 			<p className="mt-3 max-w-md text-white/85 sm:text-lg">
-				Cartwheel down the mountain, flatten every tree you can, and
-				don’t get caught by a bear 🐻
+				{m.start_intro()}
 			</p>
 			<p className="mt-2 text-sm text-white/70 any-pointer-coarse:hidden">
-				← → to steer · ↑ ↓ for speed
+				{m.start_keys()}
 			</p>
 			<p className="mt-2 hidden text-sm text-white/70 any-pointer-coarse:block">
-				Steer and speed up with the stick
+				{m.start_stick()}
 			</p>
 			{isHydrated && best > 0 && (
 				<p id="hero-start-best" className="mt-1 text-sm text-white/70">
-					Your best: {best} {best === 1 ? 'tree' : 'trees'}
+					{m.hero_best({ best })}
 				</p>
 			)}
 			<div className="mt-5 flex flex-wrap justify-center gap-2">
@@ -66,8 +67,8 @@ export const StartScreen = () => {
 				>
 					{/* Only while the game loads, not as it all fades away. */}
 					{phase === 'playing'
-						? 'Start rolling ⛰️'
-						: 'Getting ready…'}
+						? m.start_rolling()
+						: m.hero_getting_ready()}
 				</button>
 				<button
 					id="hero-start-gallery"
@@ -78,7 +79,7 @@ export const StartScreen = () => {
 						void controller.openGallery();
 					}}
 				>
-					See the easter eggs
+					{m.hero_see_easter_eggs()}
 				</button>
 			</div>
 		</div>

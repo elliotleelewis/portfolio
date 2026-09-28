@@ -42,6 +42,13 @@ Import types with `import type { … }`, not `import { type … }`. With `verbat
 ## How the code fits together
 
 - **Page:** `src/pages/index.astro` puts the sections from `src/content/` together. Everything is static Astro, except for the hero.
+- **Text** goes through [Paraglide](https://paraglidejs.com), so the Astro pages and the React island share one set of messages:
+  - Each message is in `messages/en.json`, and is called as a typed function, like `m.hero_play()`, from `../paraglide/messages.js`. Paraglide compiles them into `src/paraglide/`, which isn't committed. `pnpm install` compiles them (`prepare`), and so does every build and dev server (the Vite plugin in `astro.config.ts`).
+  - Name keys by where they're shown, in `snake_case`: `hero_…`, `start_…`, `gallery_…`, `cookies_…`.
+  - Counts use plural variants (see `hero_best`), and numbers are formatted with `: number` (see `gallery_smashed`), rather than choosing words or formatting in code.
+  - Bold or links inside a sentence are markup, like `{#score}…{/score}` in `hero_result`, rendered in React with `ParaglideMessage` from `@inlang/paraglide-js-react`. Astro has no renderer for markup, so on Astro pages, make the whole sentence the link.
+  - The hero and the cookies page are done. The rest of the page (`src/content/`) and the easter eggs' captions are still written inline.
+  - English is the only language. Adding one means a `messages/{locale}.json`, the locale in `project.inlang/settings.json`, Astro's `i18n` routing, and a `url` strategy for Paraglide, in both `astro.config.ts` and the `prepare` script.
 - **`public/llms.txt`** describes me and the site for AI agents, in the [llmstxt.org](https://llmstxt.org) format. It restates what `src/content/` says, so update it when that changes. Keep links in the `##` sections only, and the text plain ASCII.
 - **Analytics:** Cloudflare Web Analytics, turned on for the Pages project in Cloudflare's dashboard, which adds its script to each page. It sets no cookies, so the site needs no consent banner. Keep it that way: anything that sets cookies or tracks visitors would need one in the EU and UK.
 - **`src/pages/404.astro`** answers anything not on the site. Without a `404.html`, Cloudflare Pages would answer every unknown path with the home page.

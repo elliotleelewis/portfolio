@@ -3,6 +3,7 @@ import type { createStore } from 'jotai';
 import type { Gallery } from '../game/gallery';
 import type { Game, GameInput } from '../game/game';
 import type { StageScene } from '../game/stage-scene';
+import { m } from '../paraglide/messages.js';
 
 import {
 	BEST_ATOM,
@@ -79,7 +80,7 @@ export class HeroController {
 				onScore: (score, combo) => {
 					store.set(SCORE_ATOM, score);
 					if (combo > 1) {
-						this.callout(`${String(combo)}× combo!`, 900);
+						this.callout(m.hero_combo({ combo }), 900);
 					}
 				},
 				onEasterEgg: (id) => {
@@ -87,7 +88,11 @@ export class HeroController {
 				},
 				onBearBlast: (bears, points) => {
 					this.callout(
-						`${'🐻'.repeat(bears)} ×${String(bears)} +${String(points)}!`,
+						m.hero_bear_blast({
+							bears: '🐻'.repeat(bears),
+							count: bears,
+							points,
+						}),
 						1600,
 					);
 				},

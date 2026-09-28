@@ -1,8 +1,8 @@
 import { type Page, expect } from '@playwright/test';
 
-// What the dev build exposes on `globalThis.heroTest` for tests.
+// What the site exposes on `globalThis.hero`: the game in play.
 interface HeroHandle {
-	heroTest: {
+	hero: {
 		previousGame?: unknown;
 		game: {
 			input: Record<string, boolean | number>;
@@ -46,7 +46,7 @@ export const startFromStartScreen = async (page: Page): Promise<void> => {
  */
 export const advance = async (page: Page, seconds: number): Promise<void> => {
 	await page.evaluate((s) => {
-		(globalThis as unknown as HeroHandle).heroTest.game.advance(s);
+		(globalThis as unknown as HeroHandle).hero.game.advance(s);
 	}, seconds);
 };
 
@@ -56,7 +56,7 @@ export const advance = async (page: Page, seconds: number): Promise<void> => {
  */
 export const crash = async (page: Page): Promise<void> => {
 	await page.evaluate(() => {
-		(globalThis as unknown as HeroHandle).heroTest.game.catchPlayer();
+		(globalThis as unknown as HeroHandle).hero.game.catchPlayer();
 	});
 	await advance(page, 3);
 	await expect(page.locator('#hero-over')).toHaveAttribute('data-show', '');
@@ -73,7 +73,7 @@ export const readInput = async (
 	name: string,
 ): Promise<boolean | number | undefined> =>
 	page.evaluate(
-		(key) => (globalThis as unknown as HeroHandle).heroTest.game.input[key],
+		(key) => (globalThis as unknown as HeroHandle).hero.game.input[key],
 		name,
 	);
 
@@ -101,13 +101,13 @@ export const startNewRun = async (
 ): Promise<void> => {
 	await page.evaluate(() => {
 		const handle = globalThis as unknown as HeroHandle;
-		handle.heroTest.previousGame = handle.heroTest.game;
+		handle.hero.previousGame = handle.hero.game;
 	});
 	await action();
 	await page.waitForFunction(
 		() => {
 			const handle = globalThis as unknown as HeroHandle;
-			return handle.heroTest.game !== handle.heroTest.previousGame;
+			return handle.hero.game !== handle.hero.previousGame;
 		},
 		undefined,
 		{ timeout: 60_000 },

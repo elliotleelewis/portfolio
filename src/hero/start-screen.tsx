@@ -35,7 +35,7 @@ export const StartScreen = () => {
 			data-show={isShown ? '' : undefined}
 			className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center bg-linear-to-t from-slate-950/70 to-transparent px-6 pt-24 pb-8 text-center text-white opacity-0 transition-opacity duration-500 data-show:pointer-events-auto data-show:opacity-100"
 		>
-			<h1 className="font-display text-4xl font-bold sm:text-5xl">
+			<h1 className="font-display text-4xl font-semibold sm:text-5xl">
 				The quick way down
 			</h1>
 			<p className="mt-3 max-w-md text-white/85 sm:text-lg">

@@ -128,3 +128,41 @@ test('describes the site for AI agents in llms.txt', async ({ request }) => {
 		expect(page.status()).toBe(200);
 	}
 });
+
+test('loads each font, in the styles each page uses', async ({ page }) => {
+	// The build downloads the fonts from Google Fonts, and carries on without
+	// them if that fails. The page would then quietly fall back to system
+	// fonts.
+	const loaded = async (): Promise<string[]> =>
+		page.evaluate(async () => {
+			const { fonts } = globalThis.document;
+			await fonts.ready;
+			return (
+				[...fonts]
+					// Astro names each family with a hash on the end, and adds
+					// fallbacks sized to match.
+					.filter(
+						({ family, status }) =>
+							status === 'loaded' && !family.includes('fallback'),
+					)
+					.map(
+						({ family, weight, style }) =>
+							`${family.replaceAll('"', '').replace(/-\w+$/, '')} ${weight} ${style}`,
+					)
+					.toSorted((a, b) => a.localeCompare(b))
+			);
+		});
+	await page.goto('/');
+	expect(await loaded()).toEqual([
+		'Fraunces 400 italic',
+		'Fraunces 600 normal',
+		'Inter 400 900 normal',
+		'JetBrains Mono 400 normal',
+	]);
+	await page.goto('/game');
+	expect(await loaded()).toEqual([
+		'Fraunces 600 normal',
+		'Inter 400 900 normal',
+		'JetBrains Mono 400 normal',
+	]);
+});

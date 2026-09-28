@@ -33,12 +33,11 @@ export default defineConfig({
 			use: { ...devices['Pixel 7'], launchOptions },
 		},
 	],
-	// A production build, like the live site's, but in test mode, which keeps
-	// a test handle on the game. Much faster to load than the dev server,
-	// which sends every module separately.
+	// The site as it's deployed: built, then served as static files. Much
+	// faster to load than the dev server, which sends every module
+	// separately.
 	webServer: {
-		command:
-			'astro build --mode test --outDir dist-e2e && astro preview --outDir dist-e2e --port 4321',
+		command: 'astro build && astro preview --port 4321',
 		url: 'http://localhost:4321',
 		// Never an old build left running.
 		reuseExistingServer: false,

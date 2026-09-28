@@ -107,15 +107,29 @@ export class HeroController {
 		this.show({ kind: 'game', scene: next });
 		this._game = next;
 		this._gallery = undefined;
-		// A handle for the end-to-end tests, which run on a test build. The
-		// live site's production build leaves it out.
-		if (import.meta.env.MODE !== 'production') {
-			Object.assign(globalThis, { heroTest: { game: next } });
-		}
+		this.expose();
 		store.set(SCENE_ATOM, 'game');
 		store.set(MODE_ATOM, 'game');
 		store.set(WAITING_ATOM, isHeld);
 		this.resetHud();
+	}
+
+	/**
+	 * Puts the game in play on `globalThis.hero`, for anyone who wants to
+	 * play with it from the console, and for the end-to-end tests, which
+	 * fast-forward it. It's read when it's asked for, so it never keeps a
+	 * finished game from being freed.
+	 */
+	private expose(): void {
+		const current = (): Game | undefined => this._game;
+		Object.defineProperty(globalThis, 'hero', {
+			configurable: true,
+			value: {
+				get game() {
+					return current();
+				},
+			},
+		});
 	}
 
 	/**

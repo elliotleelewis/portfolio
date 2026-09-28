@@ -77,8 +77,8 @@ Import types with `import type { … }`, not `import { type … }`. With `verbat
   - Avoid randomness that can make a test flaky: put things exactly where the test needs them.
 - **End-to-end tests** are in `e2e/`. They run on a desktop and a phone-sized browser.
   - Every test fails if the page throws an error (`e2e/fixtures.ts`).
-  - They run on a production build in test mode (`astro build --mode test`, into `dist-e2e/`), served by `astro preview`. That's much faster than the dev server, and closer to the live site.
-  - In any build that isn't the live site's, the game is exposed on `globalThis.heroTest`, so tests can fast-forward it (`advance(seconds)`) or end a run (`catchPlayer()`). The helpers are in `e2e/hero.ts`.
+  - They run on the site as it's deployed: `astro build`, served by `astro preview`. That's much faster than the dev server.
+  - The game in play is on `globalThis.hero.game` (`expose()` in `controller.ts`), so tests can fast-forward it (`advance(seconds)`) or end a run (`catchPlayer()`). The helpers are in `e2e/hero.ts`. It's there on the live site too, for anyone curious enough to open the console. It reads the controller's current game each time, so it never keeps a finished one in memory.
   - Playwright runs `astro preview` with `ASTRO_PREVIEW_BACKGROUND=1`. Otherwise Astro sends the server to the background when it detects an AI agent, and Playwright thinks it has quit.
 
 ## Commits and pull requests

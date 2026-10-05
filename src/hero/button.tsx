@@ -1,7 +1,7 @@
 import type { ComponentProps, FC } from 'react';
 
 // How a button looks, by what it sits on.
-export type ButtonVariant =
+type ButtonVariant =
 	// The main action on a card.
 	| 'primary'
 	// A quiet action on a card, as a link.

@@ -6,6 +6,7 @@ import { m } from '../paraglide/messages';
 import { MODE_ATOM, PHASE_ATOM, THEME_ATOM, WAITING_ATOM } from './atoms';
 import {
 	type Device,
+	THEMES,
 	type Theme,
 	applyTheme,
 	deviceFor,
@@ -107,7 +108,7 @@ const Picker: FC = () => {
 			className="absolute inset-s-4 top-4 flex gap-0.5 rounded-full bg-surface/70 p-1 text-ink shadow-sm backdrop-blur-sm transition-[opacity,visibility] duration-500 data-hide:invisible data-hide:opacity-0 starting:opacity-0"
 		>
 			<legend className="sr-only">{m.hero_theme_label()}</legend>
-			{(['light', 'dark', 'system'] as const).map((option) => (
+			{THEMES.map((option) => (
 				<label
 					key={option}
 					title={options[option].label}

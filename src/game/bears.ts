@@ -44,7 +44,7 @@ const pinDistance = 2;
 // so it's never too small to notice.
 const pinFarthest = 45;
 
-export type BearState =
+type BearState =
 	| 'free'
 	| 'clinging'
 	| 'alert'

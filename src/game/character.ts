@@ -21,7 +21,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
  * Height (from the feet) of the point the character spins around while
  * cartwheeling. Roughly the middle of the body when in a star pose.
  */
-export const PIVOT_HEIGHT = 1.05;
+const pivotHeight = 1.05;
 
 export interface Character {
 	// Positioned on the slope.
@@ -363,7 +363,7 @@ export const createCharacter = (): Character => {
 	mats.frames.roughness = 0.3;
 
 	const body = new Group();
-	body.position.y = -PIVOT_HEIGHT;
+	body.position.y = -pivotHeight;
 
 	// Torso.
 	const torso = mesh(
@@ -438,7 +438,7 @@ export const createCharacter = (): Character => {
 	const facing = new Group();
 	facing.add(body);
 	const roller = new Group();
-	roller.position.y = PIVOT_HEIGHT;
+	roller.position.y = pivotHeight;
 	roller.add(facing);
 	const lean = new Group();
 	lean.add(roller);

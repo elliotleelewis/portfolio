@@ -29,6 +29,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm format
+      - run: pnpm knip
       - run: pnpm test
       # The leaderboard's migrations are generated from its schema
       # (functions/_lib/schema.ts). This fails if the schema has changed

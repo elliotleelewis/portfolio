@@ -126,6 +126,15 @@ export const INITIALS_ATOM = atomWithStorage<unknown>(
 	{ getOnInit: true },
 );
 
+// The theme picked with the theme picker, for the whole site. Storage could
+// hold anything, so read it with `readTheme`.
+export const THEME_ATOM = atomWithStorage<unknown>(
+	'theme',
+	'system',
+	undefined,
+	{ getOnInit: true },
+);
+
 export const GALLERY_ATOM = atom<GalleryView>({
 	index: 0,
 	caption: '',

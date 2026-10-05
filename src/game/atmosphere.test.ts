@@ -12,8 +12,8 @@ import {
 import { describe, expect, it } from 'vitest';
 
 import {
-	type TimeOfDay,
 	parseOklch,
+	pickMode,
 	readAtmosphere,
 	setLights,
 	setStars,
@@ -24,27 +24,14 @@ const css = readFileSync(
 	'utf8',
 );
 
-// The light mode's custom properties, then the dark mode's.
-const [light = '', dark = ''] = css
-	.matchAll(/:root\s*\{([^}]*)\}/g)
-	.map(([, block]) => block)
-	.toArray();
-
 /**
- * Reads the theme's custom properties straight from the stylesheet, as the
- * page would see them: the dark mode's over the light mode's by night.
- * @param timeOfDay - Day for light mode, night for dark.
- * @returns Reads one custom property.
+ * Reads one of the theme's custom properties straight from the stylesheet,
+ * as the page would before picking a mode.
+ * @param name - The property, like `--accent`.
+ * @returns Its value.
  */
-const theme =
-	(timeOfDay: TimeOfDay) =>
-	(name: string): string => {
-		const block = timeOfDay === 'day' ? light : `${light}\n${dark}`;
-		const values = block
-			.matchAll(new RegExp(String.raw`${name}:\s*([^;]+);`, 'g'))
-			.toArray();
-		return values.at(-1)?.[1] ?? '';
-	};
+const theme = (name: string): string =>
+	new RegExp(String.raw`${name}:\s*([^;]+);`).exec(css)?.[1] ?? '';
 
 /**
  * Roughly how bright a colour is.
@@ -76,18 +63,30 @@ describe('parseOklch', () => {
 	});
 });
 
+describe('pickMode', () => {
+	it('picks the light or dark colour', () => {
+		const value = 'light-dark(oklch(91.2% .007 219.6),oklch(26% .025 220))';
+		expect(pickMode(value, 'day')).toBe('oklch(91.2% .007 219.6)');
+		expect(pickMode(value, 'night')).toBe('oklch(26% .025 220)');
+	});
+
+	it('keeps a colour that is the same in both', () => {
+		expect(pickMode(' oklch(54% 0.165 49) ', 'night')).toBe(
+			'oklch(54% 0.165 49)',
+		);
+	});
+});
+
 describe('readAtmosphere', () => {
 	it('reads every colour the scene needs from the theme', () => {
 		for (const timeOfDay of ['day', 'night'] as const) {
-			expect(() =>
-				readAtmosphere(theme(timeOfDay), timeOfDay),
-			).not.toThrow();
+			expect(() => readAtmosphere(theme, timeOfDay)).not.toThrow();
 		}
 	});
 
 	it('is darker by night, with the lantern lit and the stars out', () => {
-		const day = readAtmosphere(theme('day'), 'day');
-		const night = readAtmosphere(theme('night'), 'night');
+		const day = readAtmosphere(theme, 'day');
+		const night = readAtmosphere(theme, 'night');
 		expect(brightness(night.fog)).toBeLessThan(brightness(day.fog));
 		expect(night.sunIntensity).toBeLessThan(day.sunIntensity);
 		expect(day.lanternIntensity).toBe(0);
@@ -105,7 +104,7 @@ describe('setLights and setStars', () => {
 			lantern: new PointLight(),
 		};
 		const stars = new Points(new BufferGeometry(), new PointsMaterial());
-		const night = readAtmosphere(theme('night'), 'night');
+		const night = readAtmosphere(theme, 'night');
 		setLights(lights, night);
 		setStars(stars, night);
 		expect(lights.sun.color.equals(night.sun)).toBe(true);
@@ -113,7 +112,7 @@ describe('setLights and setStars', () => {
 		expect(lights.lantern.visible).toBe(true);
 		expect(stars.visible).toBe(true);
 
-		const day = readAtmosphere(theme('day'), 'day');
+		const day = readAtmosphere(theme, 'day');
 		setLights(lights, day);
 		setStars(stars, day);
 		expect(lights.sun.intensity).toBe(day.sunIntensity);

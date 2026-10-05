@@ -44,7 +44,7 @@ Import types with `import type { … }`, not `import { type … }`. With `verbat
 
 The site and the game share one look: a trail map on a misty mountain. Keep new pages and game UI in it, so the game feels like part of the portfolio rather than something bolted on.
 
-- **Colour** comes only from the palette in `src/styles/global.css`, in OKLCH, with light ("a misty morning") and dark ("night on the mountain") values. ESLint turns down Tailwind's own colours (`bg-white`, `text-slate-900`, …) and one-off ones (`bg-[#…]`, `rgb(…)`) anywhere in `src/`. If something really needs a new colour, add a token there, with both modes.
+- **Colour** comes only from the palette in `src/styles/global.css`, in OKLCH, with light ("a misty morning") and dark ("night on the mountain") values, each written `light-dark(light, dark)`. ESLint turns down Tailwind's own colours (`bg-white`, `text-slate-900`, …) and one-off ones (`bg-[#…]`, `rgb(…)`) anywhere in `src/`. If something really needs a new colour, add a token there, with both modes.
   - `paper` is the page, `surface` cards and panels, `ink` text, `muted` quieter text, and `line` borders and rules.
   - `accent` (the wood stove's amber) is the one highlight: eyebrows, links, focus rings, the board's best moments. Text on it is `on-accent`. Use it sparingly.
   - `danger` is only for errors. `pine` and the `ridge-*` colours are for the landscape (the footer's ridges, shadows).
@@ -56,6 +56,7 @@ The site and the game share one look: a trail map on a misty mountain. Keep new 
 - **Focus:** everything you can press shows `focus-visible:ring-4` in `accent`: `ring-accent/50` on the page, and `ring-accent/70` over the busier game.
 - **Motion:** gentle fades and rises (`duration-500` to `700`). Anything that moves or pulses for decoration goes behind `motion-safe:`.
 - **The game's UI** builds on `Button` (`src/hero/button.tsx`, with a `variant` for what it sits on) and `Card` (`src/hero/card.tsx`). Use them rather than restyling a `<button>` or panel, so buttons, focus rings and cards stay the same everywhere. Cards over the scene are `surface` and `ink`, so they follow the page into dark mode.
+- **Light and dark mode** follow the device, unless the visitor picks one with the theme picker in the hero's corner (`src/hero/theme-picker.tsx`). The pick is `data-theme` on `<html>`, which sets `color-scheme`, so every `light-dark()` colour follows. It's kept in storage, and an inline script in `src/layout/Layout.astro` applies it before the page draws, so it never flashes the other mode. Don't use `prefers-color-scheme` or Tailwind's `dark:` for colours: they'd ignore the pick. Use a `light-dark()` token instead.
 - **Check it** in both modes. The e2e accessibility tests check contrast in light and dark, but not whether it looks right: take a screenshot.
 
 ## How the code fits together

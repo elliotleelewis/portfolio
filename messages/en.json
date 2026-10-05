@@ -277,5 +277,9 @@
   "egg_money_rain": "Making it rain (Canadian dollars)",
   "egg_tahoe_reader": "Reading in the back of the Tahoe",
   "egg_battlestation": "Working from the woods",
-  "egg_wood_stove": "Man make fire"
+  "egg_wood_stove": "Man make fire",
+  "hero_theme_label": "Theme",
+  "hero_theme_light": "Light",
+  "hero_theme_dark": "Dark",
+  "hero_theme_system": "Match my device"
 }

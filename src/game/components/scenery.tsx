@@ -35,15 +35,31 @@ const lanternOffset = new Vector3(0, 5, 0);
 const dark = '(prefers-color-scheme: dark)';
 
 /**
- * Listens for the site switching between light and dark mode.
- * @param onChange - Called when it does.
+ * Whether the site's in dark mode: the theme picked with the theme picker
+ * (data-theme on the page), or else the device's.
+ * @returns True in dark mode.
+ */
+const isDark = (): boolean => {
+	const { theme } = document.documentElement.dataset;
+	return theme === undefined ? matchMedia(dark).matches : theme === 'dark';
+};
+
+/**
+ * Listens for the site switching between light and dark mode, whether the
+ * device switches or a theme's picked.
+ * @param onChange - Called when it might have.
  * @returns Stops listening.
  */
 const subscribe = (onChange: () => void): (() => void) => {
 	const query = matchMedia(dark);
 	query.addEventListener('change', onChange);
+	const picked = new MutationObserver(onChange);
+	picked.observe(document.documentElement, {
+		attributeFilter: ['data-theme'],
+	});
 	return () => {
 		query.removeEventListener('change', onChange);
+		picked.disconnect();
 	};
 };
 
@@ -53,18 +69,14 @@ const subscribe = (onChange: () => void): (() => void) => {
  * @returns The atmosphere.
  */
 const useAtmosphere = (): Atmosphere => {
-	const isDark = useSyncExternalStore(
-		subscribe,
-		() => matchMedia(dark).matches,
-		() => false,
-	);
+	const isNight = useSyncExternalStore(subscribe, isDark, () => false);
 	return useMemo(() => {
 		const style = getComputedStyle(document.documentElement);
 		return readAtmosphere(
 			(name) => style.getPropertyValue(name),
-			isDark ? 'night' : 'day',
+			isNight ? 'night' : 'day',
 		);
-	}, [isDark]);
+	}, [isNight]);
 };
 
 interface SkyProps {

@@ -13,6 +13,7 @@ import { Hud } from './hud';
 import { PlayOverlay } from './play-overlay';
 import { Stage } from './stage';
 import { StartScreen } from './start-screen';
+import { ThemePicker } from './theme-picker';
 
 interface Props {
 	// The photo, which the game fades in over.
@@ -70,6 +71,7 @@ const HeroSection: FC<Props> = ({ children, isGamePage = false }) => {
 			<Hud />
 			<GameOver />
 			<GalleryPanel />
+			<ThemePicker />
 		</section>
 	);
 };

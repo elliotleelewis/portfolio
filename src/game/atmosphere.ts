@@ -79,6 +79,35 @@ export const parseOklch = (value: string): Color => {
 };
 
 /**
+ * Picks the light or dark mode's colour from one of the theme's, written
+ * `light-dark(light, dark)`. A colour the same in both is written once.
+ * @param value - The theme's colour.
+ * @param timeOfDay - Day for light mode, night for dark.
+ * @returns The colour for that mode.
+ */
+export const pickMode = (value: string, timeOfDay: TimeOfDay): string => {
+	const trimmed = value.trim();
+	if (!trimmed.startsWith('light-dark(')) {
+		return trimmed;
+	}
+	// The comma between the two colours, not one inside either.
+	const inner = trimmed.slice('light-dark('.length, -1);
+	let depth = 0;
+	for (let i = 0; i < inner.length; i++) {
+		if (inner[i] === '(') {
+			depth++;
+		} else if (inner[i] === ')') {
+			depth--;
+		} else if (depth === 0 && inner[i] === ',') {
+			return (
+				timeOfDay === 'day' ? inner.slice(0, i) : inner.slice(i + 1)
+			).trim();
+		}
+	}
+	throw new Error(`Expected light-dark(light, dark), not "${value}"`);
+};
+
+/**
  * The scene's atmosphere, from the site's theme.
  * @param read - Reads one of the theme's custom properties, like `--accent`.
  * @param timeOfDay - Whether the site's in light mode (day) or dark (night).
@@ -87,17 +116,21 @@ export const parseOklch = (value: string): Color => {
 export const readAtmosphere = (
 	read: (name: string) => string,
 	timeOfDay: TimeOfDay,
-): Atmosphere => ({
-	timeOfDay,
-	fog: parseOklch(read('--scene-fog')),
-	sun: parseOklch(read('--scene-sun')),
-	sky: parseOklch(read('--scene-sky')),
-	ground: parseOklch(read('--scene-ground')),
-	// The wood stove's amber, the site's one accent.
-	lantern: parseOklch(read('--accent')),
-	stars: timeOfDay === 'night',
-	...intensities[timeOfDay],
-});
+): Atmosphere => {
+	const colour = (name: string): Color =>
+		parseOklch(pickMode(read(name), timeOfDay));
+	return {
+		timeOfDay,
+		fog: colour('--scene-fog'),
+		sun: colour('--scene-sun'),
+		sky: colour('--scene-sky'),
+		ground: colour('--scene-ground'),
+		// The wood stove's amber, the site's one accent.
+		lantern: colour('--accent'),
+		stars: timeOfDay === 'night',
+		...intensities[timeOfDay],
+	};
+};
 
 // The lights the atmosphere sets.
 export interface Lights {

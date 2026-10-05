@@ -1,6 +1,8 @@
+import * as z from 'zod/mini';
+
 import { bearBlastPoints } from '../game/scoring';
 
-import { isInitials } from './initials';
+import { INITIALS } from './initials';
 
 // The action the page's Turnstile widget names, so a token made for
 // anything else doesn't count.
@@ -8,20 +10,6 @@ export const TURNSTILE_ACTION = 'score';
 
 // How many runs the board keeps.
 export const BOARD_SIZE = 10;
-
-export interface Entry {
-	initials: string;
-	trees: number;
-	metres: number;
-}
-
-// A finished run, as the game reports it.
-export interface Run {
-	trees: number;
-	metres: number;
-	// Real time from setting off to the game-over card.
-	seconds: number;
-}
 
 // Faster than I can ever roll: top speed is 28 m/s, pushed 35% faster (see
 // `Player.roll`).
@@ -37,29 +25,18 @@ const easterEggSpacing = 100;
 const maxTrees = 10_000_000;
 const maxMetres = 1_000_000;
 
-const isCount = (value: unknown, max: number): value is number =>
-	typeof value === 'number' &&
-	Number.isSafeInteger(value) &&
-	value >= 0 &&
-	value <= max;
+const count = (max: number): z.ZodMiniInt =>
+	z.int().check(z.minimum(0), z.maximum(max));
 
 /**
- * Whether a run could have happened in real play. Fast-forwarding the game
- * from the console covers far more ground than real time allows, and so
- * doesn't count. Anyone can still send any score they like, so this only
- * keeps the board free of the obviously impossible.
+ * Whether a run's distance and trees could fit in its time. Fast-forwarding
+ * the game from the console covers far more ground than real time allows.
  * @param run - The run.
- * @returns True if it could be real.
+ * @returns True if they could.
  */
-export const isPlausible = (run: Run): boolean => {
+const isWithinReach = (run: Run): boolean => {
 	const { trees, metres, seconds } = run;
-	if (
-		!isCount(trees, maxTrees) ||
-		!isCount(metres, maxMetres) ||
-		!Number.isFinite(seconds) ||
-		seconds < 0 ||
-		metres > maxSpeed * seconds + metresSlack
-	) {
+	if (metres > maxSpeed * seconds + metresSlack) {
 		return false;
 	}
 	// At most a tree a metre, every one in a combo, plus every easter egg
@@ -68,6 +45,34 @@ export const isPlausible = (run: Run): boolean => {
 	const eggs = Math.floor(metres / easterEggSpacing) + 1;
 	return trees <= (hits * (hits + 1)) / 2 + eggs * maxBlast;
 };
+
+// One run on the board.
+export const ENTRY = z.object({
+	initials: INITIALS,
+	trees: count(maxTrees),
+	metres: count(maxMetres),
+});
+export type Entry = z.infer<typeof ENTRY>;
+
+// A finished run, as the game reports it, that could have happened in real
+// play. Anyone can still send any score they like, so this only keeps the
+// board free of the obviously impossible.
+export const RUN = z
+	.object({
+		trees: count(maxTrees),
+		metres: count(maxMetres),
+		// Real time from setting off to the game-over card.
+		seconds: z.number().check(z.minimum(0)),
+	})
+	.check(z.refine(isWithinReach));
+export type Run = z.infer<typeof RUN>;
+
+/**
+ * Whether a run could have happened in real play.
+ * @param run - The run.
+ * @returns True if it could be real.
+ */
+export const isPlausible = (run: Run): boolean => RUN.safeParse(run).success;
 
 /**
  * Whether one run beats another: more trees, then further on a tie.
@@ -116,19 +121,10 @@ export const addEntry = (
 	return { board: next.slice(0, BOARD_SIZE), place };
 };
 
-const isEntry = (value: unknown): value is Entry =>
-	typeof value === 'object' &&
-	value !== null &&
-	'initials' in value &&
-	'trees' in value &&
-	'metres' in value &&
-	isInitials(value.initials) &&
-	isCount(value.trees, maxTrees) &&
-	isCount(value.metres, maxMetres);
-
 /**
  * Reads a board from JSON, which could hold anything: only well-formed
- * entries are kept, in order, best first.
+ * entries are kept (without anything extra), best first. One bad entry
+ * doesn't lose the rest.
  * @param value - The parsed JSON.
  * @returns The board.
  */
@@ -138,12 +134,9 @@ export const readBoard = (value: unknown): Entry[] => {
 	}
 	const board: Entry[] = [];
 	for (const item of value) {
-		if (isEntry(item)) {
-			board.push({
-				initials: item.initials,
-				trees: item.trees,
-				metres: item.metres,
-			});
+		const entry = ENTRY.safeParse(item);
+		if (entry.success) {
+			board.push(entry.data);
 		}
 	}
 	return board

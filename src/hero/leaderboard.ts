@@ -1,3 +1,5 @@
+import * as z from 'zod/mini';
+
 import { type Entry, readBoard } from '../leaderboard/board';
 
 const endpoint = '/api/scores';
@@ -32,13 +34,16 @@ const readJson = async (response: Response): Promise<unknown> => {
 	}
 };
 
-const field = (body: unknown, key: string): unknown => {
-	if (typeof body !== 'object' || body === null) {
-		return undefined;
-	}
-	const value: unknown = Reflect.get(body, key);
-	return value;
-};
+// The API's answers. Their entries are read with `readBoard`, one by one, so
+// a bad one doesn't lose the rest.
+const boardAnswer = z.object({ entries: z.unknown() });
+const boardPlace = z.int().check(z.minimum(1));
+const savedAnswer = z.object({
+	entries: z.unknown(),
+	// Missing when others' scores pushed it off the board first.
+	place: z.optional(boardPlace),
+});
+const errorAnswer = z.object({ error: z.string() });
 
 /**
  * Fetches the leaderboard.
@@ -49,7 +54,8 @@ export const fetchBoard = async (): Promise<Entry[]> => {
 	if (!response.ok) {
 		throw new Error(`The leaderboard answered ${String(response.status)}`);
 	}
-	return readBoard(field(await readJson(response), 'entries'));
+	const answer = boardAnswer.safeParse(await readJson(response));
+	return answer.success ? readBoard(answer.data.entries) : [];
 };
 
 /**
@@ -74,16 +80,22 @@ export const saveScore = async (
 	}
 	const body = await readJson(response);
 	if (response.ok) {
-		const entries = readBoard(field(body, 'entries'));
-		const place = field(body, 'place');
-		return typeof place === 'number'
-			? { kind: 'saved', entries, place }
-			: { kind: 'missed', entries };
+		const answer = savedAnswer.safeParse(body);
+		if (!answer.success) {
+			return { kind: 'failed' };
+		}
+		const { place } = answer.data;
+		const entries = readBoard(answer.data.entries);
+		return place === undefined
+			? { kind: 'missed', entries }
+			: { kind: 'saved', entries, place };
 	}
 	if (response.status === 400 || response.status === 403) {
 		return { kind: 'rejected' };
 	}
-	return { kind: field(body, 'error') === 'closed' ? 'closed' : 'failed' };
+	const answer = errorAnswer.safeParse(body);
+	const isClosed = answer.success && answer.data.error === 'closed';
+	return { kind: isClosed ? 'closed' : 'failed' };
 };
 
 // For the controller, which loads this module along with the board.

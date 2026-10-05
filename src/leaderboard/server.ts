@@ -16,6 +16,7 @@
 
 import { eq } from 'drizzle-orm';
 import type { BaseSQLiteDatabase } from 'drizzle-orm/sqlite-core';
+import * as z from 'zod/mini';
 
 import {
 	type Entry,
@@ -25,7 +26,7 @@ import {
 	placeFor,
 	readBoard,
 } from './board';
-import { isBlocked, isInitials } from './initials';
+import { INITIALS, isBlocked } from './initials';
 import { BOARD_ID, LEADERBOARD } from './schema';
 
 // The most scores the board takes in a day (UTC). One write each.
@@ -43,16 +44,28 @@ export type Database = BaseSQLiteDatabase<'async', unknown>;
 type BoardRow = Omit<typeof LEADERBOARD.$inferSelect, 'id'>;
 
 // The board before its row's first write, which creates the row.
-const emptyRow: BoardRow = { version: 0, day: '', writes: 0, entries: '[]' };
+const emptyRow: BoardRow = { version: 0, day: '', writes: 0, entries: [] };
 
-// What a page sends to save a score.
-export interface Submission {
-	initials: string;
-	trees: number;
-	metres: number;
-	seconds: number;
-	token: string;
-}
+// What a page sends to save a score: polite initials, a run that could have
+// happened, and Turnstile's token.
+const submissionSchema = z
+	.object({
+		initials: INITIALS.check(
+			z.refine((initials: string) => !isBlocked(initials)),
+		),
+		trees: z.number(),
+		metres: z.number(),
+		seconds: z.number(),
+		token: z.string().check(z.minLength(1)),
+	})
+	.check(z.refine(isPlausible));
+export type Submission = z.infer<typeof submissionSchema>;
+
+// Turnstile's answer, when a person passed its check, for saving a score.
+const turnstilePass = z.object({
+	success: z.literal(true),
+	action: z.literal(TURNSTILE_ACTION),
+});
 
 export interface PostOptions {
 	// Asks Turnstile whether a token is good.
@@ -77,8 +90,6 @@ const parseJson = (text: string): unknown => {
 		return undefined;
 	}
 };
-
-const parseEntries = (text: string): Entry[] => readBoard(parseJson(text));
 
 /**
  * Reads the board's row: one row read.
@@ -127,32 +138,11 @@ const hasWrittenRow = async (
 /**
  * Reads a submission from a request's body, which could hold anything.
  * @param text - The body.
- * @returns The submission, or undefined if it isn't one.
+ * @returns The submission, or undefined if it isn't one the board takes.
  */
 export const readSubmission = (text: string): Submission | undefined => {
-	const value = parseJson(text);
-	if (
-		typeof value !== 'object' ||
-		value === null ||
-		!('initials' in value) ||
-		!('trees' in value) ||
-		!('metres' in value) ||
-		!('seconds' in value) ||
-		!('token' in value)
-	) {
-		return undefined;
-	}
-	const { initials, trees, metres, seconds, token } = value;
-	const isSubmission =
-		typeof trees === 'number' &&
-		typeof metres === 'number' &&
-		typeof seconds === 'number' &&
-		typeof token === 'string' &&
-		token.length > 0 &&
-		isInitials(initials);
-	return isSubmission
-		? { initials, trees, metres, seconds, token }
-		: undefined;
+	const submission = submissionSchema.safeParse(parseJson(text));
+	return submission.success ? submission.data : undefined;
 };
 
 /**
@@ -174,14 +164,7 @@ export const isHuman = async (
 	try {
 		const response = await fetcher(siteverifyUrl, { method: 'POST', body });
 		const result: unknown = await response.json();
-		return (
-			typeof result === 'object' &&
-			result !== null &&
-			'success' in result &&
-			result.success === true &&
-			'action' in result &&
-			result.action === TURNSTILE_ACTION
-		);
+		return turnstilePass.safeParse(result).success;
 	} catch {
 		return false;
 	}
@@ -200,11 +183,7 @@ export const getScores = async (
 	}
 	const row = await readRow(db);
 	// A little caching saves a request when someone plays again soon after.
-	return json(
-		{ entries: parseEntries(row.entries) },
-		200,
-		'public, max-age=30',
-	);
+	return json({ entries: readBoard(row.entries) }, 200, 'public, max-age=30');
 };
 
 /**
@@ -232,11 +211,7 @@ export const postScores = async (
 	const text = await request.text();
 	const submission =
 		text.length > maxBodyLength ? undefined : readSubmission(text);
-	if (
-		!submission ||
-		isBlocked(submission.initials) ||
-		!isPlausible(submission)
-	) {
+	if (!submission) {
 		return error('invalid', 400);
 	}
 	const entry: Entry = {
@@ -249,7 +224,7 @@ export const postScores = async (
 
 	for (let attempt = 0; attempt < maxAttempts; attempt++) {
 		const row = await readRow(db);
-		const board = parseEntries(row.entries);
+		const board = readBoard(row.entries);
 		if (placeFor(board, entry) === undefined) {
 			return json({ entries: board, place: undefined });
 		}
@@ -272,7 +247,7 @@ export const postScores = async (
 			version: row.version + 1,
 			day,
 			writes: row.day === day ? row.writes + 1 : 1,
-			entries: JSON.stringify(next.board),
+			entries: next.board,
 		});
 		if (isWritten) {
 			return json({ entries: next.board, place: next.place });

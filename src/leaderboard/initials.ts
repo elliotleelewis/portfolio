@@ -1,9 +1,13 @@
+import * as z from 'zod/mini';
+
 // What each of the three initials can be, in the order ▲ and ▼ step
 // through them, like an arcade cabinet's.
 export const INITIAL_CHARACTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 export const INITIALS_LENGTH = 3;
 
-const initialsPattern = /^[A-Z0-9]{3}$/;
+// Three initials the board accepts: capital letters and digits only, like
+// "ELL" or "R2D".
+export const INITIALS = z.string().check(z.regex(/^[A-Z0-9]{3}$/));
 
 // Digits that read as letters, so "A55" can't sneak past as "ASS".
 const lookalikes: Record<string, string> = {
@@ -50,13 +54,12 @@ const blocked = new Set([
 ]);
 
 /**
- * Whether something is three initials the board accepts: capital letters
- * and digits only.
+ * Whether something is three initials the board accepts.
  * @param value - What to check.
  * @returns True for initials like "ELL" or "R2D".
  */
 export const isInitials = (value: unknown): value is string =>
-	typeof value === 'string' && initialsPattern.test(value);
+	INITIALS.safeParse(value).success;
 
 /**
  * Whether initials would put something rude on the board.

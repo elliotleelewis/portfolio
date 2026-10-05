@@ -17,8 +17,12 @@ export const LEADERBOARD = sqliteTable(
 		// The day (UTC) the writes below were counted on.
 		day: text('day').notNull().default(''),
 		writes: integer('writes').notNull().default(0),
-		// The runs, best first, as JSON.
-		entries: text('entries').notNull().default('[]'),
+		// The runs, best first, as JSON. Typed as unknown, as it could hold
+		// anything: read it with `readBoard`.
+		entries: text('entries', { mode: 'json' })
+			.$type<unknown>()
+			.notNull()
+			.default([]),
 	},
 	(table) => [
 		check('one_row', sql`${table.id} = ${sql.raw(String(BOARD_ID))}`),

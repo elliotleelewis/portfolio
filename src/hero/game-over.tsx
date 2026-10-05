@@ -22,7 +22,12 @@ const InitialsEntry = lazy(async () => {
 });
 
 // While the run's waiting on my initials.
-const enteringStatuses = new Set<EntryStatus>(['entering', 'saving', 'failed']);
+const enteringStatuses = new Set<EntryStatus>([
+	'entering',
+	'saving',
+	'failed',
+	'blocked',
+]);
 
 const link =
 	'cursor-pointer rounded-sm font-semibold text-slate-600 underline-offset-4 hover:text-slate-900 hover:underline focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none';

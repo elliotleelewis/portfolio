@@ -4,6 +4,7 @@ import {
 	BOARD_SIZE,
 	type Entry,
 	addEntry,
+	cutoffFor,
 	isPlausible,
 	placeFor,
 	readBoard,
@@ -116,5 +117,16 @@ describe('readBoard', () => {
 		expect(readBoard([{ ...entry('AAA', 1), html: '<b>' }])).toEqual([
 			entry('AAA', 1),
 		]);
+	});
+});
+
+describe('cutoffFor', () => {
+	it('has nothing to beat while the board has room', () => {
+		expect(cutoffFor([])).toBeNull();
+		expect(cutoffFor(full.slice(0, BOARD_SIZE - 1))).toBeNull();
+	});
+
+	it('gives the last run on a full board', () => {
+		expect(cutoffFor(full)).toEqual({ trees: 10, metres: 100 });
 	});
 });

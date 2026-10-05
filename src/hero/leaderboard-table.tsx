@@ -12,17 +12,17 @@ import { type BoardRow, compactRows } from './board-rows';
  * @returns The board, or nothing if it couldn't be loaded.
  */
 export const LeaderboardTable: FC = () => {
-	const board = useAtomValue(BOARD_ATOM);
+	const entries = useAtomValue(BOARD_ATOM)?.entries;
 	const { status, place } = useAtomValue(BOARD_ENTRY_ATOM);
 	const [isExpanded, setIsExpanded] = useState(false);
-	if (!board) {
+	if (!entries) {
 		return null;
 	}
 	const mine = status === 'saved' && place !== undefined ? place - 1 : -1;
-	const compact = compactRows(board.length, mine);
-	const isFull = compact.length >= board.length;
+	const compact = compactRows(entries.length, mine);
+	const isFull = compact.length >= entries.length;
 	const rows: BoardRow[] =
-		isExpanded || isFull ? board.map((_, index) => index) : compact;
+		isExpanded || isFull ? entries.map((_, index) => index) : compact;
 
 	return (
 		<div className="mt-4">
@@ -39,7 +39,7 @@ export const LeaderboardTable: FC = () => {
 					</tr>
 				</thead>
 				<tbody>
-					{board.length === 0 && (
+					{entries.length === 0 && (
 						<tr>
 							<td colSpan={4} className="text-slate-600">
 								{m.hero_board_empty()}
@@ -61,7 +61,7 @@ export const LeaderboardTable: FC = () => {
 								</tr>
 							);
 						}
-						const entry = board[row];
+						const entry = entries[row];
 						return (
 							<tr
 								key={row}

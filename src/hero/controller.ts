@@ -28,7 +28,7 @@ import {
 } from './atoms';
 import { readingDirection } from './direction';
 import { addHit, readHits } from './easter-egg-hits';
-import type { Score } from './leaderboard';
+import type { Run } from './leaderboard';
 
 type LeaderboardModule = typeof import('./leaderboard');
 
@@ -36,6 +36,9 @@ type Store = ReturnType<typeof createStore>;
 
 // Inputs held down by a key or a tap, rather than the analog stick.
 export type HeldInput = Exclude<keyof GameInput, 'steer' | 'throttle'>;
+
+// While the run's waiting on my initials (not while they're saving).
+const waitingStatuses = new Set<EntryStatus>(['entering', 'failed', 'blocked']);
 
 // How long the photo takes to fade back in.
 const sceneFadeOut = 1500;
@@ -64,7 +67,7 @@ export class HeroController {
 	// When the run in play set off, in real time.
 	private _setOffAt: number | undefined;
 	// The last finished run, to save to the leaderboard.
-	private _lastRun: Omit<Score, 'initials'> | undefined;
+	private _lastRun: Run | undefined;
 	// The leaderboard's code, loaded with the board.
 	private _leaderboard: LeaderboardModule | undefined;
 	private _boardLoad: Promise<void> | undefined;
@@ -222,13 +225,12 @@ export class HeroController {
 	 * @param run - The run.
 	 * @returns 'entering' if it does, to ask for my initials.
 	 */
-	private boardStatusFor(run: Omit<Score, 'initials'>): EntryStatus {
+	private boardStatusFor(run: Run): EntryStatus {
 		const board = this._store.get(BOARD_ATOM);
 		const leaderboard = this._leaderboard;
-		if (!board || leaderboard?.placeFor(board, run) === undefined) {
-			return 'none';
-		}
-		return leaderboard.isPlausible(run) ? 'entering' : 'fastForwarded';
+		return board && leaderboard?.canMakeBoard(run, board.cutoff)
+			? 'entering'
+			: 'none';
 	}
 
 	private resetHud(): void {
@@ -440,22 +442,18 @@ export class HeroController {
 		const run = this._lastRun;
 		const leaderboard = this._leaderboard;
 		const { status, attempt } = this._store.get(BOARD_ENTRY_ATOM);
-		if (
-			!run ||
-			!leaderboard ||
-			(status !== 'entering' && status !== 'failed')
-		) {
+		if (!run || !leaderboard || !waitingStatuses.has(status)) {
 			return;
 		}
 		this._store.set(INITIALS_ATOM, initials);
 		this._store.set(BOARD_ENTRY_ATOM, { status: 'saving', attempt });
-		const result = await leaderboard.saveScore({ ...run, initials }, token);
+		const result = await leaderboard.saveScore(initials, run, token);
 		// Moved on to another run while it saved.
 		if (this._lastRun !== run) {
 			return;
 		}
 		if (result.kind === 'saved' || result.kind === 'missed') {
-			this._store.set(BOARD_ATOM, result.entries);
+			this._store.set(BOARD_ATOM, result.board);
 		}
 		this._store.set(BOARD_ENTRY_ATOM, {
 			status: result.kind,
@@ -470,7 +468,7 @@ export class HeroController {
 	 */
 	public skipBoard(): void {
 		const { status, attempt } = this._store.get(BOARD_ENTRY_ATOM);
-		if (status === 'entering' || status === 'failed') {
+		if (waitingStatuses.has(status)) {
 			this._store.set(BOARD_ENTRY_ATOM, { status: 'none', attempt });
 		}
 	}

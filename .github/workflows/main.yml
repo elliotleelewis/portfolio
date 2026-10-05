@@ -31,7 +31,7 @@ jobs:
       - run: pnpm format
       - run: pnpm test
       # The leaderboard's migrations are generated from its schema
-      # (src/leaderboard/schema.ts). This fails if the schema has changed
+      # (functions/_lib/schema.ts). This fails if the schema has changed
       # without a migration for it.
       - name: Check the migrations match the schema
         run: |

@@ -1,102 +1,112 @@
-import * as z from 'zod/mini';
+import { hc } from 'hono/client';
 
-import { type Entry, readBoard } from '../leaderboard/board';
+import type { AppType } from '../../functions/_lib/app';
+import type { Entry, Score } from '../../functions/_lib/board';
 
-const endpoint = '/api/scores';
+// The leaderboard's API, typed from its Hono app (functions/_lib/app.ts), so
+// the page can't send or expect anything the Function doesn't. Only its
+// types come over: none of the Function's code ends up in the page.
+const client = hc<AppType>('/');
 
-// A finished run, and who's saving it.
-export interface Score {
-	initials: string;
-	trees: number;
-	metres: number;
+// The shared board, best first, and the score a run has to beat to make it
+// (null while it has room).
+export interface Board {
+	entries: Entry[];
+	cutoff: Score | null;
+}
+
+// A finished run: trees, metres, and how long it took in real time.
+export interface Run extends Score {
 	seconds: number;
 }
 
 // How saving a score went.
 export type SaveResult =
 	// On the board, at this place.
-	| { kind: 'saved'; entries: Entry[]; place: number }
+	| { kind: 'saved'; board: Board; place: number }
 	// Others' scores pushed it off the board before it was saved.
-	| { kind: 'missed'; entries: Entry[] }
-	// Turned down: the initials, the run, or the check for a person.
+	| { kind: 'missed'; board: Board }
+	// The initials would put something rude on the board.
+	| { kind: 'blocked' }
+	// The run went further than real time allows.
+	| { kind: 'fastForwarded' }
+	// Turned down: the request, or the check for a person.
 	| { kind: 'rejected' }
 	// The board has taken all the scores it will today.
 	| { kind: 'closed' }
 	// Couldn't reach the board, or something went wrong there.
 	| { kind: 'failed' };
 
-const readJson = async (response: Response): Promise<unknown> => {
-	try {
-		const body: unknown = await response.json();
-		return body;
-	} catch {
-		return undefined;
-	}
-};
-
-// The API's answers. Their entries are read with `readBoard`, one by one, so
-// a bad one doesn't lose the rest.
-const boardAnswer = z.object({ entries: z.unknown() });
-const boardPlace = z.int().check(z.minimum(1));
-const savedAnswer = z.object({
-	entries: z.unknown(),
-	// Missing when others' scores pushed it off the board first.
-	place: z.optional(boardPlace),
-});
-const errorAnswer = z.object({ error: z.string() });
+/**
+ * Whether a run makes the board, so it's worth asking for initials. The
+ * Function has the final say when it's saved.
+ * @param run - The run.
+ * @param cutoff - The score to beat, or null while the board has room.
+ * @returns True if it beats it: more trees, or as many and further.
+ */
+export const canMakeBoard = (run: Score, cutoff: Score | null): boolean =>
+	cutoff === null ||
+	run.trees > cutoff.trees ||
+	(run.trees === cutoff.trees && run.metres > cutoff.metres);
 
 /**
  * Fetches the leaderboard.
- * @returns The board, best first.
+ * @returns The board, and the score to beat.
  */
-export const fetchBoard = async (): Promise<Entry[]> => {
-	const response = await fetch(endpoint);
-	if (!response.ok) {
+export const fetchBoard = async (): Promise<Board> => {
+	const response = await client.api.scores.$get();
+	if (response.status !== 200) {
 		throw new Error(`The leaderboard answered ${String(response.status)}`);
 	}
-	const answer = boardAnswer.safeParse(await readJson(response));
-	return answer.success ? readBoard(answer.data.entries) : [];
+	return response.json();
 };
 
 /**
  * Saves a score to the leaderboard.
- * @param score - The run, and the initials to put by it.
+ * @param initials - The initials to put by it.
+ * @param run - The run.
  * @param token - Turnstile's token, to show a person is saving it.
  * @returns How it went.
  */
 export const saveScore = async (
-	score: Score,
+	initials: string,
+	run: Run,
 	token: string,
 ): Promise<SaveResult> => {
-	let response: Response;
 	try {
-		response = await fetch(endpoint, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ ...score, token }),
+		const response = await client.api.scores.$post({
+			json: { initials, ...run, token },
 		});
+		switch (response.status) {
+			case 200: {
+				const { place, ...board } = await response.json();
+				return place === null
+					? { kind: 'missed', board }
+					: { kind: 'saved', board, place };
+			}
+			case 400: {
+				const { error } = await response.json();
+				if (error === 'blocked') {
+					return { kind: 'blocked' };
+				}
+				return {
+					kind:
+						error === 'implausible' ? 'fastForwarded' : 'rejected',
+				};
+			}
+			case 403: {
+				return { kind: 'rejected' };
+			}
+			case 503: {
+				const { error } = await response.json();
+				return { kind: error === 'closed' ? 'closed' : 'failed' };
+			}
+			default: {
+				return { kind: 'failed' };
+			}
+		}
 	} catch {
+		// Offline, or an answer that isn't the API's.
 		return { kind: 'failed' };
 	}
-	const body = await readJson(response);
-	if (response.ok) {
-		const answer = savedAnswer.safeParse(body);
-		if (!answer.success) {
-			return { kind: 'failed' };
-		}
-		const { place } = answer.data;
-		const entries = readBoard(answer.data.entries);
-		return place === undefined
-			? { kind: 'missed', entries }
-			: { kind: 'saved', entries, place };
-	}
-	if (response.status === 400 || response.status === 403) {
-		return { kind: 'rejected' };
-	}
-	const answer = errorAnswer.safeParse(body);
-	const isClosed = answer.success && answer.data.error === 'closed';
-	return { kind: isClosed ? 'closed' : 'failed' };
 };
-
-// For the controller, which loads this module along with the board.
-export { isPlausible, placeFor } from '../leaderboard/board';

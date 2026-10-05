@@ -18,8 +18,9 @@ database_name = "portfolio-leaderboard-preview"
 database_id = "<preview-database-id>"
 migrations_dir = "migrations"
 
-# The live site. Its Turnstile secret is a secret on the Pages project, set
-# in Cloudflare's dashboard, rather than here.
+# The live site. Its Turnstile secret, and the optional extra initials to turn
+# away (`blockedInitials`), are secrets on the Pages project, set in
+# Cloudflare's dashboard, rather than here.
 [[env.production.d1_databases]]
 binding = "leaderboard"
 database_name = "portfolio-leaderboard"

@@ -12,6 +12,34 @@ export interface Saved extends Entry {
 	token: string;
 }
 
+// The board holds this many runs.
+const boardSize = 10;
+
+/**
+ * The score a run has to beat, as the API gives it: the last run on a full
+ * board, or null while it has room.
+ * @param entries - The board.
+ * @returns The score to beat.
+ */
+const cutoffFor = (entries: Entry[]): Omit<Entry, 'initials'> | null => {
+	const last = entries.at(boardSize - 1);
+	return last ? { trees: last.trees, metres: last.metres } : null;
+};
+
+/**
+ * Adds the score to beat to an answer with a board, if a test left it out.
+ * @param body - The answer's body.
+ * @returns The body, with its cutoff.
+ */
+const withCutoff = (body: unknown): unknown =>
+	typeof body === 'object' &&
+	body !== null &&
+	'entries' in body &&
+	Array.isArray(body.entries) &&
+	!('cutoff' in body)
+		? { ...body, cutoff: cutoffFor(body.entries as Entry[]) }
+		: body;
+
 interface LeaderboardOptions {
 	// The board, as the API has it.
 	entries?: Entry[];
@@ -35,7 +63,9 @@ export const mockLeaderboard = async (
 	await page.route('**/api/scores', async (route: Route) => {
 		const request = route.request();
 		if (request.method() === 'GET') {
-			await route.fulfill({ json: { entries } });
+			await route.fulfill({
+				json: { entries, cutoff: cutoffFor(entries) },
+			});
 			return;
 		}
 		const sent = request.postDataJSON() as Saved;
@@ -50,11 +80,14 @@ export const mockLeaderboard = async (
 						metres: sent.metres,
 					},
 					...entries,
-				],
+				].slice(0, boardSize),
 				place: 1,
 			},
 		};
-		await route.fulfill({ status: answer.status, json: answer.body });
+		await route.fulfill({
+			status: answer.status,
+			json: withCutoff(answer.body),
+		});
 	});
 	await page.route(
 		'https://challenges.cloudflare.com/turnstile/**',

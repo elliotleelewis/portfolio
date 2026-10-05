@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isBlocked, isInitials, readInitials, stepCharacter } from './initials';
+import { isBlocked, isInitials, readBlocked } from './initials';
 
 describe('isInitials', () => {
 	it('takes three capital letters or digits', () => {
@@ -21,13 +21,23 @@ describe('isInitials', () => {
 });
 
 describe('isBlocked', () => {
-	it('blocks rude initials', () => {
+	// One example from obscenity's word list, to show it's wired up. The rest
+	// stay out of the repo.
+	it('blocks rude words from the word list', () => {
 		expect(isBlocked('ASS')).toBe(true);
 	});
 
 	it('sees through digits that read as letters', () => {
 		expect(isBlocked('A55')).toBe(true);
 		expect(isBlocked('4SS')).toBe(true);
+	});
+
+	it('blocks the extra initials it’s given, however they’re spelled', () => {
+		// A harmless stand-in for the secret list.
+		const blocked = new Set(['BOO']);
+		expect(isBlocked('BOO', blocked)).toBe(true);
+		expect(isBlocked('B00', blocked)).toBe(true);
+		expect(isBlocked('BOB', blocked)).toBe(false);
 	});
 
 	it('lets everyone else through', () => {
@@ -37,31 +47,15 @@ describe('isBlocked', () => {
 	});
 });
 
-describe('stepCharacter', () => {
-	it('steps through the letters, then the digits', () => {
-		expect(stepCharacter('A', 1)).toBe('B');
-		expect(stepCharacter('Z', 1)).toBe('0');
-		expect(stepCharacter('0', -1)).toBe('Z');
+describe('readBlocked', () => {
+	it('reads initials separated by commas, in any case', () => {
+		expect(readBlocked('boo, ZZZ,7up')).toEqual(
+			new Set(['BOO', 'ZZZ', '7UP']),
+		);
 	});
 
-	it('wraps round at either end', () => {
-		expect(stepCharacter('9', 1)).toBe('A');
-		expect(stepCharacter('A', -1)).toBe('9');
-	});
-
-	it('starts from A for anything unknown', () => {
-		expect(stepCharacter('?', 1)).toBe('B');
-	});
-});
-
-describe('readInitials', () => {
-	it('keeps stored initials', () => {
-		expect(readInitials('ELL')).toBe('ELL');
-	});
-
-	it('starts from AAA for anything else', () => {
-		expect(readInitials('<script>')).toBe('AAA');
-		expect(readInitials(42)).toBe('AAA');
-		expect(readInitials(undefined)).toBe('AAA');
+	it('skips anything that isn’t initials', () => {
+		expect(readBlocked('BOOK,,B O, ')).toEqual(new Set());
+		expect(readBlocked()).toEqual(new Set());
 	});
 });

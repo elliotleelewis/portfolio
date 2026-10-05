@@ -4,14 +4,9 @@ import { DatabaseSync } from 'node:sqlite';
 import { drizzle } from 'drizzle-orm/sqlite-proxy';
 import { describe, expect, it, vi } from 'vitest';
 
-import { BOARD_SIZE, type Entry, TURNSTILE_ACTION } from './board';
-import {
-	DAILY_WRITE_LIMIT,
-	type Database,
-	getScores,
-	isHuman,
-	postScores,
-} from './server';
+import { DAILY_WRITE_LIMIT, createApp } from './app';
+import { BOARD_SIZE, type Entry } from './board';
+import type { Database } from './store';
 
 interface Row {
 	version: number;
@@ -123,41 +118,53 @@ interface Answer {
 	body: unknown;
 }
 
-const answer = async (pending: Promise<Response>): Promise<Answer> => {
-	const response = await pending;
+const answer = async (response: Response): Promise<Answer> => {
 	const body: unknown = await response.json();
 	return { status: response.status, body };
 };
 
-const setUp = (): {
+interface SetUpOptions {
+	// Whether the database is bound.
+	isBound?: boolean;
+	// Extra initials to turn away.
+	blocked?: string[];
+}
+
+const setUp = ({ isBound = true, blocked = [] }: SetUpOptions = {}): {
 	db: TestDatabase;
 	verify: ReturnType<typeof vi.fn<(token: string) => Promise<boolean>>>;
 	send: (body: unknown) => Promise<Answer>;
+	get: () => Promise<Answer>;
 } => {
 	const db = new TestDatabase();
 	const verify = vi.fn<(token: string) => Promise<boolean>>(async () => {
 		await Promise.resolve();
 		return true;
 	});
+	const app = createApp({
+		database: () => (isBound ? db.db : undefined),
+		verify: async (_env, token) => verify(token),
+		blocked: () => new Set(blocked),
+		now: () => now,
+	});
 	const send = async (body: unknown): Promise<Answer> => {
-		const request = new Request('https://example.com/api/scores', {
+		const response = await app.request('/api/scores', {
 			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
 			body: typeof body === 'string' ? body : JSON.stringify(body),
 		});
-		return answer(postScores(request, db.db, { verify, now }));
+		return answer(response);
 	};
-	return { db, verify, send };
+	const get = async (): Promise<Answer> => {
+		const response = await app.request('/api/scores');
+		return answer(response);
+	};
+	return { db, verify, send, get };
 };
-
-const answering = (body: unknown): typeof fetch =>
-	vi.fn(async () => {
-		await Promise.resolve();
-		return Response.json(body);
-	});
 
 describe('getScores', () => {
 	it('answers with the board, in one statement', async () => {
-		const { db } = setUp();
+		const { db, get } = setUp();
 		db.row = {
 			version: 1,
 			day: '',
@@ -166,15 +173,29 @@ describe('getScores', () => {
 				{ initials: 'ELL', trees: 9, metres: 90 },
 			]),
 		};
-		const { body } = await answer(getScores(db.db));
+		const { body } = await get();
 		expect(body).toEqual({
 			entries: [{ initials: 'ELL', trees: 9, metres: 90 }],
+			cutoff: null,
 		});
 		expect(db.statements).toBe(1);
 	});
 
+	it('gives the score to beat once the board is full', async () => {
+		const { db, get } = setUp();
+		db.row = {
+			version: 1,
+			day: '',
+			writes: 0,
+			entries: JSON.stringify(fullBoard),
+		};
+		const { body } = await get();
+		expect(body).toMatchObject({ cutoff: { trees: 100, metres: 900 } });
+	});
+
 	it('is unavailable without a database', async () => {
-		const { status } = await answer(getScores(undefined));
+		const { get } = setUp({ isBound: false });
+		const { status } = await get();
 		expect(status).toBe(503);
 	});
 });
@@ -185,6 +206,7 @@ describe('postScores', () => {
 		const { body } = await send(submission());
 		expect(body).toEqual({
 			entries: [{ initials: 'ELL', trees: 40, metres: 600 }],
+			cutoff: null,
 			place: 1,
 		});
 		expect(db.entries).toEqual([
@@ -222,21 +244,34 @@ describe('postScores', () => {
 		const { db, send } = setUp();
 		const body = { ...submission(), padding: 'x'.repeat(4096) };
 		const { status } = await send(body);
-		expect(status).toBe(400);
+		expect(status).toBe(413);
 		expect(db.statements).toBe(0);
 	});
 
-	it('turns down rude initials', async () => {
-		const { send } = setUp();
-		const { status } = await send(submission('A55'));
+	it('turns down rude initials, however they’re spelled', async () => {
+		const { db, send } = setUp();
+		const { status, body } = await send(submission('A55'));
 		expect(status).toBe(400);
+		expect(body).toEqual({ error: 'blocked' });
+		expect(db.statements).toBe(0);
+	});
+
+	it('turns down the extra initials it’s given', async () => {
+		// A harmless stand-in for the secret list.
+		const { send } = setUp({ blocked: ['BOO'] });
+		const { body } = await send(submission('BOO'));
+		expect(body).toEqual({ error: 'blocked' });
+		// Digits that read as letters don't get past either.
+		const { body: lookalike } = await send(submission('800'));
+		expect(lookalike).toEqual({ error: 'blocked' });
 	});
 
 	it('turns down a run real play could not reach', async () => {
 		const { send } = setUp();
 		const body = { ...submission(), metres: 50_000 };
-		const { status } = await send(body);
+		const { status, body: answer } = await send(body);
 		expect(status).toBe(400);
+		expect(answer).toEqual({ error: 'implausible' });
 	});
 
 	it('turns down a score that fails the check for a person', async () => {
@@ -258,6 +293,8 @@ describe('postScores', () => {
 		const { body } = await send(submission());
 		expect(body).toEqual({
 			entries: fullBoard,
+			cutoff: { trees: 100, metres: 900 },
+			place: null,
 		});
 		expect(db.rowsWritten).toBe(0);
 		// No need to spend the token on a score that won't be saved.
@@ -367,33 +404,5 @@ describe('postScores', () => {
 		expect(body).toMatchObject({ place: 1 });
 		expect(db.row).toMatchObject({ version: 1, writes: 1 });
 		expect(db.rowsWritten).toBe(1);
-	});
-});
-
-describe('isHuman', () => {
-	it('passes a good token made for saving a score', async () => {
-		const fetcher = answering({ success: true, action: TURNSTILE_ACTION });
-		expect(await isHuman('secret', 'token', fetcher)).toBe(true);
-	});
-
-	it('fails a bad token, or one made for something else', async () => {
-		expect(
-			await isHuman('secret', 'token', answering({ success: false })),
-		).toBe(false);
-		expect(
-			await isHuman(
-				'secret',
-				'token',
-				answering({ success: true, action: 'login' }),
-			),
-		).toBe(false);
-	});
-
-	it('fails when Turnstile cannot be reached', async () => {
-		const fetcher = vi.fn(async () => {
-			await Promise.resolve();
-			throw new Error('offline');
-		});
-		expect(await isHuman('secret', 'token', fetcher)).toBe(false);
 	});
 });

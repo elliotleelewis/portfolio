@@ -3,9 +3,9 @@ import { atomWithStorage } from 'jotai/utils';
 
 import type { Gallery } from '../game/gallery';
 import type { Game } from '../game/game';
-import type { Entry } from '../leaderboard/board';
 
 import type { EasterEggHits } from './easter-egg-hits';
+import type { Board } from './leaderboard';
 
 export type Phase = 'idle' | 'loading' | 'playing';
 export type SceneKind = 'game' | 'gallery';
@@ -41,7 +41,9 @@ export type EntryStatus =
 	| 'closed'
 	// Saving it went wrong, so I can try again.
 	| 'failed'
-	// It would have made the board, but went further than real time allows.
+	// The initials would put something rude on the board: try others.
+	| 'blocked'
+	// It went further than real time allows, so it can't go on the board.
 	| 'fastForwarded';
 
 export interface BoardEntry {
@@ -107,9 +109,9 @@ export const EASTER_EGG_HITS_ATOM = atomWithStorage<EasterEggHits>(
 	{ getOnInit: true },
 );
 
-// The shared leaderboard, best first. Undefined until it's loaded, and if it
-// can't be reached.
-export const BOARD_ATOM = atom<readonly Entry[] | undefined>(undefined);
+// The shared leaderboard, best first, and the score to beat. Undefined until
+// it's loaded, and if it can't be reached.
+export const BOARD_ATOM = atom<Board | undefined>(undefined);
 export const BOARD_ENTRY_ATOM = atom<BoardEntry>({
 	status: 'none',
 	attempt: 0,

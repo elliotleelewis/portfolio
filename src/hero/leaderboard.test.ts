@@ -1,9 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { fetchBoard, saveScore } from './leaderboard';
+import { canMakeBoard, fetchBoard, saveScore } from './leaderboard';
 
 const entry = { initials: 'ELL', trees: 40, metres: 600 };
-const score = { initials: 'ELL', trees: 40, metres: 600, seconds: 60 };
+const run = { trees: 40, metres: 600, seconds: 60 };
+const cutoff = { trees: 10, metres: 100 };
 
 /**
  * Has the API answer every request with this.
@@ -17,7 +18,7 @@ const answer = (status: number, body: unknown): void => {
 			await Promise.resolve();
 			return new Response(
 				typeof body === 'string' ? body : JSON.stringify(body),
-				{ status },
+				{ status, headers: { 'Content-Type': 'application/json' } },
 			);
 		}),
 	);
@@ -27,20 +28,23 @@ afterEach(() => {
 	vi.unstubAllGlobals();
 });
 
+describe('canMakeBoard', () => {
+	it('lets any run on while the board has room', () => {
+		expect(canMakeBoard({ trees: 0, metres: 0 }, null)).toBe(true);
+	});
+
+	it('needs more trees, or as many and further, once it is full', () => {
+		expect(canMakeBoard({ trees: 11, metres: 0 }, cutoff)).toBe(true);
+		expect(canMakeBoard({ trees: 10, metres: 101 }, cutoff)).toBe(true);
+		expect(canMakeBoard({ trees: 10, metres: 100 }, cutoff)).toBe(false);
+		expect(canMakeBoard({ trees: 9, metres: 999 }, cutoff)).toBe(false);
+	});
+});
+
 describe('fetchBoard', () => {
-	it('reads the board', async () => {
-		answer(200, { entries: [entry] });
-		expect(await fetchBoard()).toEqual([entry]);
-	});
-
-	it('keeps the good entries when some are bad', async () => {
-		answer(200, { entries: [entry, { initials: '<b>', trees: 1 }] });
-		expect(await fetchBoard()).toEqual([entry]);
-	});
-
-	it('takes an answer it cannot read as an empty board', async () => {
-		answer(200, 'not json');
-		expect(await fetchBoard()).toEqual([]);
+	it('reads the board and the score to beat', async () => {
+		answer(200, { entries: [entry], cutoff: null });
+		expect(await fetchBoard()).toEqual({ entries: [entry], cutoff: null });
 	});
 
 	it('throws when the board cannot be reached', async () => {
@@ -51,41 +55,61 @@ describe('fetchBoard', () => {
 
 describe('saveScore', () => {
 	it('reads where the score went', async () => {
-		answer(200, { entries: [entry], place: 1 });
-		expect(await saveScore(score, 'token')).toEqual({
+		answer(200, { entries: [entry], cutoff: null, place: 1 });
+		expect(await saveScore('ELL', run, 'token')).toEqual({
 			kind: 'saved',
-			entries: [entry],
+			board: { entries: [entry], cutoff: null },
 			place: 1,
 		});
 	});
 
 	it('reads a score that others pushed off the board', async () => {
-		answer(200, { entries: [entry] });
-		expect(await saveScore(score, 'token')).toEqual({
+		answer(200, { entries: [entry], cutoff, place: null });
+		expect(await saveScore('ELL', run, 'token')).toEqual({
 			kind: 'missed',
-			entries: [entry],
+			board: { entries: [entry], cutoff },
 		});
 	});
 
-	it('reads a score that was turned down', async () => {
+	it('reads why a score was turned down', async () => {
+		answer(400, { error: 'blocked' });
+		expect(await saveScore('ELL', run, 'token')).toEqual({
+			kind: 'blocked',
+		});
+		answer(400, { error: 'implausible' });
+		expect(await saveScore('ELL', run, 'token')).toEqual({
+			kind: 'fastForwarded',
+		});
 		answer(400, { error: 'invalid' });
-		expect(await saveScore(score, 'token')).toEqual({ kind: 'rejected' });
+		expect(await saveScore('ELL', run, 'token')).toEqual({
+			kind: 'rejected',
+		});
 		answer(403, { error: 'unverified' });
-		expect(await saveScore(score, 'token')).toEqual({ kind: 'rejected' });
+		expect(await saveScore('ELL', run, 'token')).toEqual({
+			kind: 'rejected',
+		});
 	});
 
 	it('reads a board that has closed for the day', async () => {
 		answer(503, { error: 'closed' });
-		expect(await saveScore(score, 'token')).toEqual({ kind: 'closed' });
+		expect(await saveScore('ELL', run, 'token')).toEqual({
+			kind: 'closed',
+		});
 	});
 
 	it('fails on anything else', async () => {
 		answer(503, { error: 'busy' });
-		expect(await saveScore(score, 'token')).toEqual({ kind: 'failed' });
-		answer(200, { entries: [entry], place: 'first' });
-		expect(await saveScore(score, 'token')).toEqual({ kind: 'failed' });
+		expect(await saveScore('ELL', run, 'token')).toEqual({
+			kind: 'failed',
+		});
 		answer(500, 'not json');
-		expect(await saveScore(score, 'token')).toEqual({ kind: 'failed' });
+		expect(await saveScore('ELL', run, 'token')).toEqual({
+			kind: 'failed',
+		});
+		answer(503, 'not json');
+		expect(await saveScore('ELL', run, 'token')).toEqual({
+			kind: 'failed',
+		});
 	});
 
 	it('fails when the board cannot be reached', async () => {
@@ -96,6 +120,23 @@ describe('saveScore', () => {
 				throw new TypeError('offline');
 			}),
 		);
-		expect(await saveScore(score, 'token')).toEqual({ kind: 'failed' });
+		expect(await saveScore('ELL', run, 'token')).toEqual({
+			kind: 'failed',
+		});
+	});
+
+	it('sends the run, the initials and the token as JSON', async () => {
+		answer(200, { entries: [entry], cutoff: null, place: 1 });
+		await saveScore('ELL', run, 'token');
+		const [url, init] = vi.mocked(fetch).mock.calls[0] ?? [];
+		expect(url).toBe('/api/scores');
+		expect(init?.method).toBe('POST');
+		expect(typeof init?.body === 'string' && JSON.parse(init.body)).toEqual(
+			{
+				initials: 'ELL',
+				...run,
+				token: 'token',
+			},
+		);
 	});
 });

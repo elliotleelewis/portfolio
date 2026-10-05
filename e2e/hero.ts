@@ -113,15 +113,3 @@ export const startNewRun = async (
 		{ timeout: 60_000 },
 	);
 };
-
-/**
- * Makes every random roll come up high, from when the page loads: the trees
- * all grow beside my lane, and no bear ever climbs one. A long fast-forward
- * can't then end early with a bear catching me.
- * @param page - The page, before it loads.
- */
-export const keepBearsAway = async (page: Page): Promise<void> => {
-	await page.addInitScript(() => {
-		Math.random = () => 0.99;
-	});
-};

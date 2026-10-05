@@ -75,21 +75,24 @@ Import types with `import type { … }`, not `import { type … }`. With `verbat
   - Each easter egg's parts that share a parent and a material are merged into one mesh to save draw calls (`mergeStill` in `easter-eggs/merge.ts`). Plain parts whose materials differ only in colour merge too, with their colours in the geometry. Glowing, see-through and textured materials keep their own, so animate those rather than a plain material's colour.
   - A part the easter egg moves (or recolours) on its own is put back automatically the moment it changes, and every part is put back before a smash, so each flies off separately.
   - Keep your own references to the parts you animate. Don't find them by walking `children`: merged parts aren't there.
-- **Leaderboard:** the site stays static. `functions/api/scores.ts` is a Cloudflare Pages Function at `/api/scores`, a thin wrapper round `src/leaderboard/server.ts`, which is plain TypeScript tested in Node. `src/leaderboard/` holds the rules both sides share: initials, ranking, and whether a run could be real.
+- **Leaderboard:** the site stays static. The leaderboard's API is a Cloudflare Pages Function, all in `functions/`: `functions/api/[[route]].ts` hands everything under `/api` to a [Hono](https://hono.dev) app, `createApp` in `functions/_lib/app.ts`, which is plain TypeScript tested in Node. Pages only turns files that export request handlers into routes, so `_lib/` (and its tests) never becomes one.
+  - `src/` and `functions/` share no code. The page calls the API with Hono's typed client (`src/hero/leaderboard.ts`), importing only `AppType` and other types from `functions/`, with `import type`, so TypeScript checks every request and answer and none of the Function's code ends up in the page. Add or change routes in `createApp`, chained, so their types reach the client.
+  - The Function has the final say on everything: rude initials, runs that couldn't be real, and whether a run makes the board. It tells the page why it turned a score down (`blocked`, `implausible`). The page only checks a run against the board's `cutoff`, so it asks for initials only when a run can make it.
   - It must never go over Cloudflare's free limits. Keep the whole board in the one D1 row, so a request reads at most a few rows and a saved score writes exactly one. The day's writes are counted in that same write, capped at `DAILY_WRITE_LIMIT`. Don't add tables, indexes, KV, or writes for anything else (no logging, no per-visitor rate limits), and don't fetch the board more than once a page.
   - The leaderboard's code loads with the board, when the game first loads, and Turnstile's script only when there's a score to save, so neither is in the page's first load.
-  - Anything from the API, D1 or storage could hold anything. The shapes it should have are [Zod](https://zod.dev) schemas (`ENTRY`, `RUN` and `INITIALS` in `src/leaderboard/`, which the page and the Function share), read with `readBoard`, `readSubmission` or `readInitials`. Import `zod/mini`, not `zod`: it's a fraction of the size in the page's code. Rules about the game, like whether a run could be real, are refinements on the schemas.
-  - Queries go through [Drizzle](https://orm.drizzle.team), with the table defined in `src/leaderboard/schema.ts`. Don't write migrations by hand: change the schema and run `pnpm db:generate`, which writes them to `migrations/`. CI checks they match. Migrations only ever add: the live code runs against them until the deploy finishes.
+  - What comes into the Function (requests, D1, Turnstile) could hold anything. Its shapes are [Zod](https://zod.dev) schemas (`ENTRY`, `RUN` and `INITIALS` in `functions/_lib/`, and the request's in `app.ts`, checked with `sValidator`). Import `zod/mini`, not `zod`. Read the stored board with `readBoard`, which keeps the good entries if some are bad.
+  - Rude initials come from [obscenity](https://github.com/jo3-l/obscenity)'s word list, plus the optional `blockedInitials` secret on the Pages project. Don't put a list of rude words in the repo: tests use a harmless stand-in for the secret.
+  - Queries go through [Drizzle](https://orm.drizzle.team), with the table defined in `functions/_lib/schema.ts`. Don't write migrations by hand: change the schema and run `pnpm db:generate`, which writes them to `migrations/`. CI checks they match. Migrations only ever add: the live code runs against them until the deploy finishes.
   - Unit tests run the server on SQLite in memory (`node:sqlite`), through Drizzle's proxy driver, with the same migrations applied.
   - The live site and previews have a database each, in `wrangler.toml`. The deploy job creates and migrates them (`.github/scripts/leaderboard-db.sh`) before deploying.
-  - `astro preview` doesn't run the Function, so e2e tests mock `/api/scores` and Turnstile (`mockLeaderboard` in `e2e/leaderboard.ts`).
+  - `astro preview` doesn't run the Function, so e2e tests mock `/api/scores` and Turnstile (`mockLeaderboard` in `e2e/leaderboard.ts`). Run it for real with `pnpm exec wrangler pages dev` (see the README).
 - **Right-to-left:** the game and gallery mirror for right-to-left pages.
   - The page's direction becomes a `Mirror` (`1` or `-1`, in `src/game/direction.ts`), which flips the chase camera's side, the sun and the gallery row.
   - Steering stays physical: ← always turns screen-left.
 
 ## Tests
 
-- **Unit tests** sit next to the code, as `*.test.ts`, and run in Node.
+- **Unit tests** sit next to the code, as `*.test.ts`, in `src/` and `functions/`, and run in Node.
   - Anything that draws on a canvas, such as the bears' "!" badge or the easter eggs' textures, needs a DOM. Add `// @vitest-environment happy-dom` at the top of that test file.
   - Avoid randomness that can make a test flaky: put things exactly where the test needs them.
 - **End-to-end tests** are in `e2e/`. They run on a desktop and a phone-sized browser.

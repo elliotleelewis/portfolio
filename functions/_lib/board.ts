@@ -1,12 +1,9 @@
+// The board's rules: what an entry looks like, how runs rank, and whether a
+// run could have happened in real play.
+
 import * as z from 'zod/mini';
 
-import { bearBlastPoints } from '../game/scoring';
-
 import { INITIALS } from './initials';
-
-// The action the page's Turnstile widget names, so a token made for
-// anything else doesn't count.
-export const TURNSTILE_ACTION = 'score';
 
 // How many runs the board keeps.
 export const BOARD_SIZE = 10;
@@ -16,8 +13,10 @@ export const BOARD_SIZE = 10;
 const maxSpeed = 40;
 // More than enough for rounding, and any frames the game skips ahead.
 const metresSlack = 20;
-// More bears than one easter egg's blast ever catches.
-const maxBlast = bearBlastPoints(20);
+// More than one easter egg's blast is ever worth: 5 points a bear, times the
+// bears again (see `bearBlastPoints` in src/game/scoring.ts), for more bears
+// than one ever catches.
+const maxBlast = 5 * 20 * 20;
 // The trail places an easter egg this often, in metres (see
 // `EASTER_EGG_SPACING`), with some to spare.
 const easterEggSpacing = 100;
@@ -74,16 +73,17 @@ export type Run = z.infer<typeof RUN>;
  */
 export const isPlausible = (run: Run): boolean => RUN.safeParse(run).success;
 
+// A run's score, without whose it is.
+export type Score = Omit<Entry, 'initials'>;
+
 /**
  * Whether one run beats another: more trees, then further on a tie.
  * @param a - One run.
  * @param b - The other.
  * @returns True if `a` ranks above `b`.
  */
-const isAbove = (
-	a: Omit<Entry, 'initials'>,
-	b: Omit<Entry, 'initials'>,
-): boolean => a.trees > b.trees || (a.trees === b.trees && a.metres > b.metres);
+const isAbove = (a: Score, b: Score): boolean =>
+	a.trees > b.trees || (a.trees === b.trees && a.metres > b.metres);
 
 /**
  * Where a run would go on the board. A tie goes below the run already
@@ -94,11 +94,23 @@ const isAbove = (
  */
 export const placeFor = (
 	board: readonly Entry[],
-	run: Omit<Entry, 'initials'>,
+	run: Score,
 ): number | undefined => {
 	const index = board.findIndex((entry) => isAbove(run, entry));
 	const place = (index === -1 ? board.length : index) + 1;
 	return place <= BOARD_SIZE ? place : undefined;
+};
+
+/**
+ * The score a run has to beat to make the board: the last run on a full
+ * board. The page checks runs against it, so it only asks for initials when
+ * a run makes it.
+ * @param board - The board, best first.
+ * @returns The score to beat, or null while the board has room.
+ */
+export const cutoffFor = (board: readonly Entry[]): Score | null => {
+	const last = board.at(BOARD_SIZE - 1);
+	return last ? { trees: last.trees, metres: last.metres } : null;
 };
 
 /**

@@ -4,6 +4,6 @@ import { defineConfig } from 'drizzle-kit';
 // apply to D1 (see .github/scripts/leaderboard-db.sh).
 export default defineConfig({
 	dialect: 'sqlite',
-	schema: './src/leaderboard/schema.ts',
+	schema: './functions/_lib/schema.ts',
 	out: './migrations',
 });

@@ -1,5 +1,5 @@
 import { expect, test } from './fixtures';
-import { advance, crash, keepBearsAway, startNewRun, startRun } from './hero';
+import { advance, crash, startNewRun, startRun } from './hero';
 import {
 	expectInitials,
 	fullBoard,
@@ -92,17 +92,45 @@ test('remembers my initials for next time', async ({ page }) => {
 	await expectInitials(page, 'ELL');
 });
 
-test('will not save rude initials', async ({ page }) => {
-	await mockLeaderboard(page);
+test('asks for other initials when the board turns them down', async ({
+	page,
+}) => {
+	// The Function decides what's rude: here, anything but ELL.
+	const saved = await mockLeaderboard(page, {
+		onSave: (sent) =>
+			sent.initials === 'ELL'
+				? {
+						status: 200,
+						body: {
+							entries: [
+								{
+									initials: sent.initials,
+									trees: sent.trees,
+									metres: sent.metres,
+								},
+							],
+							place: 1,
+						},
+					}
+				: { status: 400, body: { error: 'blocked' } },
+	});
 	await page.goto('/');
 	await startRun(page);
 	await crash(page);
 	await waitForInitials(page);
 	await page.keyboard.type('a55');
+	await page.keyboard.press('Enter');
 	await expect(page.locator('#hero-initials-status')).toHaveText(
 		'Try some other initials',
 	);
-	await expect(page.locator('#hero-initials-save')).toBeDisabled();
+	// A fresh check for a person, then another go.
+	await waitForInitials(page);
+	await page.keyboard.type('ell');
+	await page.keyboard.press('Enter');
+	await expect(page.locator('#hero-board-message')).toHaveText(
+		'#1 on the leaderboard 🏆',
+	);
+	expect(saved.map(({ initials }) => initials)).toEqual(['A55', 'ELL']);
 });
 
 test('lets me try again when saving fails', async ({ page }) => {
@@ -221,15 +249,16 @@ test('skips the initials, straight to how the run went', async ({ page }) => {
 	expect(saved).toEqual([]);
 });
 
-test('keeps fast-forwarded runs off the board', async ({ page }) => {
-	await mockLeaderboard(page);
-	// Otherwise a bear could catch me early, in a run short enough to count.
-	await keepBearsAway(page);
+test('says when a run went further than real time allows', async ({ page }) => {
+	// The Function checks the run's distance against its time.
+	await mockLeaderboard(page, {
+		onSave: () => ({ status: 400, body: { error: 'implausible' } }),
+	});
 	await page.goto('/');
 	await startRun(page);
-	// Much further than real time allows.
-	await advance(page, 200);
 	await crash(page);
+	await waitForInitials(page);
+	await page.keyboard.press('Enter');
 	await expect(page.locator('#hero-board-message')).toHaveText(
 		'Fast-forwarded runs don’t go on the leaderboard.',
 	);

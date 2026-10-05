@@ -9,21 +9,19 @@ import {
 	useState,
 } from 'react';
 
-import { TURNSTILE_ACTION } from '../leaderboard/board';
-import {
-	INITIALS_LENGTH,
-	isBlocked,
-	readInitials,
-	stepCharacter,
-} from '../leaderboard/initials';
+import type { TurnstileAction } from '../../functions/_lib/turnstile';
 import { m } from '../paraglide/messages';
 
 import { BOARD_ENTRY_ATOM, INITIALS_ATOM } from './atoms';
 import { useController } from './context';
+import { INITIALS_LENGTH, readInitials, stepCharacter } from './initials';
 import { loadTurnstile, siteKey } from './turnstile';
 
 // What can go in an initial, as typed (in either case).
 const typeable = /[\dA-Za-z]/g;
+
+// Matches the Function's, so a token made here counts there.
+const turnstileAction: TurnstileAction = 'score';
 
 const stepButton =
 	'flex h-6 w-12 cursor-pointer items-center justify-center rounded-md text-xs text-slate-500 hover:bg-slate-900/10 hover:text-slate-900';
@@ -67,7 +65,7 @@ const useTurnstile = (
 				}
 				const id = turnstile.render(target, {
 					sitekey: siteKey(),
-					action: TURNSTILE_ACTION,
+					action: turnstileAction,
 					appearance: 'interaction-only',
 					callback: (token) => {
 						setState({ token, hasFailed: false });
@@ -116,7 +114,9 @@ export const InitialsEntry: FC = () => {
 	const { token, hasFailed } = useTurnstile(widget);
 	const isSaving = status === 'saving';
 	const value = initials.join('');
-	const isRude = isBlocked(value);
+	// The Function turned down the last initials: they'd put something rude
+	// on the board.
+	const isRude = status === 'blocked';
 
 	useEffect(() => {
 		slots.current[0]?.focus();
@@ -142,7 +142,7 @@ export const InitialsEntry: FC = () => {
 	};
 
 	const save = (): void => {
-		if (token && !isSaving && !isRude) {
+		if (token && !isSaving) {
 			void controller.saveScore(value, token);
 		}
 	};
@@ -297,7 +297,7 @@ export const InitialsEntry: FC = () => {
 			<button
 				id="hero-initials-save"
 				type="button"
-				disabled={!token || isSaving || isRude}
+				disabled={!token || isSaving}
 				className="mt-3 cursor-pointer rounded-full bg-slate-900 px-6 py-2.5 font-semibold text-white hover:bg-slate-700 focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none disabled:cursor-default disabled:opacity-60"
 				onClick={save}
 			>

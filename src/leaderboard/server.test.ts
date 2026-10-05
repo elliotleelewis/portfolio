@@ -1,10 +1,13 @@
+import { readFileSync, readdirSync } from 'node:fs';
+import { DatabaseSync } from 'node:sqlite';
+
+import { drizzle } from 'drizzle-orm/sqlite-proxy';
 import { describe, expect, it, vi } from 'vitest';
 
 import { BOARD_SIZE, type Entry, TURNSTILE_ACTION } from './board';
 import {
 	DAILY_WRITE_LIMIT,
 	type Database,
-	type Statement,
 	getScores,
 	isHuman,
 	postScores,
@@ -17,69 +20,77 @@ interface Row {
 	entries: string;
 }
 
-/**
- * A stand-in for D1 that understands the two queries the API makes, and
- * counts rows read and written the way D1 bills them.
- */
-class FakeDatabase implements Database {
-	public row: Row | undefined = {
-		version: 0,
-		day: '',
-		writes: 0,
-		entries: '[]',
-	};
-	public rowsRead = 0;
-	public rowsWritten = 0;
-	// Runs just before an update, to let another score land first.
-	public beforeUpdate: (() => void) | undefined;
+const migrations = new URL('../../migrations/', import.meta.url);
 
-	private update([entries, day, version, limit]: unknown[]): number {
-		const row = this.row;
-		if (!row) {
-			return 0;
+/**
+ * A stand-in for D1: SQLite in memory, migrated with the same migrations,
+ * and queried through Drizzle. It counts the statements run (each reads at
+ * most the one row) and the rows written, the way D1 bills them.
+ */
+class TestDatabase {
+	private readonly _sqlite = new DatabaseSync(':memory:');
+	public statements = 0;
+	public rowsWritten = 0;
+	// Runs just before a write, to let another score land first.
+	public beforeWrite: (() => void) | undefined;
+	public readonly db: Database = drizzle(async (query, params, method) => {
+		await Promise.resolve();
+		if (query.startsWith('insert')) {
+			this.beforeWrite?.();
+			this.beforeWrite = undefined;
 		}
-		this.rowsRead++;
-		if (
-			row.version !== version ||
-			(row.day === day && row.writes >= Number(limit))
-		) {
-			return 0;
+		this.statements++;
+		const before = this.totalChanges();
+		const statement = this._sqlite.prepare(query);
+		// Drizzle's proxy wants each row as its values, in column order.
+		const rows = statement
+			.all(...params.map(String))
+			.map((row) => Object.values(row));
+		this.rowsWritten += this.totalChanges() - before;
+		// A single row, or nothing if there isn't one.
+		return { rows: method === 'get' ? rows[0] : rows };
+	});
+
+	public constructor() {
+		// In order, as Wrangler applies them.
+		const files = readdirSync(migrations)
+			.filter((file) => file.endsWith('.sql'))
+			.toSorted((a, b) => a.localeCompare(b));
+		for (const file of files) {
+			this._sqlite.exec(readFileSync(new URL(file, migrations), 'utf8'));
 		}
-		this.row = {
-			entries: String(entries),
-			version: row.version + 1,
-			writes: row.day === day ? row.writes + 1 : 1,
-			day: String(day),
-		};
-		this.rowsWritten++;
-		return 1;
 	}
 
-	public prepare(query: string): Statement {
-		let values: unknown[] = [];
-		const statement: Statement = {
-			bind: (...bound) => {
-				values = bound;
-				return statement;
-			},
-			first: async () => {
-				await Promise.resolve();
-				expect(query).toMatch(/^SELECT/);
-				if (!this.row) {
-					return null;
-				}
-				this.rowsRead++;
-				return { ...this.row };
-			},
-			run: async () => {
-				await Promise.resolve();
-				expect(query).toMatch(/^UPDATE/);
-				this.beforeUpdate?.();
-				this.beforeUpdate = undefined;
-				return { meta: { changes: this.update(values) } };
-			},
-		};
-		return statement;
+	private totalChanges(): number {
+		const { changes } = this._sqlite
+			.prepare('SELECT total_changes() AS changes')
+			.get() ?? { changes: 0 };
+		return Number(changes);
+	}
+
+	public get row(): Row | undefined {
+		const row = this._sqlite
+			.prepare('SELECT version, day, writes, entries FROM leaderboard')
+			.get();
+		return (
+			row && {
+				version: Number(row.version),
+				day: String(row.day),
+				writes: Number(row.writes),
+				entries: String(row.entries),
+			}
+		);
+	}
+
+	public set row(row: Row | undefined) {
+		this._sqlite.exec('DELETE FROM leaderboard');
+		if (row) {
+			this._sqlite
+				.prepare(
+					'INSERT INTO leaderboard (id, version, day, writes, entries) VALUES (1, ?, ?, ?, ?)',
+				)
+				.run(row.version, row.day, row.writes, row.entries);
+		}
 	}
 
 	public get entries(): unknown {
@@ -119,11 +130,11 @@ const answer = async (pending: Promise<Response>): Promise<Answer> => {
 };
 
 const setUp = (): {
-	db: FakeDatabase;
+	db: TestDatabase;
 	verify: ReturnType<typeof vi.fn<(token: string) => Promise<boolean>>>;
 	send: (body: unknown) => Promise<Answer>;
 } => {
-	const db = new FakeDatabase();
+	const db = new TestDatabase();
 	const verify = vi.fn<(token: string) => Promise<boolean>>(async () => {
 		await Promise.resolve();
 		return true;
@@ -133,9 +144,7 @@ const setUp = (): {
 			method: 'POST',
 			body: typeof body === 'string' ? body : JSON.stringify(body),
 		});
-		return answer(
-			postScores(request, { leaderboard: db }, { verify, now }),
-		);
+		return answer(postScores(request, db.db, { verify, now }));
 	};
 	return { db, verify, send };
 };
@@ -147,7 +156,7 @@ const answering = (body: unknown): typeof fetch =>
 	});
 
 describe('getScores', () => {
-	it('answers with the board, in one row read', async () => {
+	it('answers with the board, in one statement', async () => {
 		const { db } = setUp();
 		db.row = {
 			version: 1,
@@ -157,15 +166,15 @@ describe('getScores', () => {
 				{ initials: 'ELL', trees: 9, metres: 90 },
 			]),
 		};
-		const { body } = await answer(getScores({ leaderboard: db }));
+		const { body } = await answer(getScores(db.db));
 		expect(body).toEqual({
 			entries: [{ initials: 'ELL', trees: 9, metres: 90 }],
 		});
-		expect(db.rowsRead).toBe(1);
+		expect(db.statements).toBe(1);
 	});
 
 	it('is unavailable without a database', async () => {
-		const { status } = await answer(getScores({}));
+		const { status } = await answer(getScores(undefined));
 		expect(status).toBe(503);
 	});
 });
@@ -205,7 +214,7 @@ describe('postScores', () => {
 			const { status } = await send(body);
 			expect(status).toBe(400);
 		}
-		expect(db.rowsRead).toBe(0);
+		expect(db.statements).toBe(0);
 		expect(verify).not.toHaveBeenCalled();
 	});
 
@@ -214,7 +223,7 @@ describe('postScores', () => {
 		const body = { ...submission(), padding: 'x'.repeat(4096) };
 		const { status } = await send(body);
 		expect(status).toBe(400);
-		expect(db.rowsRead).toBe(0);
+		expect(db.statements).toBe(0);
 	});
 
 	it('turns down rude initials', async () => {
@@ -257,7 +266,7 @@ describe('postScores', () => {
 
 	it('keeps both scores when another lands first', async () => {
 		const { db, verify, send } = setUp();
-		db.beforeUpdate = () => {
+		db.beforeWrite = () => {
 			db.row = {
 				version: 1,
 				day: '2026-10-05',
@@ -347,15 +356,17 @@ describe('postScores', () => {
 				send(submission('AAA', i + 1)),
 			),
 		);
-		// Up to three tries, each a read and a conditional update.
-		expect(db.rowsRead).toBeLessThanOrEqual(20 * 3 * 2);
+		// Up to three tries, each a read and a conditional write.
+		expect(db.statements).toBeLessThanOrEqual(20 * 3 * 2);
 	});
 
-	it('is unavailable before the board is set up', async () => {
+	it('starts the board with the first score saved', async () => {
 		const { db, send } = setUp();
 		db.row = undefined;
-		const { status } = await send(submission());
-		expect(status).toBe(503);
+		const { body } = await send(submission());
+		expect(body).toMatchObject({ place: 1 });
+		expect(db.row).toMatchObject({ version: 1, writes: 1 });
+		expect(db.rowsWritten).toBe(1);
 	});
 });
 

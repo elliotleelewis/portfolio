@@ -1,6 +1,7 @@
 // The leaderboard's API, run by the Pages Function in
 // `functions/api/scores.ts`. It's kept here, apart from Cloudflare's
-// runtime, so it can be tested in Node.
+// runtime, so it can be tested in Node, with Drizzle on SQLite standing in
+// for D1.
 //
 // It's built so it can never go over the free plans' daily limits:
 //
@@ -13,6 +14,9 @@
 // - Turnstile, which checks a person is saving the score, is free with no
 //   limit on checks.
 
+import { eq } from 'drizzle-orm';
+import type { BaseSQLiteDatabase } from 'drizzle-orm/sqlite-core';
+
 import {
 	type Entry,
 	TURNSTILE_ACTION,
@@ -22,6 +26,7 @@ import {
 	readBoard,
 } from './board';
 import { isBlocked, isInitials } from './initials';
+import { BOARD_ID, LEADERBOARD } from './schema';
 
 // The most scores the board takes in a day (UTC). One write each.
 export const DAILY_WRITE_LIMIT = 1000;
@@ -32,30 +37,13 @@ const maxAttempts = 3;
 const siteverifyUrl =
 	'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 
-// The parts of Cloudflare's D1 binding this uses.
-export interface Database {
-	prepare: (query: string) => Statement;
-}
+// Drizzle on D1, or on anything else that speaks SQLite.
+export type Database = BaseSQLiteDatabase<'async', unknown>;
 
-export interface Statement {
-	bind: (...values: unknown[]) => Statement;
-	first: () => Promise<Record<string, unknown> | null>;
-	run: () => Promise<{ meta: { changes: number } }>;
-}
+type BoardRow = Omit<typeof LEADERBOARD.$inferSelect, 'id'>;
 
-// The Function's bindings, set on the Pages project: the D1 database, and
-// the Turnstile widget's secret key.
-export interface Env {
-	leaderboard?: Database;
-	turnstileSecret?: string;
-}
-
-interface BoardRow {
-	version: number;
-	day: string;
-	writes: number;
-	entries: string;
-}
+// The board before its row's first write, which creates the row.
+const emptyRow: BoardRow = { version: 0, day: '', writes: 0, entries: '[]' };
 
 // What a page sends to save a score.
 export interface Submission {
@@ -95,24 +83,45 @@ const parseEntries = (text: string): Entry[] => readBoard(parseJson(text));
 /**
  * Reads the board's row: one row read.
  * @param db - The database.
- * @returns The row, or undefined if it hasn't been set up properly.
+ * @returns The row, or an empty board if nothing's been saved yet.
  */
-const readRow = async (db: Database): Promise<BoardRow | undefined> => {
+const readRow = async (db: Database): Promise<BoardRow> => {
 	const row = await db
-		.prepare(
-			'SELECT version, day, writes, entries FROM leaderboard WHERE id = 1',
-		)
-		.first();
-	if (!row) {
-		return undefined;
-	}
-	const { version, day, writes, entries } = row;
-	const isRow =
-		typeof version === 'number' &&
-		typeof day === 'string' &&
-		typeof writes === 'number' &&
-		typeof entries === 'string';
-	return isRow ? { version, day, writes, entries } : undefined;
+		.select({
+			version: LEADERBOARD.version,
+			day: LEADERBOARD.day,
+			writes: LEADERBOARD.writes,
+			entries: LEADERBOARD.entries,
+		})
+		.from(LEADERBOARD)
+		.where(eq(LEADERBOARD.id, BOARD_ID))
+		.get();
+	return row ?? emptyRow;
+};
+
+/**
+ * Writes the board's row, creating it the first time, but only if it hasn't
+ * changed since it was read: one row write, or none.
+ * @param db - The database.
+ * @param read - The row as it was read.
+ * @param next - The row to write.
+ * @returns Whether it was written.
+ */
+const hasWrittenRow = async (
+	db: Database,
+	read: BoardRow,
+	next: BoardRow,
+): Promise<boolean> => {
+	const written = await db
+		.insert(LEADERBOARD)
+		.values({ id: BOARD_ID, ...next })
+		.onConflictDoUpdate({
+			target: LEADERBOARD.id,
+			set: next,
+			setWhere: eq(LEADERBOARD.version, read.version),
+		})
+		.returning({ version: LEADERBOARD.version });
+	return written.length > 0;
 };
 
 /**
@@ -180,17 +189,19 @@ export const isHuman = async (
 
 /**
  * Answers `GET /api/scores` with the board: one row read.
- * @param env - The function's bindings.
+ * @param db - The database, if it's bound.
  * @returns The board, best first.
  */
-export const getScores = async (env: Env): Promise<Response> => {
-	if (!env.leaderboard) {
+export const getScores = async (
+	db: Database | undefined,
+): Promise<Response> => {
+	if (!db) {
 		return error('unavailable', 503);
 	}
-	const row = await readRow(env.leaderboard);
+	const row = await readRow(db);
 	// A little caching saves a request when someone plays again soon after.
 	return json(
-		{ entries: row ? parseEntries(row.entries) : [] },
+		{ entries: parseEntries(row.entries) },
 		200,
 		'public, max-age=30',
 	);
@@ -202,17 +213,16 @@ export const getScores = async (env: Env): Promise<Response> => {
  * checked first, and the score is written in one row write, only if the row
  * hasn't changed since it was read.
  * @param request - The request.
- * @param env - The function's bindings.
+ * @param db - The database, if it's bound.
  * @param options - How to check Turnstile tokens, and today's date.
  * @returns The board, and the score's place on it (undefined if someone
  * else's scores pushed it off first).
  */
 export const postScores = async (
 	request: Request,
-	env: Env,
+	db: Database | undefined,
 	options: PostOptions,
 ): Promise<Response> => {
-	const { leaderboard: db } = env;
 	if (!db) {
 		return error('unavailable', 503);
 	}
@@ -239,9 +249,6 @@ export const postScores = async (
 
 	for (let attempt = 0; attempt < maxAttempts; attempt++) {
 		const row = await readRow(db);
-		if (!row) {
-			return error('unavailable', 503);
-		}
 		const board = parseEntries(row.entries);
 		if (placeFor(board, entry) === undefined) {
 			return json({ entries: board, place: undefined });
@@ -258,26 +265,16 @@ export const postScores = async (
 			}
 		}
 		const next = addEntry(board, entry);
-		// Writes nothing unless the row is as it was read, and the day's
-		// writes are under the limit, so two scores at once can't overwrite
-		// each other, and nothing can push the writes past the limit.
-		const { meta } = await db
-			.prepare(
-				`UPDATE leaderboard
-				SET entries = ?1,
-					version = version + 1,
-					writes = CASE WHEN day = ?2 THEN writes + 1 ELSE 1 END,
-					day = ?2
-				WHERE id = 1 AND version = ?3 AND (day <> ?2 OR writes < ?4)`,
-			)
-			.bind(
-				JSON.stringify(next.board),
-				day,
-				row.version,
-				DAILY_WRITE_LIMIT,
-			)
-			.run();
-		if (meta.changes > 0) {
+		// Only if the row is as it was read, so two scores at once can't
+		// overwrite each other, and the day's writes (checked above) can't
+		// have moved past the limit since.
+		const isWritten = await hasWrittenRow(db, row, {
+			version: row.version + 1,
+			day,
+			writes: row.day === day ? row.writes + 1 : 1,
+			entries: JSON.stringify(next.board),
+		});
+		if (isWritten) {
 			return json({ entries: next.board, place: next.place });
 		}
 	}

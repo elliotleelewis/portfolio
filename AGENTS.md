@@ -79,7 +79,9 @@ Import types with `import type { … }`, not `import { type … }`. With `verbat
   - It must never go over Cloudflare's free limits. Keep the whole board in the one D1 row, so a request reads at most a few rows and a saved score writes exactly one. The day's writes are counted in that same write, capped at `DAILY_WRITE_LIMIT`. Don't add tables, indexes, KV, or writes for anything else (no logging, no per-visitor rate limits), and don't fetch the board more than once a page.
   - The leaderboard's code loads with the board, when the game first loads, and Turnstile's script only when there's a score to save, so neither is in the page's first load.
   - Anything from the API, D1 or storage could hold anything: read it with `readBoard`, `readSubmission` or `readInitials`.
-  - The live site and previews have a database each, in `wrangler.toml`. The deploy job creates and migrates them (`.github/scripts/leaderboard-db.sh`) before deploying. Migrations in `migrations/` only ever add: the live code runs against them until the deploy finishes.
+  - Queries go through [Drizzle](https://orm.drizzle.team), with the table defined in `src/leaderboard/schema.ts`. Don't write migrations by hand: change the schema and run `pnpm db:generate`, which writes them to `migrations/`. CI checks they match. Migrations only ever add: the live code runs against them until the deploy finishes.
+  - Unit tests run the server on SQLite in memory (`node:sqlite`), through Drizzle's proxy driver, with the same migrations applied.
+  - The live site and previews have a database each, in `wrangler.toml`. The deploy job creates and migrates them (`.github/scripts/leaderboard-db.sh`) before deploying.
   - `astro preview` doesn't run the Function, so e2e tests mock `/api/scores` and Turnstile (`mockLeaderboard` in `e2e/leaderboard.ts`).
 - **Right-to-left:** the game and gallery mirror for right-to-left pages.
   - The page's direction becomes a `Mirror` (`1` or `-1`, in `src/game/direction.ts`), which flips the chase camera's side, the sun and the gallery row.

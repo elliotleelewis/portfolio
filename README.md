@@ -70,7 +70,7 @@ The game is split so most of it can be tested without a browser:
 - **The hero** (`src/hero/`) is a React island. `HeroController` starts and stops the scenes and copies what they report (score, distance, game over, the gallery's position) into Jotai atoms for the UI to show. The best score and easter egg smash counts are atoms with storage, so they're kept between visits.
 - **The scenes** (`src/game/game.ts` and `src/game/gallery.ts`) are plain classes. Each part of the game is its own class with its own tests, for example `Player`, `Forest`, `Bears`, `EasterEggTrail`, `Effects` and `ChaseCamera`. On each step these run as systems, in the order set by `SYSTEM_ORDER`.
 - **The game page** (`src/pages/game.astro`, at `/game`) is the same island on its own, filling the window. There's no photo: the game loads straight away and waits on a start screen of its own, and leaving a run goes back there.
-- **The worlds** (`src/game/components/`) are React Three Fiber components that add the sky, light, mountains, ground and trees to a scene and hook into its systems with `useSystem`.
+- **The worlds** (`src/game/components/`) are React Three Fiber components that add the sky, light, mountains, ground and trees to a scene and hook into its systems with `useSystem`. The light and air come from the site's theme, so the mountain is day in light mode and night in dark mode, with a lantern to see by.
 
 The game in play is also on `hero.game` in the browser's console, on the live site too. Try `hero.game.advance(30)` to skip ahead, or `hero.game.catchPlayer()` to end the run. The end-to-end tests use it the same way.
 

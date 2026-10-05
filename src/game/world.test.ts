@@ -1,18 +1,17 @@
-import { readFileSync } from 'node:fs';
-
-import { Group, MeshLambertMaterial, Vector3 } from 'three';
+import { Color, Group, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 
 import {
 	APPEAR_AHEAD,
 	CHUNK_LENGTH,
-	FOG_COLOR,
 	FOG_FAR,
 	GROUND_CHUNKS,
 	GROUND_RECYCLE_DISTANCE,
 	LANE_HALF_WIDTH,
 	SLOPE_ANGLE,
+	STAR_DISTANCE,
 	createLedge,
+	createStars,
 	slopeSurfaceHeight,
 	terrainHeight,
 } from './world';
@@ -86,13 +85,17 @@ describe('the ledge', () => {
 	});
 });
 
-describe('FOG_COLOR', () => {
-	it('is the fog colour the page uses behind the hero', () => {
-		const css = readFileSync(
-			new URL('../styles/global.css', import.meta.url),
-			'utf8',
-		);
-		const token = /--color-fog:\s*#([\da-f]{6});/i.exec(css)?.[1];
-		expect(token?.toLowerCase()).toBe(FOG_COLOR.getHexString());
+describe('the stars', () => {
+	it('are all above the horizon, and past the mountains', () => {
+		const stars = createStars(new Color('white'));
+		const position = stars.geometry.getAttribute('position');
+		const point = new Vector3();
+		for (let i = 0; i < position.count; i++) {
+			point.fromBufferAttribute(position, i);
+			expect(point.y).toBeGreaterThan(0);
+			expect(point.length()).toBeCloseTo(STAR_DISTANCE);
+		}
+		stars.geometry.dispose();
+		stars.material.dispose();
 	});
 });

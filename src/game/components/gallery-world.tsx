@@ -8,7 +8,7 @@ import type { Gallery } from '../gallery';
 import { createGalleryGround, createGalleryTrees } from '../gallery-scenery';
 
 import { StageContext } from './game-context';
-import { Lighting, Mountains, Sky } from './scenery';
+import { Surroundings } from './scenery';
 
 interface SceneryProps {
 	// How many easter eggs are in the row.
@@ -57,20 +57,20 @@ interface Props {
  * @returns The world.
  */
 export const GalleryWorld: FC<Props> = ({ gallery }) => {
-	// The sun lights whatever the camera is looking at.
+	// The light falls on whatever the camera is looking at.
 	const focus = (into: Vector3): Vector3 => into.copy(gallery.focus);
 	return (
 		<StageContext value={gallery}>
 			{createPortal(
 				<>
-					<Sky near={30} far={160} />
-					<Lighting
+					<Surroundings
+						near={30}
+						far={160}
 						reach={14}
 						depth={90}
 						focus={focus}
 						mirror={gallery.mirror}
 					/>
-					<Mountains />
 					<Scenery
 						count={gallery.count}
 						create={createGalleryGround}

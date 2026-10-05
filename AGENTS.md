@@ -48,8 +48,9 @@ The site and the game share one look: a trail map on a misty mountain. Keep new 
   - `paper` is the page, `surface` cards and panels, `ink` text, `muted` quieter text, and `line` borders and rules.
   - `accent` (the wood stove's amber) is the one highlight: eyebrows, links, focus rings, the board's best moments. Text on it is `on-accent`. Use it sparingly.
   - `danger` is only for errors. `pine` and the `ridge-*` colours are for the landscape (the footer's ridges, shadows).
-  - Over the hero's photo and 3D scene, which don't change with the mode: `snow` is light text, on a `scrim` gradient (`from-scrim/70`). `fog` is the scene's haze, shown until it's drawn. It's the same colour as `FOG_COLOR` in `src/game/world.ts`, and a test checks they match.
-  - The 3D world's own colours (grass, rock, bears, easter eggs) are scenery, set in `src/game/`, and aren't part of the palette.
+  - Over the hero's photo and 3D scene: `snow` is light text, on a `scrim` gradient (`from-scrim/70`). Both stay the same in either mode, because the photo doesn't change. `fog` is the scene's haze, shown until it's drawn.
+  - The 3D scene is day in light mode and night in dark mode. Its light and air come from the theme: the `--scene-*` colours (haze, sun or moon, and the light from the sky and the ground) and `accent` for my lantern by night. `src/game/atmosphere.ts` reads them and converts the OKLCH to three.js's colours, and sets how bright each light is. Change the colours in `global.css`, not in the game.
+  - The 3D world's own colours (grass, rock, bears, easter eggs) are scenery, set in `src/game/`, and aren't part of the palette. The night light changes how they look, so check them in both modes.
 - **Type:** Fraunces (`font-display`), semibold, for headings, with `tracking-tight` on the big ones. Inter (`font-sans`) for text. JetBrains Mono (`font-mono`) for numbers, scores and labels, including eyebrows: `font-mono text-xs tracking-[0.25em] text-accent uppercase`. The game's combo callouts can go bolder, as arcade text.
 - **Shape:** `rounded-xl` for cards on the page, `rounded-2xl` for cards over the game, `rounded-full` for buttons and pills, and `rounded-lg` for small chips.
 - **Focus:** everything you can press shows `focus-visible:ring-4` in `accent`: `ring-accent/50` on the page, and `ring-accent/70` over the busier game.
@@ -85,6 +86,7 @@ The site and the game share one look: a trail map on a misty mountain. Keep new 
   - Each step runs them as systems, in the order set by `SYSTEM_ORDER` in `systems.ts`. Keep new behaviour in its own class or system rather than adding to `Game`.
   - My rig (`character.ts`) and the bears' (`bear.ts`) are built with each joint's pieces merged into one mesh per material, to save draw calls. Animate the joints. To move a piece on its own, keep it out of the merge, as my eyes are for blinking.
 - **Worlds:** `src/game/components/` holds React Three Fiber components that add the sky, light, mountains, ground and trees to a scene.
+  - `Surroundings` (`scenery.tsx`) is the sky, haze, light and horizon, from the site's theme. It follows the site's mode as it changes, even mid-run, recolouring the lights in place rather than rebuilding them.
   - They join the scene's step with `useSystem`, so tests that fast-forward the game run them too.
   - Components free what they create. Game parts free theirs in `dispose()`.
   - The haze (`src/game/haze.ts`) changes three.js's fog for every material that uses it. It's measured by distance, not depth, and anything it has swallowed fades out, so the far mountains show through rather than a haze-coloured shape. Put anything new on the slope at least `APPEAR_AHEAD` ahead of the player (see `world.ts`), so it arrives already hidden.

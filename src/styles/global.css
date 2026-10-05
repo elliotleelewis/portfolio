@@ -31,11 +31,10 @@
 	--color-snow: oklch(95.4% 0.007 132.4);
 	--color-scrim: oklch(18.7% 0.012 167);
 	/*
-	 * The mountain's fog, behind the hero until the scene is drawn. The 3D
-	 * fog in src/game/world.ts is the same colour, and a test checks it. In
-	 * sRGB hex, as three.js reads it.
+	 * The mountain's haze, behind the hero until the scene is drawn. The 3D
+	 * scene reads it too, with the other --scene-* colours below.
 	 */
-	--color-fog: #dde3e5;
+	--color-fog: var(--scene-fog);
 
 	--font-display: var(--font-fraunces);
 	--font-sans: var(--font-inter);
@@ -57,6 +56,16 @@
 	--ridge-near: oklch(38% 0.051 148.3);
 	--on-accent: oklch(100% 0 0);
 	--danger: oklch(50.5% 0.213 27.5);
+
+	/*
+	 * The 3D scene's light and air (src/game/atmosphere.ts): the haze and
+	 * sky, the sun (the moon, by night), and light from the sky above and
+	 * the ground below. My lantern by night is the accent.
+	 */
+	--scene-fog: oklch(91.2% 0.007 219.6);
+	--scene-sun: oklch(96.8% 0.029 80.7);
+	--scene-sky: oklch(97.4% 0.004 236.5);
+	--scene-ground: oklch(46.2% 0.057 128.4);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -73,6 +82,11 @@
 		--ridge-near: oklch(17.8% 0.012 166.9);
 		--on-accent: oklch(18.9% 0.026 77.5);
 		--danger: oklch(70.4% 0.191 22.2);
+
+		--scene-fog: oklch(26% 0.025 220);
+		--scene-sun: oklch(86% 0.04 245);
+		--scene-sky: oklch(48% 0.05 240);
+		--scene-ground: oklch(20% 0.02 160);
 	}
 }
 

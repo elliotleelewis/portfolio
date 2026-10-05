@@ -1,20 +1,18 @@
 import {
 	BufferAttribute,
-	type BufferGeometry,
+	BufferGeometry,
 	Color,
 	ConeGeometry,
 	CylinderGeometry,
+	Float32BufferAttribute,
 	Group,
 	Mesh,
 	MeshLambertMaterial,
 	PlaneGeometry,
+	Points,
+	PointsMaterial,
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-
-// The haze the mountainside fades into, and the sky behind it. The page
-// shows the same colour (`fog` in src/styles/global.css) until the scene is
-// drawn, and a test checks they match.
-export const FOG_COLOR = new Color('#dde3e5');
 
 // Steepness of the mountainside, in radians.
 export const SLOPE_ANGLE = 0.24;
@@ -341,4 +339,48 @@ export const createMountains = (fogColor: Color): Group => {
 	geometry.computeVertexNormals();
 	group.add(new Mesh(geometry, material));
 	return group;
+};
+
+// How far off the stars are: past the farthest mountain, and inside what
+// the camera can see (1200).
+export const STAR_DISTANCE = 1000;
+
+/**
+ * Scatters stars across the sky, above the mountains, as one draw call.
+ * @param color - Their colour.
+ * @param count - How many there are.
+ * @returns The stars, centred on the origin.
+ */
+export const createStars = (
+	color: Color,
+	count = 600,
+): Points<BufferGeometry, PointsMaterial> => {
+	let seed = 11;
+	const random = (): number => {
+		seed = (seed * 16_807) % 2_147_483_647;
+		return (seed - 1) / 2_147_483_646;
+	};
+	const positions: number[] = [];
+	for (let i = 0; i < count; i++) {
+		const angle = random() * Math.PI * 2;
+		// Even across the dome, rather than bunched at the top.
+		const height = 0.05 + random() * 0.95;
+		const across = Math.sqrt(1 - height * height);
+		positions.push(
+			Math.cos(angle) * across * STAR_DISTANCE,
+			height * STAR_DISTANCE,
+			Math.sin(angle) * across * STAR_DISTANCE,
+		);
+	}
+	const geometry = new BufferGeometry();
+	geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+	return new Points(
+		geometry,
+		new PointsMaterial({
+			color,
+			size: 1.5,
+			sizeAttenuation: false,
+			fog: false,
+		}),
+	);
 };

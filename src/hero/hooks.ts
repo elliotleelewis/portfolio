@@ -96,7 +96,7 @@ export const usePreventTouchZoom = (
 		const onTouchEnd = (event: TouchEvent): void => {
 			const isOnButton =
 				event.target instanceof Element &&
-				event.target.closest('button, a, [role="spinbutton"]') !== null;
+				event.target.closest('button, a, input') !== null;
 			if (!isOnButton && controller.hasScene) {
 				event.preventDefault();
 			}

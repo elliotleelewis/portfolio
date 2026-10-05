@@ -91,7 +91,23 @@ export const fullBoard = (): Entry[] =>
  */
 export const waitForInitials = async (page: Page): Promise<void> => {
 	await expect(
-		page.locator('#hero-initials').getByRole('spinbutton').first(),
+		page.locator('#hero-initials').getByRole('textbox').first(),
 	).toBeFocused();
 	await expect(page.locator('#hero-initials-save')).toBeEnabled();
+};
+
+/**
+ * Checks the initials on the game-over card.
+ * @param page - The page, with the initials up.
+ * @param initials - What they should be, like "ELL".
+ */
+export const expectInitials = async (
+	page: Page,
+	initials: string,
+): Promise<void> => {
+	const slots = page.locator('#hero-initials').getByRole('textbox');
+	await expect(slots).toHaveCount(initials.length);
+	for (let index = 0; index < initials.length; index++) {
+		await expect(slots.nth(index)).toHaveValue(initials.charAt(index));
+	}
 };

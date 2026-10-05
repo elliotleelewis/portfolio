@@ -1,6 +1,11 @@
 import { expect, test } from './fixtures';
 import { advance, crash, startNewRun, startRun } from './hero';
-import { fullBoard, mockLeaderboard, waitForInitials } from './leaderboard';
+import {
+	expectInitials,
+	fullBoard,
+	mockLeaderboard,
+	waitForInitials,
+} from './leaderboard';
 
 test('puts a run on the leaderboard with three initials', async ({ page }) => {
 	// A run that went nowhere, which any run beats.
@@ -12,9 +17,8 @@ test('puts a run on the leaderboard with three initials', async ({ page }) => {
 	await crash(page);
 	await waitForInitials(page);
 
-	const initials = page.locator('#hero-initials');
 	await page.keyboard.type('ell');
-	await expect(initials.getByRole('spinbutton')).toHaveText(['E', 'L', 'L']);
+	await expectInitials(page, 'ELL');
 	await expect(page.locator('#hero-initials-save')).toBeEnabled();
 	await page.keyboard.press('Enter');
 
@@ -38,18 +42,35 @@ test('steps through the initials like an arcade cabinet', async ({ page }) => {
 	await crash(page);
 	await waitForInitials(page);
 
-	const slots = page.locator('#hero-initials').getByRole('spinbutton');
-	await expect(slots).toHaveText(['A', 'A', 'A']);
+	await expectInitials(page, 'AAA');
 	// Back from A wraps round to 9, the last character.
 	await page.keyboard.press('ArrowDown');
 	await page.keyboard.press('ArrowRight');
 	await page.keyboard.press('ArrowUp');
 	await page.keyboard.press('ArrowUp');
-	await expect(slots).toHaveText(['9', 'C', 'A']);
+	await expectInitials(page, '9CA');
 	// The arrows above and below each initial, for touch screens.
 	await page.locator('#hero-initials button[aria-hidden]').nth(4).click();
-	await expect(slots).toHaveText(['9', 'C', 'B']);
-	await expect(slots.nth(2)).toHaveAttribute('aria-valuetext', 'B');
+	await expectInitials(page, '9CB');
+});
+
+test('takes initials from a phone’s on-screen keyboard', async ({ page }) => {
+	await mockLeaderboard(page);
+	await page.goto('/');
+	await startRun(page);
+	await crash(page);
+	await waitForInitials(page);
+	// On-screen keyboards change the input without saying which key was
+	// pressed, and some type in lower case.
+	for (const typed of ['e', 'l', 'L']) {
+		await page.keyboard.insertText(typed);
+	}
+	await expectInitials(page, 'ELL');
+	// Deleting goes back to the one before, rather than leave a gap.
+	const slots = page.locator('#hero-initials').getByRole('textbox');
+	await slots.nth(2).fill('');
+	await expect(slots.nth(1)).toBeFocused();
+	await expectInitials(page, 'ELL');
 });
 
 test('remembers my initials for next time', async ({ page }) => {
@@ -68,9 +89,7 @@ test('remembers my initials for next time', async ({ page }) => {
 	await advance(page, 4);
 	await crash(page);
 	await waitForInitials(page);
-	await expect(
-		page.locator('#hero-initials').getByRole('spinbutton'),
-	).toHaveText(['E', 'L', 'L']);
+	await expectInitials(page, 'ELL');
 });
 
 test('will not save rude initials', async ({ page }) => {
@@ -117,9 +136,7 @@ test('lets me try again when saving fails', async ({ page }) => {
 	await expect(page.locator('#hero-initials-status')).toHaveText(
 		'Couldn’t save your score. Try again?',
 	);
-	await expect(
-		page.locator('#hero-initials').getByRole('spinbutton'),
-	).toHaveText(['E', 'L', 'L']);
+	await expectInitials(page, 'ELL');
 	await page.locator('#hero-initials-save').click();
 	await expect(page.locator('#hero-board-message')).toHaveText(
 		'#1 on the leaderboard 🏆',

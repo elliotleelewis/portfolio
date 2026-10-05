@@ -1,5 +1,6 @@
 import { useAtomValue } from 'jotai';
 import {
+	type ChangeEvent,
 	type FC,
 	type KeyboardEvent,
 	type RefObject,
@@ -11,7 +12,6 @@ import {
 import { TURNSTILE_ACTION } from '../leaderboard/board';
 import {
 	INITIALS_LENGTH,
-	INITIAL_CHARACTERS,
 	isBlocked,
 	readInitials,
 	stepCharacter,
@@ -22,7 +22,8 @@ import { BOARD_ENTRY_ATOM, INITIALS_ATOM } from './atoms';
 import { useController } from './context';
 import { loadTurnstile, siteKey } from './turnstile';
 
-const typeable = /^[\dA-Za-z]$/;
+// What can go in an initial, as typed (in either case).
+const typeable = /[\dA-Za-z]/g;
 
 const stepButton =
 	'flex h-6 w-12 cursor-pointer items-center justify-center rounded-md text-xs text-slate-500 hover:bg-slate-900/10 hover:text-slate-900';
@@ -110,7 +111,7 @@ export const InitialsEntry: FC = () => {
 		);
 	});
 	const [active, setActive] = useState(0);
-	const slots = useRef<(HTMLDivElement | null)[]>([]);
+	const slots = useRef<(HTMLInputElement | null)[]>([]);
 	const widget = useRef<HTMLDivElement>(null);
 	const { token, hasFailed } = useTurnstile(widget);
 	const isSaving = status === 'saving';
@@ -124,7 +125,9 @@ export const InitialsEntry: FC = () => {
 	const moveTo = (index: number): void => {
 		const next = Math.min(Math.max(index, 0), initials.length - 1);
 		setActive(next);
+		// Selected, so whatever's typed next replaces it.
 		slots.current[next]?.focus();
+		slots.current[next]?.select();
 	};
 
 	const setAt = (index: number, character: string): void => {
@@ -144,43 +147,55 @@ export const InitialsEntry: FC = () => {
 		}
 	};
 
-	const onKeyDown = (event: KeyboardEvent, index: number): void => {
-		const { key } = event;
-		if (typeable.test(key)) {
-			setAt(index, key.toUpperCase());
+	// Typing comes in as the input changing, rather than as key presses:
+	// phones' on-screen keyboards don't say which key was pressed.
+	const onChange = (
+		event: ChangeEvent<HTMLInputElement>,
+		index: number,
+	): void => {
+		const { nativeEvent, currentTarget } = event;
+		const typed =
+			nativeEvent instanceof InputEvent && nativeEvent.data !== null
+				? nativeEvent.data
+				: currentTarget.value;
+		const character = typed.match(typeable)?.at(-1);
+		if (character !== undefined) {
+			setAt(index, character.toUpperCase());
 			moveTo(index + 1);
-		} else
-			switch (key) {
-				case 'ArrowUp': {
-					step(index, 1);
+		} else if (currentTarget.value === '') {
+			// Deleted: back to the one before, like an arcade cabinet, which
+			// never leaves a gap.
+			moveTo(index - 1);
+		}
+	};
 
-					break;
-				}
-				case 'ArrowDown': {
-					step(index, -1);
-
-					break;
-				}
-				case 'ArrowLeft':
-				case 'Backspace': {
-					moveTo(index - 1);
-
-					break;
-				}
-				case 'ArrowRight': {
-					moveTo(index + 1);
-
-					break;
-				}
-				case 'Enter': {
-					save();
-
-					break;
-				}
-				default: {
-					return;
-				}
+	const onKeyDown = (event: KeyboardEvent, index: number): void => {
+		switch (event.key) {
+			case 'ArrowUp': {
+				step(index, 1);
+				break;
 			}
+			case 'ArrowDown': {
+				step(index, -1);
+				break;
+			}
+			case 'ArrowLeft':
+			case 'Backspace': {
+				moveTo(index - 1);
+				break;
+			}
+			case 'ArrowRight': {
+				moveTo(index + 1);
+				break;
+			}
+			case 'Enter': {
+				save();
+				break;
+			}
+			default: {
+				return;
+			}
+		}
 		event.preventDefault();
 	};
 
@@ -213,36 +228,43 @@ export const InitialsEntry: FC = () => {
 						>
 							▲
 						</button>
-						<div
-							ref={(element) => {
-								slots.current[index] = element;
-							}}
-							role="spinbutton"
-							tabIndex={0}
-							aria-label={m.hero_board_initial({
-								number: index + 1,
-							})}
-							aria-valuemin={0}
-							aria-valuemax={INITIAL_CHARACTERS.length - 1}
-							aria-valuenow={INITIAL_CHARACTERS.indexOf(
-								character,
-							)}
-							aria-valuetext={character}
-							data-active={index === active ? '' : undefined}
-							className="flex h-14 w-12 cursor-pointer items-center justify-center rounded-lg bg-slate-900 font-mono text-3xl text-amber-300 ring-amber-400 outline-none data-active:ring-4"
-							onFocus={() => {
-								setActive(index);
-							}}
-							onClick={() => {
-								moveTo(index);
-							}}
-							onKeyDown={(event) => {
-								onKeyDown(event, index);
-							}}
-						>
-							<span className="border-b-2 border-transparent in-data-active:border-amber-300 in-data-active:motion-safe:animate-pulse">
-								{character}
-							</span>
+						<div className="relative">
+							<input
+								ref={(element) => {
+									slots.current[index] = element;
+								}}
+								type="text"
+								value={character}
+								aria-label={m.hero_board_initial({
+									number: index + 1,
+								})}
+								autoCapitalize="characters"
+								autoComplete="off"
+								autoCorrect="off"
+								spellCheck={false}
+								enterKeyHint={
+									index === initials.length - 1
+										? 'done'
+										: 'next'
+								}
+								data-active={index === active ? '' : undefined}
+								className="peer h-14 w-12 cursor-pointer rounded-lg bg-slate-900 text-center font-mono text-3xl text-amber-300 caret-transparent ring-amber-400 outline-none selection:bg-transparent selection:text-amber-300 data-active:ring-4"
+								onFocus={(event) => {
+									setActive(index);
+									event.currentTarget.select();
+								}}
+								onChange={(event) => {
+									onChange(event, index);
+								}}
+								onKeyDown={(event) => {
+									onKeyDown(event, index);
+								}}
+							/>
+							{/* The cursor, blinking under the initial being picked. */}
+							<span
+								aria-hidden="true"
+								className="pointer-events-none absolute inset-x-3.5 bottom-2.5 h-0.5 bg-amber-300 opacity-0 peer-data-active:opacity-100 peer-data-active:motion-safe:animate-pulse"
+							/>
 						</div>
 						<button
 							type="button"

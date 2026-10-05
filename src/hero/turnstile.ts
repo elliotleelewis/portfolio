@@ -6,7 +6,7 @@ const testSiteKey = '1x00000000000000000000AA';
 const scriptUrl =
 	'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
 
-export interface TurnstileOptions {
+interface TurnstileOptions {
 	sitekey: string;
 	action: string;
 	appearance: 'always' | 'execute' | 'interaction-only';

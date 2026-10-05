@@ -1,5 +1,5 @@
 // Small nudges of the stick do nothing.
-export const STICK_DEAD_ZONE = 0.15;
+const deadZone = 0.15;
 
 export interface StickReading {
 	// Where the knob sits, in pixels from the centre of the ring.
@@ -27,7 +27,7 @@ export const readStick = (
 	const knobX = dx * scale;
 	const knobY = dy * scale;
 	const shape = (value: number): number =>
-		Math.abs(value) < STICK_DEAD_ZONE ? 0 : value;
+		Math.abs(value) < deadZone ? 0 : value;
 	return {
 		knobX,
 		knobY,

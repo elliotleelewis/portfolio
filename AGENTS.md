@@ -9,6 +9,7 @@ Run all of these. CI runs the same checks, and a red build blocks the merge.
 ```sh
 pnpm lint
 pnpm format
+pnpm knip
 pnpm test
 pnpm build
 pnpm e2e
@@ -16,6 +17,7 @@ pnpm e2e
 
 - `pnpm lint` fails on warnings as well as errors.
 - `pnpm lint:fix` and `pnpm format:fix` fix most style problems, including Tailwind class order.
+- `pnpm knip` fails on dependencies, files and exports nothing uses. Delete what it finds, or stop exporting something only its own file uses. If something really is used in a way it can't see, say so in `knip.ts`.
 - The end-to-end tests build the site and serve it themselves. If Playwright's own browser isn't installed, point `PLAYWRIGHT_CHROMIUM_EXECUTABLE` at a Chromium you have.
 - For changes to the game or the page's look, also look at the result in a browser. The tests can't tell you whether it looks right.
 
@@ -100,7 +102,7 @@ The site and the game share one look: a trail map on a misty mountain. Keep new 
   - The Function has the final say on everything: rude initials, runs that couldn't be real, and whether a run makes the board. It tells the page why it turned a score down (`blocked`, `implausible`). The page only checks a run against the board's `cutoff`, so it asks for initials only when a run can make it.
   - It must never go over Cloudflare's free limits. Keep the whole board in the one D1 row, so a request reads at most a few rows and a saved score writes exactly one. The day's writes are counted in that same write, capped at `DAILY_WRITE_LIMIT`. Don't add tables, indexes, KV, or writes for anything else (no logging, no per-visitor rate limits), and don't fetch the board more than once a page.
   - The leaderboard's code loads with the board, when the game first loads, and Turnstile's script only when there's a score to save, so neither is in the page's first load.
-  - What comes into the Function (requests, D1, Turnstile) could hold anything. Its shapes are [Zod](https://zod.dev) schemas (`ENTRY`, `RUN` and `INITIALS` in `functions/_lib/`, and the request's in `app.ts`, checked with `sValidator`). Import `zod/mini`, not `zod`. Read the stored board with `readBoard`, which keeps the good entries if some are bad.
+  - What comes into the Function (requests, D1, Turnstile) could hold anything. Its shapes are [Zod](https://zod.dev) schemas (in `functions/_lib/board.ts` and `initials.ts`, and the request's in `app.ts`, checked with `sValidator`). Import `zod/mini`, not `zod`. Read the stored board with `readBoard`, which keeps the good entries if some are bad.
   - Rude initials come from [obscenity](https://github.com/jo3-l/obscenity)'s word list, plus the optional `blockedInitials` secret on the Pages project. Don't put a list of rude words in the repo: tests use a harmless stand-in for the secret.
   - Queries go through [Drizzle](https://orm.drizzle.team), with the table defined in `functions/_lib/schema.ts`. Don't write migrations by hand: change the schema and run `pnpm db:generate`, which writes them to `migrations/`. CI checks they match. Migrations only ever add: the live code runs against them until the deploy finishes.
   - Unit tests run the server on SQLite in memory (`node:sqlite`), through Drizzle's proxy driver, with the same migrations applied.

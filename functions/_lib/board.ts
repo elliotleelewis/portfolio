@@ -46,17 +46,17 @@ const isWithinReach = (run: Run): boolean => {
 };
 
 // One run on the board.
-export const ENTRY = z.object({
+const entrySchema = z.object({
 	initials: INITIALS,
 	trees: count(maxTrees),
 	metres: count(maxMetres),
 });
-export type Entry = z.infer<typeof ENTRY>;
+export type Entry = z.infer<typeof entrySchema>;
 
 // A finished run, as the game reports it, that could have happened in real
 // play. Anyone can still send any score they like, so this only keeps the
 // board free of the obviously impossible.
-export const RUN = z
+const runSchema = z
 	.object({
 		trees: count(maxTrees),
 		metres: count(maxMetres),
@@ -64,14 +64,15 @@ export const RUN = z
 		seconds: z.number().check(z.minimum(0)),
 	})
 	.check(z.refine(isWithinReach));
-export type Run = z.infer<typeof RUN>;
+export type Run = z.infer<typeof runSchema>;
 
 /**
  * Whether a run could have happened in real play.
  * @param run - The run.
  * @returns True if it could be real.
  */
-export const isPlausible = (run: Run): boolean => RUN.safeParse(run).success;
+export const isPlausible = (run: Run): boolean =>
+	runSchema.safeParse(run).success;
 
 // A run's score, without whose it is.
 export type Score = Omit<Entry, 'initials'>;
@@ -146,7 +147,7 @@ export const readBoard = (value: unknown): Entry[] => {
 	}
 	const board: Entry[] = [];
 	for (const item of value) {
-		const entry = ENTRY.safeParse(item);
+		const entry = entrySchema.safeParse(item);
 		if (entry.success) {
 			board.push(entry.data);
 		}

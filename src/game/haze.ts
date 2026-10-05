@@ -10,7 +10,7 @@ const distance = 'vFogDepth = length( mvPosition.xyz );';
 const tint = 'gl_FragColor.rgb = mix( gl_FragColor.rgb, fogColor, fogFactor );';
 
 // How hazed something has to be before it starts fading out altogether.
-export const HAZE_FADE_FROM = 0.97;
+const hazeFadeFrom = 0.97;
 
 // As well as the tint, fade out (with a fine, fixed stipple) whatever the
 // haze has all but swallowed. The far mountains ignore the haze, so they
@@ -18,7 +18,7 @@ export const HAZE_FADE_FROM = 0.97;
 // end of the ground, or a tree just planted, would otherwise stand out
 // against the mountains and pop in.
 const fade = `${tint}
-	float hazeFade = smoothstep( ${HAZE_FADE_FROM.toFixed(2)}, 1.0, fogFactor );
+	float hazeFade = smoothstep( ${hazeFadeFrom.toFixed(2)}, 1.0, fogFactor );
 	if ( hazeFade > 0.0 && fract( 52.9829189 * fract( dot( gl_FragCoord.xy, vec2( 0.06711056, 0.00583715 ) ) ) ) < hazeFade ) discard;`;
 
 /**

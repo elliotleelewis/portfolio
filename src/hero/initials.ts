@@ -4,7 +4,7 @@
 
 // What each of the three initials can be, in the order ▲ and ▼ step
 // through them.
-export const INITIAL_CHARACTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 export const INITIALS_LENGTH = 3;
 
 const initialsPattern = /^[A-Z0-9]{3}$/;
@@ -16,9 +16,9 @@ const initialsPattern = /^[A-Z0-9]{3}$/;
  * @returns The new initial.
  */
 export const stepCharacter = (character: string, delta: number): string => {
-	const count = INITIAL_CHARACTERS.length;
-	const index = Math.max(INITIAL_CHARACTERS.indexOf(character), 0);
-	return INITIAL_CHARACTERS.charAt((index + (delta % count) + count) % count);
+	const count = characters.length;
+	const index = Math.max(characters.indexOf(character), 0);
+	return characters.charAt((index + (delta % count) + count) % count);
 };
 
 /**

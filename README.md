@@ -36,6 +36,7 @@ pnpm start
 | `pnpm preview` | Serves the built site.                                                             |
 | `pnpm lint`    | Lints everything with ESLint. `pnpm lint:fix` fixes what it can.                   |
 | `pnpm format`  | Checks formatting with Prettier. `pnpm format:fix` fixes it.                       |
+| `pnpm knip`    | Checks with Knip that every dependency, file and export is used.                   |
 | `pnpm test`    | Runs the unit tests.                                                               |
 | `pnpm e2e`     | Builds the site and runs the end-to-end tests on desktop and phone-sized Chromium. |
 

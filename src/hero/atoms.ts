@@ -5,6 +5,7 @@ import type { Gallery } from '../game/gallery';
 import type { Game } from '../game/game';
 
 import type { EasterEggHits } from './easter-egg-hits';
+import type { Board } from './leaderboard';
 
 export type Phase = 'idle' | 'loading' | 'playing';
 export type SceneKind = 'game' | 'gallery';
@@ -23,6 +24,34 @@ export interface RunResult {
 	metres: number;
 	// The best score before this run.
 	best: number;
+}
+
+// Where the last run stands with the leaderboard.
+export type EntryStatus =
+	// Not on the board (or there's no board to be on).
+	| 'none'
+	// It made the board: waiting for my initials.
+	| 'entering'
+	| 'saving'
+	| 'saved'
+	// Others' scores pushed it off before it was saved.
+	| 'missed'
+	| 'rejected'
+	// The board's taken all the scores it will today.
+	| 'closed'
+	// Saving it went wrong, so I can try again.
+	| 'failed'
+	// The initials would put something rude on the board: try others.
+	| 'blocked'
+	// It went further than real time allows, so it can't go on the board.
+	| 'fastForwarded';
+
+export interface BoardEntry {
+	status: EntryStatus;
+	// Its place on the board, once saved.
+	place?: number;
+	// Goes up with each try at saving, for a fresh check for a person.
+	attempt: number;
 }
 
 export interface GalleryView {
@@ -76,6 +105,23 @@ export const BEST_ATOM = atomWithStorage('hero-best-trees', 0, undefined, {
 export const EASTER_EGG_HITS_ATOM = atomWithStorage<EasterEggHits>(
 	'hero-easter-egg-hits',
 	{},
+	undefined,
+	{ getOnInit: true },
+);
+
+// The shared leaderboard, best first, and the score to beat. Undefined until
+// it's loaded, and if it can't be reached.
+export const BOARD_ATOM = atom<Board | undefined>(undefined);
+export const BOARD_ENTRY_ATOM = atom<BoardEntry>({
+	status: 'none',
+	attempt: 0,
+});
+
+// The initials I last put on the leaderboard, to start from next time.
+// Storage could hold anything, so read it with `readInitials`.
+export const INITIALS_ATOM = atomWithStorage<unknown>(
+	'hero-initials',
+	'AAA',
 	undefined,
 	{ getOnInit: true },
 );

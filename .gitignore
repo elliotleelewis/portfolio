@@ -28,3 +28,6 @@ pnpm-debug.log*
 # Playwright
 test-results/
 playwright-report/
+
+# Wrangler's local state, like local D1 databases
+.wrangler/

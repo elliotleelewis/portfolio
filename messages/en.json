@@ -39,6 +39,54 @@
   "hero_best_none": "Flatten some trees before they get you!",
   "hero_roll_again": "Roll again",
   "hero_see_easter_eggs": "See the easter eggs",
+  "hero_board_title": "Leaderboard",
+  "hero_board_place": "Place",
+  "hero_board_initials_column": "Initials",
+  "hero_board_trees_column": "Trees",
+  "hero_board_distance_column": "Distance",
+  "hero_board_trees": [
+    {
+      "declarations": ["input trees", "local treesFormatted = trees: number"],
+      "selectors": [],
+      "match": {
+        "": "{treesFormatted} 🌲"
+      }
+    }
+  ],
+  "hero_board_metres": [
+    {
+      "declarations": [
+        "input metres",
+        "local metresFormatted = metres: number"
+      ],
+      "selectors": [],
+      "match": {
+        "": "{metresFormatted}m"
+      }
+    }
+  ],
+  "hero_board_empty": "No scores yet. Be the first!",
+  "hero_board_high_score": "High score! Enter your initials",
+  "hero_board_initials": "Your initials",
+  "hero_board_initial": "Initial {number} of 3",
+  "hero_board_initials_help": "↑ ↓ to change a letter · ← → to move, or type them",
+  "hero_board_save": "Save",
+  "hero_board_saving": "Saving…",
+  "hero_board_blocked": "Try some other initials",
+  "hero_board_saved": [
+    {
+      "declarations": ["input place", "local placeFormatted = place: number"],
+      "selectors": [],
+      "match": {
+        "": "You’re number {placeFormatted} on the leaderboard! 🏆"
+      }
+    }
+  ],
+  "hero_board_missed": "So close! Others got there first.",
+  "hero_board_rejected": "That score couldn’t be saved.",
+  "hero_board_closed": "The leaderboard’s had a busy day. Try again tomorrow!",
+  "hero_board_failed": "Couldn’t save your score. Try again?",
+  "hero_board_fast_forward": "Fast-forwarded runs don’t go on the leaderboard.",
   "start_title": "The quick way down",
   "start_intro": "Cartwheel down the mountain, flatten every tree you can, and don’t get caught by a bear 🐻",
   "start_keys": "← → to steer · ↑ ↓ for speed",
@@ -82,10 +130,12 @@
   "cookies_kept_for_value": "As long as the check lasts, 30 minutes by default",
   "cookies_cloudflare_more": "Read more in Cloudflare’s own list of its cookies",
   "cookies_game_heading": "What the game remembers",
-  "cookies_game_body": "The game keeps your best score and the easter eggs you’ve found in your browser’s local storage, so they’re still there next time you play. They never leave your device. You can clear them here, or by clearing your browser’s data for this site.",
+  "cookies_game_body": "The game keeps your best score, the easter eggs you’ve found and the initials you last put on the leaderboard in your browser’s local storage, so they’re still there next time you play. They never leave your device. You can clear them here, or by clearing your browser’s data for this site.",
   "cookies_game_clear": "Clear what the game remembers",
   "cookies_game_cleared": "Cleared. The game will start afresh.",
   "cookies_game_empty": "There’s nothing to clear.",
+  "cookies_board_heading": "The leaderboard",
+  "cookies_board_body": "If a run makes the game’s leaderboard and you save it, Cloudflare stores your three initials, trees and distance for everyone to see. Nothing else about you is kept. Saving a score first asks Cloudflare Turnstile to check you’re a person, not a bot. It’s only loaded when you save a score.",
   "cookies_analytics_heading": "Analytics",
   "cookies_analytics_body": "I count visits with Cloudflare Web Analytics, which sets no cookies, stores nothing on your device and doesn’t fingerprint you.",
   "back_to_trailhead": "Back to the trailhead",

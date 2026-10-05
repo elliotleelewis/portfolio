@@ -7,11 +7,15 @@ import { m } from '../paraglide/messages';
 
 import {
 	BEST_ATOM,
+	BOARD_ATOM,
+	BOARD_ENTRY_ATOM,
 	CALLOUT_ATOM,
 	EASTER_EGG_HITS_ATOM,
+	type EntryStatus,
 	GALLERY_ATOM,
 	GAME_OVER_ATOM,
 	HINT_ATOM,
+	INITIALS_ATOM,
 	METRES_ATOM,
 	MODE_ATOM,
 	PHASE_ATOM,
@@ -24,6 +28,9 @@ import {
 } from './atoms';
 import { readingDirection } from './direction';
 import { addHit, readHits } from './easter-egg-hits';
+import type { Score } from './leaderboard';
+
+type LeaderboardModule = typeof import('./leaderboard');
 
 type Store = ReturnType<typeof createStore>;
 
@@ -54,6 +61,13 @@ export class HeroController {
 	private _game: Game | undefined;
 	private _gallery: Gallery | undefined;
 	private _calloutTimeout: ReturnType<typeof setTimeout> | undefined;
+	// When the run in play set off, in real time.
+	private _setOffAt: number | undefined;
+	// The last finished run, to save to the leaderboard.
+	private _lastRun: Omit<Score, 'initials'> | undefined;
+	// The leaderboard's code, loaded with the board.
+	private _leaderboard: LeaderboardModule | undefined;
+	private _boardLoad: Promise<void> | undefined;
 
 	public constructor(store: Store, options: HeroOptions = {}) {
 		this._store = store;
@@ -111,12 +125,35 @@ export class HeroController {
 		);
 		this.show({ kind: 'game', scene: next });
 		this._game = next;
+		this._setOffAt = isHeld ? undefined : performance.now();
+		this.loadBoard();
 		this._gallery = undefined;
 		this.expose();
 		store.set(SCENE_ATOM, 'game');
 		store.set(MODE_ATOM, 'game');
 		store.set(WAITING_ATOM, isHeld);
 		this.resetHud();
+	}
+
+	/**
+	 * Fetches the leaderboard, once a page (or again, if it couldn't be
+	 * reached), so the game-over card knows whether a run makes it. It
+	 * isn't fetched again after each run, to keep well inside the free
+	 * plan's requests: saving a score answers with the board as it is now.
+	 */
+	private loadBoard(): void {
+		this._boardLoad ??= (async () => {
+			try {
+				const leaderboard = await import('./leaderboard');
+				this._store.set(BOARD_ATOM, await leaderboard.fetchBoard());
+				this._leaderboard = leaderboard;
+				// Ready for when a run makes the board.
+				void import('./initials-entry');
+			} catch {
+				// The game plays on without a board. Try again next run.
+				this._boardLoad = undefined;
+			}
+		})();
 	}
 
 	/**
@@ -158,11 +195,20 @@ export class HeroController {
 
 	private finish(trees: number, metres: number): void {
 		const best = this._store.get(BEST_ATOM);
-		this._store.set(RESULT_ATOM, {
+		const run = {
 			trees,
 			metres: Math.floor(metres),
-			best,
-		});
+			seconds:
+				this._setOffAt === undefined
+					? 0
+					: (performance.now() - this._setOffAt) / 1000,
+		};
+		this._lastRun = run;
+		this._store.set(RESULT_ATOM, { trees, metres: run.metres, best });
+		this._store.set(BOARD_ENTRY_ATOM, ({ attempt }) => ({
+			status: this.boardStatusFor(run),
+			attempt,
+		}));
 		this._store.set(HINT_ATOM, false);
 		this._store.set(GAME_OVER_ATOM, true);
 		// Last, so the card is up even if storage fails.
@@ -171,7 +217,26 @@ export class HeroController {
 		}
 	}
 
+	/**
+	 * Whether a run makes the leaderboard.
+	 * @param run - The run.
+	 * @returns 'entering' if it does, to ask for my initials.
+	 */
+	private boardStatusFor(run: Omit<Score, 'initials'>): EntryStatus {
+		const board = this._store.get(BOARD_ATOM);
+		const leaderboard = this._leaderboard;
+		if (!board || leaderboard?.placeFor(board, run) === undefined) {
+			return 'none';
+		}
+		return leaderboard.isPlausible(run) ? 'entering' : 'fastForwarded';
+	}
+
 	private resetHud(): void {
+		this._lastRun = undefined;
+		this._store.set(BOARD_ENTRY_ATOM, ({ attempt }) => ({
+			status: 'none',
+			attempt,
+		}));
 		this._store.set(GAME_OVER_ATOM, false);
 		this._store.set(SCORE_ATOM, 0);
 		this._store.set(METRES_ATOM, 0);
@@ -275,6 +340,7 @@ export class HeroController {
 			return;
 		}
 		this._game.release();
+		this._setOffAt = performance.now();
 		this._store.set(WAITING_ATOM, false);
 	}
 
@@ -363,6 +429,40 @@ export class HeroController {
 			this._store.set(STAGE_SCENE_ATOM, undefined);
 			this.disposeRetired();
 		}, sceneFadeOut);
+	}
+
+	/**
+	 * Saves the last run to the leaderboard.
+	 * @param initials - The initials to put by it.
+	 * @param token - Turnstile's token, to show a person is saving it.
+	 */
+	public async saveScore(initials: string, token: string): Promise<void> {
+		const run = this._lastRun;
+		const leaderboard = this._leaderboard;
+		const { status, attempt } = this._store.get(BOARD_ENTRY_ATOM);
+		if (
+			!run ||
+			!leaderboard ||
+			(status !== 'entering' && status !== 'failed')
+		) {
+			return;
+		}
+		this._store.set(INITIALS_ATOM, initials);
+		this._store.set(BOARD_ENTRY_ATOM, { status: 'saving', attempt });
+		const result = await leaderboard.saveScore({ ...run, initials }, token);
+		// Moved on to another run while it saved.
+		if (this._lastRun !== run) {
+			return;
+		}
+		if (result.kind === 'saved' || result.kind === 'missed') {
+			this._store.set(BOARD_ATOM, result.entries);
+		}
+		this._store.set(BOARD_ENTRY_ATOM, {
+			status: result.kind,
+			place: result.kind === 'saved' ? result.place : undefined,
+			// A fresh check for a person, for another try.
+			attempt: attempt + 1,
+		});
 	}
 
 	public nextEgg(): void {

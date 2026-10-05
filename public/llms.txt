@@ -2,7 +2,7 @@
 
 > Elliot Lewis is a Staff Software Engineer at StubHub, based in Los Angeles, California. He's a front-end engineer with nearly a decade of building enterprise and consumer web apps, from factory-floor systems at Jabil to Lens creator tools at Snap.
 
-He likes leading projects and teams, launching products people actually use, and leaving codebases easier to work in than he found them. His site is a single page styled like a hiking trail. Its hero photo doubles as a 3D game: press play, and a low-poly version of him cartwheels down a mountain, flattening trees and dodging bears.
+He likes leading projects and teams, launching products people actually use, and leaving codebases easier to work in than he found them. His site is a single page styled like a hiking trail. Its hero photo doubles as a 3D game: press play, and a low-poly version of him cartwheels down a mountain, flattening trees and dodging bears. The best runs go on a shared leaderboard, under three initials like on an arcade cabinet.
 
 Work history:
 
@@ -18,7 +18,7 @@ Education: Computer Science BSc (Hons), First Class Honours, Manchester Metropol
 ## Site
 
 - [Home page](https://elliotleelewis.com/): Work history, skills and education, with the game in the hero.
-- [The game](https://elliotleelewis.com/game): "The quick way down", the game on its own, filling the window.
+- [The game](https://elliotleelewis.com/game): "The quick way down", the game on its own, filling the window, with its leaderboard.
 - [Cookies](https://elliotleelewis.com/cookies): The one cookie the site's host may set, and what the game remembers.
 
 ## Elsewhere

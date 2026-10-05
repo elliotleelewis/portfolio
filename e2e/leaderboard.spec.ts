@@ -1,0 +1,164 @@
+import { expect, test } from './fixtures';
+import { advance, crash, startNewRun, startRun } from './hero';
+import { fullBoard, mockLeaderboard, waitForInitials } from './leaderboard';
+
+test('puts a run on the leaderboard with three initials', async ({ page }) => {
+	// A run that went nowhere, which any run beats.
+	const saved = await mockLeaderboard(page, {
+		entries: [{ initials: 'LOW', trees: 0, metres: 0 }],
+	});
+	await page.goto('/');
+	await startRun(page);
+	await crash(page);
+	await waitForInitials(page);
+
+	const initials = page.locator('#hero-initials');
+	await page.keyboard.type('ell');
+	await expect(initials.getByRole('spinbutton')).toHaveText(['E', 'L', 'L']);
+	await expect(page.locator('#hero-initials-save')).toBeEnabled();
+	await page.keyboard.press('Enter');
+
+	await expect(page.locator('#hero-board-message')).toHaveText(
+		'You’re number 1 on the leaderboard! 🏆',
+	);
+	await expect(page.locator('#hero-board tbody tr')).toHaveCount(2);
+	const mine = page.locator('#hero-board tr[data-mine]');
+	await expect(mine).toContainText('ELL');
+	expect(saved).toHaveLength(1);
+	expect(saved[0]).toMatchObject({ initials: 'ELL', token: 'test-token' });
+	// Real time, rather than the game's.
+	expect(saved[0]?.seconds).toBeGreaterThan(0);
+	await expect(page.locator('#hero-again')).toBeFocused();
+});
+
+test('steps through the initials like an arcade cabinet', async ({ page }) => {
+	await mockLeaderboard(page);
+	await page.goto('/');
+	await startRun(page);
+	await crash(page);
+	await waitForInitials(page);
+
+	const slots = page.locator('#hero-initials').getByRole('spinbutton');
+	await expect(slots).toHaveText(['A', 'A', 'A']);
+	// Back from A wraps round to 9, the last character.
+	await page.keyboard.press('ArrowDown');
+	await page.keyboard.press('ArrowRight');
+	await page.keyboard.press('ArrowUp');
+	await page.keyboard.press('ArrowUp');
+	await expect(slots).toHaveText(['9', 'C', 'A']);
+	// The arrows above and below each initial, for touch screens.
+	await page.locator('#hero-initials button[aria-hidden]').nth(4).click();
+	await expect(slots).toHaveText(['9', 'C', 'B']);
+	await expect(slots.nth(2)).toHaveAttribute('aria-valuetext', 'B');
+});
+
+test('remembers my initials for next time', async ({ page }) => {
+	await mockLeaderboard(page);
+	await page.goto('/');
+	await startRun(page);
+	await crash(page);
+	await waitForInitials(page);
+	await page.keyboard.type('ell');
+	await page.keyboard.press('Enter');
+	await expect(page.locator('#hero-board-message')).not.toBeEmpty();
+
+	await startNewRun(page, async () => {
+		await page.locator('#hero-again').click();
+	});
+	await advance(page, 4);
+	await crash(page);
+	await waitForInitials(page);
+	await expect(
+		page.locator('#hero-initials').getByRole('spinbutton'),
+	).toHaveText(['E', 'L', 'L']);
+});
+
+test('will not save rude initials', async ({ page }) => {
+	await mockLeaderboard(page);
+	await page.goto('/');
+	await startRun(page);
+	await crash(page);
+	await waitForInitials(page);
+	await page.keyboard.type('a55');
+	await expect(page.locator('#hero-initials-status')).toHaveText(
+		'Try some other initials',
+	);
+	await expect(page.locator('#hero-initials-save')).toBeDisabled();
+});
+
+test('lets me try again when saving fails', async ({ page }) => {
+	let tries = 0;
+	const saved = await mockLeaderboard(page, {
+		onSave: (sent) => {
+			tries++;
+			return tries === 1
+				? { status: 500, body: { error: 'busy' } }
+				: {
+						status: 200,
+						body: {
+							entries: [
+								{
+									initials: sent.initials,
+									trees: 1,
+									metres: 1,
+								},
+							],
+							place: 1,
+						},
+					};
+		},
+	});
+	await page.goto('/');
+	await startRun(page);
+	await crash(page);
+	await waitForInitials(page);
+	await page.keyboard.type('ell');
+	await page.keyboard.press('Enter');
+	await expect(page.locator('#hero-initials-status')).toHaveText(
+		'Couldn’t save your score. Try again?',
+	);
+	await expect(
+		page.locator('#hero-initials').getByRole('spinbutton'),
+	).toHaveText(['E', 'L', 'L']);
+	await page.locator('#hero-initials-save').click();
+	await expect(page.locator('#hero-board-message')).toHaveText(
+		'You’re number 1 on the leaderboard! 🏆',
+	);
+	expect(saved).toHaveLength(2);
+});
+
+test('shows the board when a run misses out', async ({ page }) => {
+	const saved = await mockLeaderboard(page, { entries: fullBoard() });
+	await page.goto('/');
+	await startRun(page);
+	await crash(page);
+	await expect(page.locator('#hero-board tbody tr')).toHaveCount(10);
+	await expect(page.locator('#hero-initials')).toHaveCount(0);
+	await expect(page.locator('#hero-again')).toBeFocused();
+	expect(saved).toEqual([]);
+});
+
+test('keeps fast-forwarded runs off the board', async ({ page }) => {
+	await mockLeaderboard(page);
+	await page.goto('/');
+	await startRun(page);
+	// Much further than real time allows.
+	await advance(page, 200);
+	await crash(page);
+	await expect(page.locator('#hero-board-message')).toHaveText(
+		'Fast-forwarded runs don’t go on the leaderboard.',
+	);
+	await expect(page.locator('#hero-initials')).toHaveCount(0);
+});
+
+test('plays on without a board when it cannot be reached', async ({ page }) => {
+	await page.route('**/api/scores', (route) =>
+		route.fulfill({ status: 503, json: { error: 'unavailable' } }),
+	);
+	await page.goto('/');
+	await startRun(page);
+	await crash(page);
+	await expect(page.locator('#hero-over')).toContainText('Caught by a bear!');
+	await expect(page.locator('#hero-board')).toHaveCount(0);
+	await expect(page.locator('#hero-initials')).toHaveCount(0);
+});

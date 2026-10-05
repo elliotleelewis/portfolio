@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test';
 
 import { expect, test } from './fixtures';
 import { crash, startFromStartScreen, startRun } from './hero';
+import { mockLeaderboard } from './leaderboard';
 
 /**
  * Checks the page as it is now against WCAG 2.2 AA, and best practice.
@@ -84,6 +85,20 @@ for (const colorScheme of ['light', 'dark'] as const) {
 			});
 			await page.locator('#hero-start-gallery').click();
 			await expect(page.locator('#hero-gallery-caption')).not.toBeEmpty();
+			await expectNoViolations(page);
+		});
+
+		test('the leaderboard is accessible', async ({ page }) => {
+			await mockLeaderboard(page);
+			await page.goto('/');
+			await startRun(page);
+			await crash(page);
+			await expect(page.locator('#hero-initials-save')).toBeEnabled();
+			await expectNoViolations(page);
+			await page.locator('#hero-initials-save').click();
+			await expect(
+				page.locator('#hero-board tr[data-mine]'),
+			).toBeVisible();
 			await expectNoViolations(page);
 		});
 

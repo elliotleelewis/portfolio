@@ -74,8 +74,8 @@ export const useKeyboardControls = (): void => {
 };
 
 /**
- * Stops taps and pinches on a scene zooming the page. Buttons and links
- * still get their taps.
+ * Stops taps and pinches on a scene zooming the page. Buttons, links and
+ * the leaderboard's initials still get their taps.
  * @param element - The element to guard.
  */
 export const usePreventTouchZoom = (
@@ -96,7 +96,7 @@ export const usePreventTouchZoom = (
 		const onTouchEnd = (event: TouchEvent): void => {
 			const isOnButton =
 				event.target instanceof Element &&
-				event.target.closest('button, a') !== null;
+				event.target.closest('button, a, [role="spinbutton"]') !== null;
 			if (!isOnButton && controller.hasScene) {
 				event.preventDefault();
 			}

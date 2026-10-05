@@ -18,7 +18,7 @@ import {
 
 import { GameContext, StageContext, useGame, useSystem } from './game-context';
 import { OnSlope } from './on-slope';
-import { Lighting, Mountains, Sky } from './scenery';
+import { Surroundings } from './scenery';
 import { Trees } from './trees';
 
 interface GroundPieces {
@@ -101,7 +101,7 @@ interface Props {
  * @returns The world.
  */
 export const GameWorld: FC<Props> = ({ game }) => {
-	// The sun follows me down the mountain.
+	// The sun and my lantern follow me down the mountain.
 	const focus = (into: Vector3): Vector3 =>
 		game.slope.localToWorld(into.copy(game.player));
 	return (
@@ -109,14 +109,14 @@ export const GameWorld: FC<Props> = ({ game }) => {
 			<GameContext value={game}>
 				{createPortal(
 					<>
-						<Sky near={FOG_NEAR} far={FOG_FAR} />
-						<Lighting
+						<Surroundings
+							near={FOG_NEAR}
+							far={FOG_FAR}
 							reach={30}
 							depth={120}
 							focus={focus}
 							mirror={game.mirror}
 						/>
-						<Mountains />
 						<Ground />
 						<Trees />
 						<OnSlope object={game.character} />

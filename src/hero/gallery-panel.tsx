@@ -4,6 +4,8 @@ import { type FC, useEffect, useRef } from 'react';
 import { m } from '../paraglide/messages';
 
 import { GALLERY_ATOM, SCENE_ATOM } from './atoms';
+import { Button } from './button';
+import { Card } from './card';
 import { useController } from './context';
 import { hitsMessage } from './easter-egg-hits';
 
@@ -34,46 +36,43 @@ export const GalleryPanel: FC = () => {
 			aria-roledescription={m.gallery_carousel()}
 		>
 			<div className="flex w-full max-w-md items-center gap-2">
-				<button
+				<Button
 					id="hero-gallery-prev"
-					type="button"
 					aria-label={m.gallery_previous()}
-					className="size-11 shrink-0 cursor-pointer rounded-full bg-white/85 text-xl font-bold text-slate-900 shadow-lg backdrop-blur-md hover:bg-white focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none"
+					variant="glass"
+					className="size-11 shrink-0 rounded-full text-xl font-bold shadow-lg"
 					onClick={() => {
 						controller.previousEgg();
 					}}
 				>
 					{/* Pointing back along the row, whichever way the page reads. */}
 					<span className="inline-block rtl:-scale-x-100">←</span>
-				</button>
-				<div
-					className="flex-1 rounded-2xl bg-white/85 px-4 py-3 text-center text-slate-900 shadow-xl backdrop-blur-md"
+				</Button>
+				<Card
+					className="flex-1 px-4 py-3 text-center"
 					aria-live="polite"
 				>
 					<p id="hero-gallery-caption" className="text-lg font-bold">
 						{caption}
 					</p>
-					<p
-						id="hero-gallery-hint"
-						className="text-sm text-slate-600"
-					>
+					<p id="hero-gallery-hint" className="text-sm text-muted">
 						{smashes > 0
 							? hitsMessage(smashes)
 							: m.gallery_find_out()}
 					</p>
-				</div>
-				<button
+				</Card>
+				<Button
 					id="hero-gallery-next"
 					ref={next}
-					type="button"
 					aria-label={m.gallery_next()}
-					className="size-11 shrink-0 cursor-pointer rounded-full bg-white/85 text-xl font-bold text-slate-900 shadow-lg backdrop-blur-md hover:bg-white focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none"
+					variant="glass"
+					className="size-11 shrink-0 rounded-full text-xl font-bold shadow-lg"
 					onClick={() => {
 						controller.nextEgg();
 					}}
 				>
 					<span className="inline-block rtl:-scale-x-100">→</span>
-				</button>
+				</Button>
 			</div>
 			<div id="hero-gallery-dots" className="flex">
 				{Array.from({ length: count }, (_value, i) => (
@@ -93,20 +92,20 @@ export const GalleryPanel: FC = () => {
 							controller.selectEgg(i);
 						}}
 					>
-						<span className="size-2.5 rounded-full bg-white/60 shadow-sm transition-all group-data-active:w-6 group-data-active:bg-white" />
+						<span className="size-2.5 rounded-full bg-surface/60 shadow-sm transition-all group-data-active:w-6 group-data-active:bg-surface" />
 					</button>
 				))}
 			</div>
-			<button
+			<Button
 				id="hero-gallery-again"
-				type="button"
-				className="cursor-pointer rounded-full bg-slate-900 px-5 py-2.5 font-semibold text-white shadow-lg hover:bg-slate-700 focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none"
+				variant="primary"
+				className="rounded-full px-5 py-2.5 shadow-lg"
 				onClick={() => {
 					controller.rollAgain();
 				}}
 			>
 				{m.hero_roll_again()}
-			</button>
+			</Button>
 		</div>
 	);
 };

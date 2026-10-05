@@ -53,11 +53,13 @@ const previewUrl = new URL(preview.src, url).href;
 			name="theme-color"
 			content="#eef1ec"
 			media="(prefers-color-scheme: light)"
+			data-scheme="light"
 		/>
 		<meta
 			name="theme-color"
 			content="#0e1512"
 			media="(prefers-color-scheme: dark)"
+			data-scheme="dark"
 		/>
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -90,6 +92,23 @@ const previewUrl = new URL(preview.src, url).href;
 		<title>{title}</title>
 		<script is:inline>
 			document.documentElement.classList.add('js');
+			// The theme picked with the theme picker, before the page draws,
+			// so it never flashes the other one. As applyTheme does, in
+			// src/hero/theme.ts.
+			try {
+				const theme = JSON.parse(localStorage.getItem('theme'));
+				if (theme === 'light' || theme === 'dark') {
+					document.documentElement.dataset.theme = theme;
+					for (const meta of document.querySelectorAll(
+						'meta[name="theme-color"]',
+					)) {
+						meta.media =
+							meta.dataset.scheme === theme ? 'all' : 'not all';
+					}
+				}
+			} catch {
+				// No storage, or nothing sensible in it: the device's theme.
+			}
 		</script>
 	</head>
 	<body>

@@ -4,6 +4,7 @@ import { type FC, useEffect, useRef } from 'react';
 import { m } from '../paraglide/messages';
 
 import { SCENE_ATOM } from './atoms';
+import { Button } from './button';
 import { useIsHydrated } from './hooks';
 
 interface Props {
@@ -31,17 +32,17 @@ export const PlayOverlay: FC<Props> = ({ onPlay }) => {
 	}, [scene]);
 
 	return (
-		<div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 bg-linear-to-t from-slate-950/70 to-transparent px-6 pt-24 pb-8 text-center text-white transition-opacity duration-500 group-data-[state=playing]:opacity-0">
-			<p className="text-sm tracking-widest text-white/80 uppercase">
+		<div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 bg-linear-to-t from-scrim/70 to-transparent px-6 pt-24 pb-8 text-center text-snow transition-opacity duration-500 group-data-[state=playing]:opacity-0">
+			<p className="text-sm tracking-widest text-snow/80 uppercase">
 				{m.hero_greeting()}
 			</p>
-			<button
+			<Button
 				id="hero-play"
 				ref={button}
-				type="button"
+				variant="glassOnScrim"
 				// Until the page hydrates, a tap would go nowhere.
 				disabled={!isHydrated}
-				className="pointer-events-auto cursor-pointer rounded-full border border-white/40 bg-white/15 px-6 py-3 font-semibold whitespace-nowrap backdrop-blur-md transition group-data-[state=playing]:pointer-events-none hover:bg-white/25 focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none disabled:cursor-wait disabled:opacity-70 sm:text-lg"
+				className="pointer-events-auto rounded-full px-6 py-3 whitespace-nowrap transition group-data-[state=playing]:pointer-events-none disabled:cursor-wait disabled:opacity-70 sm:text-lg"
 				onClick={onPlay}
 			>
 				<span className="group-data-[state=loading]:hidden">
@@ -50,7 +51,7 @@ export const PlayOverlay: FC<Props> = ({ onPlay }) => {
 				<span className="hidden group-data-[state=loading]:inline">
 					{m.hero_getting_ready()}
 				</span>
-			</button>
+			</Button>
 		</div>
 	);
 };

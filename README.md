@@ -11,6 +11,7 @@ The hero photo doubles as a game. Press play and the photo fades into a low-poly
 - [Astro](https://astro.build) for the page, with [Tailwind CSS](https://tailwindcss.com) for styles.
 - A [React](https://react.dev) island for the hero, with its state in [Jotai](https://jotai.org) atoms.
 - [Paraglide](https://paraglidejs.com) for text, shared by the Astro pages and the React island, in `messages/`.
+- A small design system: the palette and type in `src/styles/global.css`, and the rules for using them in [AGENTS.md](AGENTS.md#design). ESLint keeps colours to the palette.
 - [three.js](https://threejs.org) and [React Three Fiber](https://r3f.docs.pmnd.rs) for the game, loaded only when you press play.
 - [Vitest](https://vitest.dev) for unit tests and [Playwright](https://playwright.dev) for end-to-end tests.
 - Hosted on [Cloudflare Pages](https://pages.cloudflare.com), with one [Pages Function](https://developers.cloudflare.com/pages/functions/) and a [D1](https://developers.cloudflare.com/d1/) database for the leaderboard, queried with [Drizzle](https://orm.drizzle.team).
@@ -69,7 +70,7 @@ The game is split so most of it can be tested without a browser:
 - **The hero** (`src/hero/`) is a React island. `HeroController` starts and stops the scenes and copies what they report (score, distance, game over, the gallery's position) into Jotai atoms for the UI to show. The best score and easter egg smash counts are atoms with storage, so they're kept between visits.
 - **The scenes** (`src/game/game.ts` and `src/game/gallery.ts`) are plain classes. Each part of the game is its own class with its own tests, for example `Player`, `Forest`, `Bears`, `EasterEggTrail`, `Effects` and `ChaseCamera`. On each step these run as systems, in the order set by `SYSTEM_ORDER`.
 - **The game page** (`src/pages/game.astro`, at `/game`) is the same island on its own, filling the window. There's no photo: the game loads straight away and waits on a start screen of its own, and leaving a run goes back there.
-- **The worlds** (`src/game/components/`) are React Three Fiber components that add the sky, light, mountains, ground and trees to a scene and hook into its systems with `useSystem`.
+- **The worlds** (`src/game/components/`) are React Three Fiber components that add the sky, light, mountains, ground and trees to a scene and hook into its systems with `useSystem`. The light and air come from the site's theme, so the mountain is day in light mode and night in dark mode, with a lantern to see by.
 
 The game in play is also on `hero.game` in the browser's console, on the live site too. Try `hero.game.advance(30)` to skip ahead, or `hero.game.catchPlayer()` to end the run. The end-to-end tests use it the same way.
 

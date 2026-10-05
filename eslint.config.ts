@@ -150,6 +150,66 @@ export default defineConfig(
 			globals: globals.browser,
 		},
 	},
+	{
+		// The page only imports types from the leaderboard's Function.
+		// Anything more would bundle the Function's code (with Zod and
+		// obscenity) into the site.
+		files: ['src/**/*.ts', 'src/**/*.tsx'],
+		rules: {
+			'@typescript-eslint/no-restricted-imports': [
+				'error',
+				{
+					patterns: [
+						{
+							group: ['**/functions/**'],
+							allowTypeImports: true,
+							message:
+								'The page only imports types from functions/, with `import type`. Call the API through the typed client in src/hero/leaderboard.ts.',
+						},
+					],
+				},
+			],
+		},
+	},
+	{
+		// Astro pages have no business with the Function at all.
+		files: ['src/**/*.astro'],
+		rules: {
+			'no-restricted-imports': [
+				'error',
+				{
+					patterns: [
+						{
+							group: ['**/functions/**'],
+							message:
+								'Astro pages don’t import from functions/. The page calls the API through the typed client in src/hero/leaderboard.ts.',
+						},
+					],
+				},
+			],
+		},
+	},
+	{
+		// The Function runs on Cloudflare, apart from the site, so it never
+		// imports the site's code.
+		files: ['functions/**/*.ts'],
+		rules: {
+			'import-x/no-restricted-paths': [
+				'error',
+				{
+					basePath: import.meta.dirname,
+					zones: [
+						{
+							target: './functions',
+							from: './src',
+							message:
+								'functions/ runs on Cloudflare, apart from the site, so it doesn’t import from src/.',
+						},
+					],
+				},
+			],
+		},
+	},
 	astro.configs.recommended,
 	astro.configs['jsx-a11y-strict'],
 	{

@@ -50,7 +50,7 @@ describe('parseOklch', () => {
 		);
 	});
 
-	it('clips colours past sRGB into it', () => {
+	it('brings colours past sRGB into it', () => {
 		const { r, g, b } = parseOklch('oklch(78.2% 0.19 72.3)');
 		for (const channel of [r, g, b]) {
 			expect(channel).toBeGreaterThanOrEqual(0);

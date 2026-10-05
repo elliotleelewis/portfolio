@@ -1,4 +1,15 @@
 import {
+	clampRgb,
+	converter,
+	modeLrgb,
+	modeOklab,
+	modeOklch,
+	modeRgb,
+	parse,
+	toGamut,
+	useMode as registerMode,
+} from 'culori/fn';
+import {
 	type BufferGeometry,
 	Color,
 	type DirectionalLight,
@@ -41,41 +52,34 @@ const intensities: Record<
 	night: { sunIntensity: 0.9, skyIntensity: 1.1, lanternIntensity: 22 },
 };
 
-const oklch =
-	/^oklch\(\s*([\d.]+)(%?)\s+([\d.]+)\s+([\d.]+)(?:deg)?\s*(?:\/[^)]*)?\)$/i;
+// Only the colour spaces the scene needs, so the rest of culori stays out
+// of the game's code.
+/* eslint-disable unicorn/no-top-level-side-effects -- culori converts only between colour spaces registered first. */
+registerMode(modeOklch);
+registerMode(modeOklab);
+registerMode(modeRgb);
+registerMode(modeLrgb);
+/* eslint-enable unicorn/no-top-level-side-effects */
+
+// Into sRGB the way CSS does it: colours past it (the amber reaches into
+// Display P3) lose chroma until they fit, keeping their hue. Clamped after,
+// as that leaves them a rounding error out.
+const toSrgb = toGamut('rgb', 'oklch');
+const toLinear = converter('lrgb');
 
 /**
- * Reads a colour from the site's theme, written in OKLCH, for three.js.
- * OKLCH converts straight to linear sRGB, the space three.js works in.
- * Colours past sRGB (the amber reaches into Display P3) are clipped to it.
+ * Reads a colour from the site's theme, written in OKLCH, for three.js,
+ * which works in linear sRGB.
  * @param value - The colour, like `oklch(54% 0.165 49)`.
  * @returns The colour.
  */
 export const parseOklch = (value: string): Color => {
-	const match = oklch.exec(value.trim());
-	if (!match) {
+	const colour = parse(value);
+	if (colour?.mode !== 'oklch') {
 		throw new Error(`Expected an oklch() colour, not "${value}"`);
 	}
-	const [, lightness = '', percent, chroma = '', hue = ''] = match;
-	const l = Number(lightness) / (percent ? 100 : 1);
-	const c = Number(chroma);
-	const h = (Number(hue) * Math.PI) / 180;
-	const a = c * Math.cos(h);
-	const b = c * Math.sin(h);
-	// OKLab to LMS, then to linear sRGB (Björn Ottosson's matrices).
-	const lms = [
-		l + 0.3963377774 * a + 0.2158037573 * b,
-		l - 0.1055613458 * a - 0.0638541728 * b,
-		l - 0.0894841775 * a - 1.291485548 * b,
-	].map((x) => x ** 3);
-	const [ll = 0, m = 0, s = 0] = lms;
-	const clip = (x: number): number => Math.min(1, Math.max(0, x));
-	return new Color().setRGB(
-		clip(4.0767416621 * ll - 3.3077115913 * m + 0.2309699292 * s),
-		clip(-1.2684380046 * ll + 2.6097574011 * m - 0.3413193965 * s),
-		clip(-0.0041960863 * ll - 0.7034186147 * m + 1.707614701 * s),
-		LinearSRGBColorSpace,
-	);
+	const { r, g, b } = toLinear(clampRgb(toSrgb(colour)));
+	return new Color().setRGB(r, g, b, LinearSRGBColorSpace);
 };
 
 /**

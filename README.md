@@ -54,7 +54,7 @@ src/
     easter-eggs/ One module per easter egg.
   leaderboard/  The leaderboard's rules and API, shared by the page and the Function.
 functions/      The Pages Function that serves the leaderboard, at /api/scores.
-migrations/     The leaderboard's D1 table.
+migrations/     The leaderboard's D1 table, applied on each deploy.
 e2e/            The Playwright tests.
 messages/       The site's text, one file per language, for Paraglide.
 project.inlang/ Paraglide's settings.
@@ -77,7 +77,7 @@ The game in play is also on `hero.game` in the browser's console, on the live si
 The site stays static. The leaderboard is one Pages Function (`functions/api/scores.ts`) next to it, which keeps the top 10 runs in D1, and it's built to stay inside Cloudflare's free plans however many people play, or however hard anyone hammers it:
 
 - The whole board is one row. Reading it is one row read, and saving a score is one row write, only if the score makes the top 10.
-- The row counts its own writes, in that same write, and takes no more than 1,000 scores a day (`DAILY_WRITE_LIMIT`), against D1's free 100,000 rows written.
+- The row counts its own writes, in that same write, and takes no more than 1,000 scores a day (`DAILY_WRITE_LIMIT`). With the live board and the previews' board, that's at most 2,000 rows written a day, against D1's free 100,000 for the account.
 - Each request reads at most six rows, and Workers' free plan stops at 100,000 requests a day, so reads stay under D1's free 5 million a day. Past that limit, Cloudflare turns requests to `/api/scores` away rather than charging, and the game plays on without the board. The rest of the site is static, so its requests never reach the Function.
 - The page fetches the board once, when the game first loads, and only saves a score that makes it.
 - [Turnstile](https://developers.cloudflare.com/turnstile/) checks that a person is saving each score. It's free with no limit on checks, and only loads when there's a score to save.
@@ -92,17 +92,28 @@ Write a module in `src/game/easter-eggs/` that exports an `EasterEgg` (see `type
 
 GitHub Actions (`.github/workflows/main.yml`) lints, tests and builds every pull request and every push to `main`, and deploys each one to Cloudflare Pages. Pull requests get a preview deployment, and `main` is the live site.
 
+### The leaderboard's databases
+
+The live site and preview deployments each have a D1 database of their own, set in `wrangler.toml`, so pull requests never touch the live board. Before each deploy, the deploy job runs `.github/scripts/leaderboard-db.sh`, which creates the database if it doesn't exist yet, fills its ID into `wrangler.toml`, and applies any migrations in `migrations/` it hasn't had. All the previews share one database.
+
+To change the table, add a migration, numbered after the last, like `migrations/0002_add_dates.sql`. The site that's already live keeps running against it until the deploy finishes, so only ever add (columns with defaults, new tables), never rename or drop. Run the Function locally, with a local database, with:
+
+```sh
+pnpm build
+pnpm exec wrangler d1 migrations apply leaderboard --local
+pnpm exec wrangler pages dev
+```
+
 ### Setting up the leaderboard
 
-Once, in Cloudflare's dashboard, with the account on the Workers Free plan. On the Paid plan, requests past the free allowance are billed rather than turned away.
+Once, with the Cloudflare account on the Workers Free plan. On the Paid plan, requests past the free allowance are billed rather than turned away.
 
-1. Create a D1 database (Storage & Databases → D1), called `portfolio-leaderboard`, and create its table by running `migrations/0001_leaderboard.sql` in its console, or with `npx wrangler d1 execute portfolio-leaderboard --remote --file=migrations/0001_leaderboard.sql`.
+1. Give the Cloudflare API token (the `CLOUDFLARE_API_TOKEN` secret) the **D1 Edit** permission, so the deploy job can create the databases and migrate them.
 2. Add a Turnstile widget (Turnstile → Add widget) for `elliotleelewis.com`, in Managed mode.
-3. In the Pages project's Settings → Bindings, for Production only, bind the database as `leaderboard`. Preview deployments then have no board, so they can't write to the live one.
-4. In Settings → Variables and Secrets, for Production, add the widget's secret key as a secret called `turnstileSecret`.
-5. In the GitHub repo's Settings → Secrets and variables → Actions → Variables, add the widget's site key as `TURNSTILE_SITE_KEY`. The deploy job builds with it. Without it, the page uses Cloudflare's test key, which the live secret turns down.
+3. In the Pages project's Settings → Variables and Secrets, for Production, add the widget's secret key as a secret called `turnstileSecret`. Previews use Turnstile's test secret, from `wrangler.toml`.
+4. In the GitHub repo's Settings → Secrets and variables → Actions → Variables, add the widget's site key as `TURNSTILE_SITE_KEY`. Deploys of `main` build with it. Without it, the page uses Turnstile's test key, which the live secret turns down.
 
-Until that's done, `/api/scores` answers 503 and the game plays on without a board.
+`wrangler.toml` now holds the Pages project's bindings and variables, so Cloudflare's dashboard shows them read-only. Secrets stay in the dashboard.
 
 ## Contributing
 

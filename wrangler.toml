@@ -1,0 +1,27 @@
+# Cloudflare Pages' settings for the site and the leaderboard's Function
+# (functions/). Each kind of deployment has a D1 database of its own. The
+# deploy job fills in their IDs, creating them if they don't exist yet, and
+# runs their migrations first (see .github/scripts/leaderboard-db.sh).
+name = "portfolio"
+pages_build_output_dir = "./dist"
+compatibility_date = "2026-09-01"
+
+# Preview deployments, for pull requests: a board of their own, so they never
+# touch the live one, and Turnstile's test secret, which always passes (they
+# build with its test site key).
+[vars]
+turnstileSecret = "1x0000000000000000000000000000000AA"
+
+[[d1_databases]]
+binding = "leaderboard"
+database_name = "portfolio-leaderboard-preview"
+database_id = "<preview-database-id>"
+migrations_dir = "migrations"
+
+# The live site. Its Turnstile secret is a secret on the Pages project, set
+# in Cloudflare's dashboard, rather than here.
+[[env.production.d1_databases]]
+binding = "leaderboard"
+database_name = "portfolio-leaderboard"
+database_id = "<production-database-id>"
+migrations_dir = "migrations"

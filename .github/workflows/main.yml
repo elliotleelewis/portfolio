@@ -77,6 +77,12 @@ jobs:
     # preview. Main deploys once the merge lands.
     if: github.event_name != 'merge_group'
     runs-on: ubuntu-26.04
+    # One deploy at a time per database, so two never migrate it at once.
+    concurrency: deploy-${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }}
+    env:
+      # Main is the live site, and everything else a preview, each with a
+      # leaderboard database of its own (see wrangler.toml).
+      ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }}
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -90,9 +96,16 @@ jobs:
       - run: pnpm build
         env:
           # Turnstile's site key, for saving scores to the leaderboard. Site
-          # keys are public.
-          PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
-      # Deploys functions/ (the leaderboard's API) along with the site.
+          # keys are public. Previews build without it, so they use
+          # Turnstile's test key, to match the test secret in wrangler.toml.
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ env.ENVIRONMENT == 'production' && vars.TURNSTILE_SITE_KEY || '' }}
+      # Before the deploy, so the new code never meets an old table.
+      - run: .github/scripts/leaderboard-db.sh "$ENVIRONMENT"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 08bcfcb3f50021eafc9bd1bfb1f06ad0
+      # Deploys functions/ (the leaderboard's API) along with the site, with
+      # the bindings in wrangler.toml.
       - uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}

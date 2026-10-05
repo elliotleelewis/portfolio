@@ -11,6 +11,8 @@ import {
 	RESULT_ATOM,
 } from './atoms';
 import { bestMessage } from './best';
+import { Button } from './button';
+import { Card } from './card';
 import { useController } from './context';
 import { LeaderboardTable } from './leaderboard-table';
 
@@ -28,9 +30,6 @@ const enteringStatuses = new Set<EntryStatus>([
 	'failed',
 	'blocked',
 ]);
-
-const link =
-	'cursor-pointer rounded-sm font-semibold text-slate-600 underline-offset-4 hover:text-slate-900 hover:underline focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none';
 
 /**
  * What to say about how saving the run to the leaderboard went.
@@ -84,7 +83,7 @@ const RunStats: FC = () => {
 					<span id="hero-over-score" className="text-4xl font-bold">
 						{m.hero_over_trees_count({ trees })}
 					</span>
-					<span className="text-xs text-slate-600">
+					<span className="text-xs text-muted">
 						{m.hero_over_trees_label({ trees })}
 					</span>
 				</p>
@@ -95,7 +94,7 @@ const RunStats: FC = () => {
 					>
 						{m.hero_board_metres({ metres })}
 					</span>
-					<span className="text-xs text-slate-600">
+					<span className="text-xs text-muted">
 						{m.hero_over_rolled()}
 					</span>
 				</p>
@@ -141,16 +140,16 @@ export const GameOver: FC = () => {
 		<div
 			id="hero-over"
 			data-show={isShown ? '' : undefined}
-			className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/30 p-6 opacity-0 transition-opacity duration-500 data-show:pointer-events-auto data-show:opacity-100"
+			className="pointer-events-none absolute inset-0 flex items-center justify-center bg-scrim/30 p-6 opacity-0 transition-opacity duration-500 data-show:pointer-events-auto data-show:opacity-100"
 			role="dialog"
 			aria-labelledby="hero-over-title"
 		>
-			<div className="max-h-full w-full max-w-sm overflow-y-auto rounded-2xl bg-white/85 p-6 text-center text-slate-900 shadow-2xl backdrop-blur-md">
+			<Card className="max-h-full w-full max-w-sm overflow-y-auto p-6 text-center">
 				{isEntering ? (
 					<>
 						<h2
 							id="hero-over-title"
-							className="font-mono text-sm font-bold tracking-widest text-amber-700 uppercase"
+							className="font-mono text-xs tracking-[0.25em] text-accent uppercase"
 						>
 							{m.hero_board_new_high_score()}
 						</h2>
@@ -170,7 +169,7 @@ export const GameOver: FC = () => {
 						</p>
 						<h2
 							id="hero-over-title"
-							className="mt-1 text-2xl font-black"
+							className="mt-1 font-display text-2xl font-semibold"
 						>
 							{m.hero_caught()}
 						</h2>
@@ -178,7 +177,7 @@ export const GameOver: FC = () => {
 						<p
 							id="hero-over-best"
 							data-new={isNewBest ? '' : undefined}
-							className="mt-3 text-sm text-slate-600 data-new:inline-block data-new:rounded-full data-new:bg-amber-300/70 data-new:px-3 data-new:py-0.5 data-new:font-semibold data-new:text-slate-900"
+							className="mt-3 text-sm text-muted data-new:inline-block data-new:rounded-full data-new:bg-accent data-new:px-3 data-new:py-0.5 data-new:font-semibold data-new:text-on-accent"
 						>
 							{bestMessage(trees, best)}
 						</p>
@@ -191,32 +190,30 @@ export const GameOver: FC = () => {
 							</p>
 						)}
 						<LeaderboardTable />
-						<button
+						<Button
 							id="hero-again"
 							ref={again}
-							type="button"
-							className="mt-5 cursor-pointer rounded-full bg-slate-900 px-6 py-2.5 font-semibold text-white hover:bg-slate-700 focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none"
+							variant="primary"
+							className="mt-5 rounded-full px-6 py-2.5"
 							onClick={() => {
 								controller.rollAgain();
 							}}
 						>
 							{m.hero_roll_again()}
-						</button>
+						</Button>
 						<div className="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-1 text-sm">
-							<button
+							<Button
 								id="hero-gallery-open"
-								type="button"
-								className={link}
+								variant="link"
 								onClick={() => {
 									void controller.openGallery();
 								}}
 							>
 								{m.hero_see_easter_eggs()}
-							</button>
-							<button
+							</Button>
+							<Button
 								id="hero-over-exit"
-								type="button"
-								className={link}
+								variant="link"
 								onClick={() => {
 									controller.leave();
 								}}
@@ -224,11 +221,11 @@ export const GameOver: FC = () => {
 								{controller.hasStartScreen
 									? m.hero_back_to_start()
 									: m.hero_back_to_trail()}
-							</button>
+							</Button>
 						</div>
 					</>
 				)}
-			</div>
+			</Card>
 		</div>
 	);
 };

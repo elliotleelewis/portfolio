@@ -1,9 +1,12 @@
+import { readFileSync } from 'node:fs';
+
 import { Group, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 
 import {
 	APPEAR_AHEAD,
 	CHUNK_LENGTH,
+	FOG_COLOR,
 	FOG_FAR,
 	GROUND_CHUNKS,
 	GROUND_RECYCLE_DISTANCE,
@@ -80,5 +83,16 @@ describe('the ledge', () => {
 			}
 		}
 		expect(tucked).toBeGreaterThan(0);
+	});
+});
+
+describe('FOG_COLOR', () => {
+	it('is the fog colour the page uses behind the hero', () => {
+		const css = readFileSync(
+			new URL('../styles/global.css', import.meta.url),
+			'utf8',
+		);
+		const token = /--color-fog:\s*#([\da-f]{6});/i.exec(css)?.[1];
+		expect(token?.toLowerCase()).toBe(FOG_COLOR.getHexString());
 	});
 });

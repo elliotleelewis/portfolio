@@ -4,6 +4,7 @@ import { type FC, useEffect, useRef } from 'react';
 import { m } from '../paraglide/messages';
 
 import { BEST_ATOM, PHASE_ATOM, WAITING_ATOM } from './atoms';
+import { Button } from './button';
 import { useController } from './context';
 import { useIsHydrated } from './hooks';
 
@@ -35,32 +36,32 @@ export const StartScreen: FC = () => {
 		<div
 			id="hero-start-screen"
 			data-show={isShown ? '' : undefined}
-			className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center bg-linear-to-t from-slate-950/70 to-transparent px-6 pt-24 pb-8 text-center text-white opacity-0 transition-opacity duration-500 data-show:pointer-events-auto data-show:opacity-100"
+			className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center bg-linear-to-t from-scrim/70 to-transparent px-6 pt-24 pb-8 text-center text-snow opacity-0 transition-opacity duration-500 data-show:pointer-events-auto data-show:opacity-100"
 		>
 			<h1 className="font-display text-4xl font-semibold sm:text-5xl">
 				{m.start_title()}
 			</h1>
-			<p className="mt-3 max-w-md text-white/85 sm:text-lg">
+			<p className="mt-3 max-w-md text-snow/85 sm:text-lg">
 				{m.start_intro()}
 			</p>
-			<p className="mt-2 text-sm text-white/70 any-pointer-coarse:hidden">
+			<p className="mt-2 text-sm text-snow/70 any-pointer-coarse:hidden">
 				{m.start_keys()}
 			</p>
-			<p className="mt-2 hidden text-sm text-white/70 any-pointer-coarse:block">
+			<p className="mt-2 hidden text-sm text-snow/70 any-pointer-coarse:block">
 				{m.start_stick()}
 			</p>
 			{isHydrated && best > 0 && (
-				<p id="hero-start-best" className="mt-1 text-sm text-white/70">
+				<p id="hero-start-best" className="mt-1 text-sm text-snow/70">
 					{m.hero_best({ best })}
 				</p>
 			)}
 			<div className="mt-5 flex flex-wrap justify-center gap-2">
-				<button
+				<Button
 					id="hero-start"
 					ref={start}
-					type="button"
+					variant="onScrim"
 					disabled={!isReady}
-					className="cursor-pointer rounded-full bg-white px-6 py-3 font-semibold whitespace-nowrap text-slate-900 hover:bg-white/85 focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none disabled:cursor-wait disabled:opacity-70 sm:text-lg"
+					className="rounded-full px-6 py-3 whitespace-nowrap disabled:cursor-wait disabled:opacity-70 sm:text-lg"
 					onClick={() => {
 						controller.begin();
 					}}
@@ -69,18 +70,18 @@ export const StartScreen: FC = () => {
 					{phase === 'playing'
 						? m.start_rolling()
 						: m.hero_getting_ready()}
-				</button>
-				<button
+				</Button>
+				<Button
 					id="hero-start-gallery"
-					type="button"
+					variant="glassOnScrim"
 					disabled={!isReady}
-					className="cursor-pointer rounded-full border border-white/40 bg-white/15 px-6 py-3 font-semibold whitespace-nowrap backdrop-blur-md hover:bg-white/25 focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none disabled:cursor-wait disabled:opacity-70 sm:text-lg"
+					className="rounded-full px-6 py-3 whitespace-nowrap disabled:cursor-wait disabled:opacity-70 sm:text-lg"
 					onClick={() => {
 						void controller.openGallery();
 					}}
 				>
 					{m.hero_see_easter_eggs()}
-				</button>
+				</Button>
 			</div>
 		</div>
 	);

@@ -46,8 +46,8 @@ const HeroSection: FC<Props> = ({ children, isGamePage = false }) => {
 			data-mode={mode}
 			className={
 				isGamePage
-					? 'group fixed inset-0 overflow-hidden bg-[#dde3e5] select-none'
-					: 'group relative h-[85svh] min-h-120 overflow-hidden rounded-3xl bg-[#dde3e5] shadow-2xl ring-1 shadow-pine/20 ring-line select-none'
+					? 'group fixed inset-0 overflow-hidden bg-fog select-none'
+					: 'group relative h-[85svh] min-h-120 overflow-hidden rounded-3xl bg-fog shadow-2xl ring-1 shadow-pine/20 ring-line select-none'
 			}
 			aria-label={m.hero_label()}
 		>

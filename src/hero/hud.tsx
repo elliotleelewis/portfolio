@@ -10,6 +10,7 @@ import {
 	SCORE_ATOM,
 	WAITING_ATOM,
 } from './atoms';
+import { Button } from './button';
 import { useController } from './context';
 import { Stick } from './stick';
 
@@ -36,18 +37,18 @@ export const Hud: FC = () => {
 			}
 			aria-live="polite"
 		>
-			<div className="absolute inset-s-4 top-4 flex gap-2 font-mono text-sm text-slate-900 group-data-[mode=gallery]:hidden sm:text-base">
-				<div className="rounded-lg bg-white/70 px-3 py-1.5 backdrop-blur-sm">
+			<div className="absolute inset-s-4 top-4 flex gap-2 font-mono text-sm text-ink group-data-[mode=gallery]:hidden sm:text-base">
+				<div className="rounded-lg bg-surface/70 px-3 py-1.5 backdrop-blur-sm">
 					🌲 <span id="hero-score">{score}</span>
 				</div>
-				<div className="rounded-lg bg-white/70 px-3 py-1.5 backdrop-blur-sm">
+				<div className="rounded-lg bg-surface/70 px-3 py-1.5 backdrop-blur-sm">
 					<span id="hero-distance">{metres}</span>m
 				</div>
 			</div>
-			<button
+			<Button
 				id="hero-exit"
-				type="button"
-				className="pointer-events-auto absolute inset-e-4 top-4 cursor-pointer rounded-lg bg-white/70 px-3 py-1.5 text-sm text-slate-900 backdrop-blur-sm group-data-[state=idle]:pointer-events-none hover:bg-white/90 focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none sm:text-base"
+				variant="glass"
+				className="pointer-events-auto absolute inset-e-4 top-4 rounded-lg px-3 py-1.5 text-sm group-data-[state=idle]:pointer-events-none sm:text-base"
 				onClick={() => {
 					controller.leave();
 				}}
@@ -56,23 +57,23 @@ export const Hud: FC = () => {
 					? m.hero_back_to_start()
 					: m.hero_back_to_trail()}{' '}
 				✕
-			</button>
+			</Button>
 			<div
 				id="hero-combo"
 				data-show={callout.isShown ? '' : undefined}
-				className="absolute top-20 left-1/2 -translate-x-1/2 text-3xl font-black text-amber-400 opacity-0 drop-shadow-[0_2px_2px_rgb(0_0_0/0.5)] transition-all duration-300 data-show:top-16 data-show:opacity-100"
+				className="absolute top-20 left-1/2 -translate-x-1/2 text-3xl font-black text-accent opacity-0 drop-shadow-sm drop-shadow-scrim/60 transition-all duration-300 data-show:top-16 data-show:opacity-100"
 			>
 				{callout.text}
 			</div>
 			<p
 				id="hero-hint"
 				data-show={isHintShown ? '' : undefined}
-				className="absolute inset-x-0 bottom-6 text-center text-sm font-semibold text-slate-900 opacity-0 transition-opacity duration-500 group-data-[mode=gallery]:hidden data-show:opacity-100 sm:text-base any-pointer-coarse:bottom-38"
+				className="absolute inset-x-0 bottom-6 text-center text-sm font-semibold text-ink opacity-0 transition-opacity duration-500 group-data-[mode=gallery]:hidden data-show:opacity-100 sm:text-base any-pointer-coarse:bottom-38"
 			>
-				<span className="rounded-full bg-white/70 px-4 py-2 backdrop-blur-sm any-pointer-coarse:hidden">
+				<span className="rounded-full bg-surface/70 px-4 py-2 backdrop-blur-sm any-pointer-coarse:hidden">
 					{m.hero_hint_keys()}
 				</span>
-				<span className="mx-4 hidden rounded-2xl bg-white/70 px-4 py-2 backdrop-blur-sm any-pointer-coarse:inline-block">
+				<span className="mx-4 hidden rounded-2xl bg-surface/70 px-4 py-2 backdrop-blur-sm any-pointer-coarse:inline-block">
 					{m.hero_hint_stick()}
 				</span>
 			</p>

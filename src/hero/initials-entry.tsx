@@ -13,6 +13,7 @@ import type { TurnstileAction } from '../../functions/_lib/turnstile';
 import { m } from '../paraglide/messages';
 
 import { BOARD_ENTRY_ATOM, INITIALS_ATOM } from './atoms';
+import { Button } from './button';
 import { useController } from './context';
 import { INITIALS_LENGTH, readInitials, stepCharacter } from './initials';
 import { loadTurnstile, siteKey } from './turnstile';
@@ -24,7 +25,7 @@ const typeable = /[\dA-Za-z]/g;
 const turnstileAction: TurnstileAction = 'score';
 
 const stepButton =
-	'flex h-6 w-12 cursor-pointer items-center justify-center rounded-md text-xs text-slate-500 hover:bg-slate-900/10 hover:text-slate-900';
+	'flex h-6 w-12 cursor-pointer items-center justify-center rounded-md text-xs text-muted hover:bg-ink/10 hover:text-ink';
 
 interface TurnstileState {
 	token: string | undefined;
@@ -248,7 +249,7 @@ export const InitialsEntry: FC = () => {
 										: 'next'
 								}
 								data-active={index === active ? '' : undefined}
-								className="peer h-14 w-12 cursor-pointer rounded-lg bg-slate-900 text-center font-mono text-3xl text-amber-300 caret-transparent ring-amber-400 outline-none selection:bg-transparent selection:text-amber-300 data-active:ring-4"
+								className="peer h-14 w-12 cursor-pointer rounded-lg bg-accent text-center font-mono text-3xl text-on-accent caret-transparent ring-ink outline-none selection:bg-transparent selection:text-on-accent data-active:ring-4"
 								onFocus={(event) => {
 									setActive(index);
 									event.currentTarget.select();
@@ -263,7 +264,7 @@ export const InitialsEntry: FC = () => {
 							{/* The cursor, blinking under the initial being picked. */}
 							<span
 								aria-hidden="true"
-								className="pointer-events-none absolute inset-x-3.5 bottom-2.5 h-0.5 bg-amber-300 opacity-0 peer-data-active:opacity-100 peer-data-active:motion-safe:animate-pulse"
+								className="pointer-events-none absolute inset-x-3.5 bottom-2.5 h-0.5 bg-on-accent opacity-0 peer-data-active:opacity-100 peer-data-active:motion-safe:animate-pulse"
 							/>
 						</div>
 						<button
@@ -280,13 +281,13 @@ export const InitialsEntry: FC = () => {
 					</div>
 				))}
 			</div>
-			<p className="mt-1 text-xs text-slate-600 any-pointer-coarse:hidden">
+			<p className="mt-1 text-xs text-muted any-pointer-coarse:hidden">
 				{m.hero_board_initials_help()}
 			</p>
 			<div ref={widget} className="flex justify-center" />
 			<p
 				id="hero-initials-status"
-				className="text-sm text-red-700 not-empty:mt-1"
+				className="text-sm text-danger not-empty:mt-1"
 				aria-live="polite"
 			>
 				{isRude && m.hero_board_blocked()}
@@ -294,27 +295,27 @@ export const InitialsEntry: FC = () => {
 					(hasFailed || status === 'failed') &&
 					m.hero_board_failed()}
 			</p>
-			<button
+			<Button
 				id="hero-initials-save"
-				type="button"
+				variant="primary"
 				disabled={!token || isSaving}
-				className="mt-3 cursor-pointer rounded-full bg-slate-900 px-6 py-2.5 font-semibold text-white hover:bg-slate-700 focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none disabled:cursor-default disabled:opacity-60"
+				className="mt-3 rounded-full px-6 py-2.5 disabled:cursor-default disabled:opacity-60"
 				onClick={save}
 			>
 				{isSaving ? m.hero_board_saving() : m.hero_board_save()}
-			</button>
+			</Button>
 			<p className="mt-3">
-				<button
+				<Button
 					id="hero-initials-skip"
-					type="button"
+					variant="link"
 					disabled={isSaving}
-					className="cursor-pointer rounded-sm text-sm font-semibold text-slate-600 underline-offset-4 hover:text-slate-900 hover:underline focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none disabled:cursor-default disabled:opacity-60"
+					className="text-sm disabled:cursor-default disabled:opacity-60"
 					onClick={() => {
 						controller.skipBoard();
 					}}
 				>
 					{m.hero_board_skip()}
-				</button>
+				</Button>
 			</p>
 		</div>
 	);

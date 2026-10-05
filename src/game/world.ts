@@ -11,7 +11,9 @@ import {
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
-// The haze the mountainside fades into, and the sky behind it.
+// The haze the mountainside fades into, and the sky behind it. The page
+// shows the same colour (`fog` in src/styles/global.css) until the scene is
+// drawn, and a test checks they match.
 export const FOG_COLOR = new Color('#dde3e5');
 
 // Steepness of the mountainside, in radians.

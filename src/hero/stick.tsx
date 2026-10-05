@@ -46,7 +46,7 @@ export const Stick: FC = () => {
 		<div className="hidden any-pointer-coarse:block">
 			<div
 				id="hero-stick"
-				className="absolute bottom-6 left-1/2 size-28 -translate-x-1/2 touch-none rounded-full border-2 border-white/60 bg-white/25 shadow-lg backdrop-blur-sm group-data-[mode=gallery]:hidden group-data-[state=playing]:pointer-events-auto"
+				className="absolute bottom-6 left-1/2 size-28 -translate-x-1/2 touch-none rounded-full border-2 border-surface/60 bg-surface/25 shadow-lg backdrop-blur-sm group-data-[mode=gallery]:hidden group-data-[state=playing]:pointer-events-auto"
 				aria-hidden="true"
 				onPointerDown={(event) => {
 					pointer.current = event.pointerId;
@@ -65,7 +65,7 @@ export const Stick: FC = () => {
 				<div
 					id="hero-stick-knob"
 					data-active={knob === undefined ? undefined : ''}
-					className="absolute top-1/2 left-1/2 size-12 -translate-1/2 rounded-full bg-white/90 shadow-md transition-transform duration-150 data-active:transition-none"
+					className="absolute top-1/2 left-1/2 size-12 -translate-1/2 rounded-full bg-surface/90 shadow-md transition-transform duration-150 data-active:transition-none"
 					style={
 						isMoved
 							? {

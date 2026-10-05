@@ -3,7 +3,8 @@
 /*
  * A palette lifted from the mountain: misty fog, pine, slate rock and bark,
  * with the wood stove's amber glow as the one accent. Light mode is a misty
- * morning; dark mode is night on the mountain.
+ * morning; dark mode is night on the mountain. Danger is only for errors.
+ * See "Design" in AGENTS.md for which to use where.
  *
  * In OKLCH so the amber can reach past sRGB into Display P3 on screens that
  * show it (others map it back into gamut).
@@ -20,7 +21,21 @@
 	--color-ridge-mid: var(--ridge-mid);
 	--color-ridge-near: var(--ridge-near);
 	--color-on-accent: var(--on-accent);
+	--color-danger: var(--danger);
+
+	/*
+	 * Fixed, whichever the mode: for things drawn over the hero's photo and
+	 * 3D scene, which don't change with it. Snow is light text over them,
+	 * and scrim the dark gradient that keeps it readable.
+	 */
 	--color-snow: oklch(95.4% 0.007 132.4);
+	--color-scrim: oklch(18.7% 0.012 167);
+	/*
+	 * The mountain's fog, behind the hero until the scene is drawn. The 3D
+	 * fog in src/game/world.ts is the same colour, and a test checks it. In
+	 * sRGB hex, as three.js reads it.
+	 */
+	--color-fog: #dde3e5;
 
 	--font-display: var(--font-fraunces);
 	--font-sans: var(--font-inter);
@@ -41,6 +56,7 @@
 	--ridge-mid: oklch(63.1% 0.017 186.4);
 	--ridge-near: oklch(38% 0.051 148.3);
 	--on-accent: oklch(100% 0 0);
+	--danger: oklch(50.5% 0.213 27.5);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -56,6 +72,7 @@
 		--ridge-mid: oklch(23.5% 0.019 167);
 		--ridge-near: oklch(17.8% 0.012 166.9);
 		--on-accent: oklch(18.9% 0.026 77.5);
+		--danger: oklch(70.4% 0.191 22.2);
 	}
 }
 

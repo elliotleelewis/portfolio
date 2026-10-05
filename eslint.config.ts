@@ -223,6 +223,24 @@ export default defineConfig(
 		rules: {
 			// Prettier wraps lines.
 			'better-tailwindcss/enforce-consistent-line-wrapping': 'off',
+			// Colours come from the site's palette (src/styles/global.css),
+			// so the game looks like the rest of the site, in light and dark
+			// mode alike. See "Design" in AGENTS.md.
+			'better-tailwindcss/no-restricted-classes': [
+				'error',
+				{
+					restrict: [
+						{
+							pattern: String.raw`^(?:.+:)?((?:bg|text|border(?:-[xytrblse])?|ring|ring-offset|inset-ring|outline|decoration|divide|caret|accent|fill|stroke|shadow|inset-shadow|drop-shadow|text-shadow|from|via|to|placeholder)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|white|black)(?:-\d+)?(?:\/\d+)?)$`,
+							message: `"$1" is one of Tailwind's colours. Use the site's palette instead (paper, surface, ink, muted, line, accent, on-accent, danger, pine, snow, scrim, fog): see "Design" in AGENTS.md.`,
+						},
+						{
+							pattern: String.raw`^(?:.+:)?([a-z-]+-\[[^\]]*(?:#[\da-fA-F]{3,8}|rgba?\(|hsla?\(|oklch\().*)$`,
+							message: `"$1" sets its own colour. Use the site's palette instead, adding a token to src/styles/global.css if it really needs a new one: see "Design" in AGENTS.md.`,
+						},
+					],
+				},
+			],
 		},
 	},
 	{

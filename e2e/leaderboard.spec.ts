@@ -1,5 +1,5 @@
 import { expect, test } from './fixtures';
-import { advance, crash, startNewRun, startRun } from './hero';
+import { advance, crash, keepBearsAway, startNewRun, startRun } from './hero';
 import {
 	expectInitials,
 	fullBoard,
@@ -223,6 +223,8 @@ test('skips the initials, straight to how the run went', async ({ page }) => {
 
 test('keeps fast-forwarded runs off the board', async ({ page }) => {
 	await mockLeaderboard(page);
+	// Otherwise a bear could catch me early, in a run short enough to count.
+	await keepBearsAway(page);
 	await page.goto('/');
 	await startRun(page);
 	// Much further than real time allows.

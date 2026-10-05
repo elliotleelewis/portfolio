@@ -25,6 +25,26 @@
       }
     }
   ],
+  "hero_over_trees_label": [
+    {
+      "declarations": ["input trees", "local treesPlural = trees: plural"],
+      "selectors": ["treesPlural"],
+      "match": {
+        "treesPlural=one": "tree",
+        "treesPlural=*": "trees"
+      }
+    }
+  ],
+  "hero_over_trees_count": [
+    {
+      "declarations": ["input trees", "local treesFormatted = trees: number"],
+      "selectors": [],
+      "match": {
+        "": "{treesFormatted}"
+      }
+    }
+  ],
+  "hero_over_rolled": "rolled",
   "hero_best_new": "A new personal best! 🎉",
   "hero_best": [
     {
@@ -66,7 +86,11 @@
     }
   ],
   "hero_board_empty": "No scores yet. Be the first!",
-  "hero_board_high_score": "High score! Enter your initials",
+  "hero_board_new_high_score": "New high score!",
+  "hero_board_enter_initials": "Enter your initials",
+  "hero_board_skip": "Skip",
+  "hero_board_show_all": "Show all",
+  "hero_board_show_fewer": "Show fewer",
   "hero_board_initials": "Your initials",
   "hero_board_initial": "Initial {number} of 3",
   "hero_board_initials_help": "↑ ↓ to change a letter · ← → to move, or type them",
@@ -78,7 +102,7 @@
       "declarations": ["input place", "local placeFormatted = place: number"],
       "selectors": [],
       "match": {
-        "": "You’re number {placeFormatted} on the leaderboard! 🏆"
+        "": "#{placeFormatted} on the leaderboard 🏆"
       }
     }
   ],

@@ -465,6 +465,16 @@ export class HeroController {
 		});
 	}
 
+	/**
+	 * Leaves the last run off the leaderboard, rather than enter initials.
+	 */
+	public skipBoard(): void {
+		const { status, attempt } = this._store.get(BOARD_ENTRY_ATOM);
+		if (status === 'entering' || status === 'failed') {
+			this._store.set(BOARD_ENTRY_ATOM, { status: 'none', attempt });
+		}
+	}
+
 	public nextEgg(): void {
 		this._gallery?.next();
 	}

@@ -85,11 +85,13 @@ export const fullBoard = (): Entry[] =>
 	}));
 
 /**
- * Waits for the game-over card to ask for initials, ready to type them.
+ * Waits for the game-over card to ask for initials, ready to type them and
+ * save them (once Turnstile has passed).
  * @param page - The page, with the game-over card up.
  */
 export const waitForInitials = async (page: Page): Promise<void> => {
 	await expect(
 		page.locator('#hero-initials').getByRole('spinbutton').first(),
 	).toBeFocused();
+	await expect(page.locator('#hero-initials-save')).toBeEnabled();
 };

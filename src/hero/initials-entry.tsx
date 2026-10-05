@@ -185,8 +185,10 @@ export const InitialsEntry: FC = () => {
 	};
 
 	return (
-		<div id="hero-initials" className="mt-4">
-			<p className="font-semibold">{m.hero_board_high_score()}</p>
+		<div id="hero-initials" className="mt-5">
+			<p className="text-sm font-semibold">
+				{m.hero_board_enter_initials()}
+			</p>
 			{/* Initials read left to right, whichever way the page does. */}
 			<div
 				dir="ltr"
@@ -274,11 +276,24 @@ export const InitialsEntry: FC = () => {
 				id="hero-initials-save"
 				type="button"
 				disabled={!token || isSaving || isRude}
-				className="mt-2 cursor-pointer rounded-full bg-amber-400 px-6 py-2.5 font-semibold text-slate-900 hover:bg-amber-300 focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none disabled:cursor-default disabled:opacity-60"
+				className="mt-3 cursor-pointer rounded-full bg-slate-900 px-6 py-2.5 font-semibold text-white hover:bg-slate-700 focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none disabled:cursor-default disabled:opacity-60"
 				onClick={save}
 			>
 				{isSaving ? m.hero_board_saving() : m.hero_board_save()}
 			</button>
+			<p className="mt-3">
+				<button
+					id="hero-initials-skip"
+					type="button"
+					disabled={isSaving}
+					className="cursor-pointer rounded-sm text-sm font-semibold text-slate-600 underline-offset-4 hover:text-slate-900 hover:underline focus-visible:ring-4 focus-visible:ring-amber-400/70 focus-visible:outline-none disabled:cursor-default disabled:opacity-60"
+					onClick={() => {
+						controller.skipBoard();
+					}}
+				>
+					{m.hero_board_skip()}
+				</button>
+			</p>
 		</div>
 	);
 };

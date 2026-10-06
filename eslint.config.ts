@@ -115,11 +115,11 @@ export default defineConfig(
 			],
 			// Too keen: it would rename `props`, `ref` and `i`.
 			'unicorn/name-replacements': 'off',
-			// React, JSON and three.js all use null.
-			'unicorn/no-null': 'off',
 			// JSDoc comments keep the leading asterisk on each line, as jsdoc's
 			// own rules expect.
 			'unicorn/no-asterisk-prefix-in-documentation-comments': 'off',
+			// React, JSON and three.js all use null.
+			'unicorn/no-null': 'off',
 		},
 	},
 	{

@@ -6,15 +6,14 @@ import { CAMERA_SWING_END, ChaseCamera } from './chase-camera';
 const dt = 1 / 60;
 
 /**
- * A chase camera on a flat slope, fitted to a stage.
+ * A chase camera on a flat slope, fitted to a stage 900 high.
  * @param width - Stage width.
- * @param height - Stage height.
  * @param isShakeless - Whether to keep it steady.
  * @returns The camera.
  */
-const setUp = (width = 1600, height = 900, isShakeless = false) => {
+const setUp = (width = 1600, isShakeless = false) => {
 	const camera = new ChaseCamera(new Group(), isShakeless);
-	camera.resize(width, height);
+	camera.resize(width, 900);
 	return camera;
 };
 
@@ -43,8 +42,8 @@ describe('ChaseCamera', () => {
 	});
 
 	it('sits further behind me on portrait screens', () => {
-		const landscape = setUp(1600, 900);
-		const portrait = setUp(400, 900);
+		const landscape = setUp(1600);
+		const portrait = setUp(400);
 		expect(portrait.offset.z).toBeGreaterThan(landscape.offset.z);
 		expect(Math.abs(portrait.offset.x)).toBeLessThan(landscape.offset.x);
 	});
@@ -74,7 +73,7 @@ describe('ChaseCamera', () => {
 	});
 
 	it('stays steady for reduced motion', () => {
-		const chase = setUp(1600, 900, true);
+		const chase = setUp(1600, true);
 		chase.shake(0.6);
 		expect(chase.shakiness).toBe(0);
 	});

@@ -246,9 +246,9 @@ const buildWorkstation = (parent: Object3D): Workstation => {
 		texture: CanvasTexture,
 		position: [number, number, number],
 		yaw: number,
-		width: number,
-		height: number,
 	): void => {
+		const width = 0.62;
+		const height = 0.36;
 		const mount = joint(table, position);
 		mount.rotation.y = yaw;
 		part(
@@ -265,10 +265,10 @@ const buildWorkstation = (parent: Object3D): Workstation => {
 		).castShadow = false;
 		part(mount, new BoxGeometry(0.02, 0.02, 0.14), metal, [0, 0, -0.08]);
 	};
-	monitor(code, [0, top + 0.46, -0.14], 0, 0.62, 0.36);
-	monitor(dashboard, [-0.63, top + 0.46, -0.05], 0.45, 0.62, 0.36);
-	monitor(terminal, [0.63, top + 0.46, -0.05], -0.45, 0.62, 0.36);
-	monitor(callTexture(), [0, top + 0.86, -0.16], 0, 0.62, 0.36);
+	monitor(code, [0, top + 0.46, -0.14], 0);
+	monitor(dashboard, [-0.63, top + 0.46, -0.05], 0.45);
+	monitor(terminal, [0.63, top + 0.46, -0.05], -0.45);
+	monitor(callTexture(), [0, top + 0.86, -0.16], 0);
 
 	// Laptop, open, off to the left.
 	const laptop = joint(table, [-0.45, top, 0.06]);

@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { DAILY_WRITE_LIMIT, createApp } from './app';
 import { BOARD_SIZE, type Entry } from './board';
 import type { Database } from './store';
+import type { Visitor } from './turnstile';
 
 interface Row {
 	version: number;
@@ -116,11 +117,12 @@ const fullBoard: Entry[] = Array.from({ length: BOARD_SIZE }, () => ({
 interface Answer {
 	status: number;
 	body: unknown;
+	headers: Headers;
 }
 
 const answer = async (response: Response): Promise<Answer> => {
 	const body: unknown = await response.json();
-	return { status: response.status, body };
+	return { status: response.status, body, headers: response.headers };
 };
 
 interface SetUpOptions {
@@ -132,35 +134,65 @@ interface SetUpOptions {
 
 const setUp = ({ isBound = true, blocked = [] }: SetUpOptions = {}): {
 	db: TestDatabase;
-	verify: ReturnType<typeof vi.fn<(token: string) => Promise<boolean>>>;
-	send: (body: unknown) => Promise<Answer>;
+	verify: ReturnType<
+		typeof vi.fn<(token: string, visitor: Visitor) => Promise<boolean>>
+	>;
+	send: (body: unknown, headers?: Record<string, string>) => Promise<Answer>;
 	get: () => Promise<Answer>;
 } => {
 	const db = new TestDatabase();
-	const verify = vi.fn<(token: string) => Promise<boolean>>(async () => {
-		await Promise.resolve();
-		return true;
-	});
+	const verify = vi.fn<(token: string, visitor: Visitor) => Promise<boolean>>(
+		async () => {
+			await Promise.resolve();
+			return true;
+		},
+	);
 	const app = createApp({
 		database: () => (isBound ? db.db : undefined),
-		verify: async (_env, token) => verify(token),
+		verify: async (_env, token, visitor) => verify(token, visitor),
 		blocked: () => new Set(blocked),
 		now: () => now,
 	});
-	const send = async (body: unknown): Promise<Answer> => {
-		const response = await app.request('/api/scores', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: typeof body === 'string' ? body : JSON.stringify(body),
-		});
+	const send = async (
+		body: unknown,
+		headers: Record<string, string> = {},
+	): Promise<Answer> => {
+		const response = await app.request(
+			'https://elliotleelewis.com/api/scores',
+			{
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', ...headers },
+				body: typeof body === 'string' ? body : JSON.stringify(body),
+			},
+		);
 		return answer(response);
 	};
 	const get = async (): Promise<Answer> => {
-		const response = await app.request('/api/scores');
+		const response = await app.request(
+			'https://elliotleelewis.com/api/scores',
+		);
 		return answer(response);
 	};
 	return { db, verify, send, get };
 };
+
+describe('headers', () => {
+	it('tell browsers to take every answer as JSON', async () => {
+		const { send, get } = setUp();
+		for (const { headers } of [await get(), await send(submission())]) {
+			expect(headers.get('X-Content-Type-Options')).toBe('nosniff');
+			expect(headers.get('Content-Type')).toMatch(/^application\/json/);
+		}
+	});
+
+	it('let the board be cached briefly, but never a saved score', async () => {
+		const { send, get } = setUp();
+		const board = await get();
+		const saved = await send(submission());
+		expect(board.headers.get('Cache-Control')).toBe('public, max-age=30');
+		expect(saved.headers.get('Cache-Control')).toBe('no-store');
+	});
+});
 
 describe('getScores', () => {
 	it('answers with the board, in one statement', async () => {
@@ -213,7 +245,37 @@ describe('postScores', () => {
 			{ initials: 'ELL', trees: 40, metres: 600 },
 		]);
 		expect(db.rowsWritten).toBe(1);
-		expect(verify).toHaveBeenCalledWith('token');
+		expect(verify).toHaveBeenCalledWith('token', {
+			hostname: 'elliotleelewis.com',
+			ip: undefined,
+		});
+	});
+
+	it('tells the check for a person where the token came from', async () => {
+		const { verify, send } = setUp();
+		await send(submission(), { 'CF-Connecting-IP': '192.0.2.1' });
+		expect(verify).toHaveBeenCalledWith('token', {
+			hostname: 'elliotleelewis.com',
+			ip: '192.0.2.1',
+		});
+	});
+
+	it('takes scores from the site itself', async () => {
+		const { send } = setUp();
+		const { status } = await send(submission(), {
+			origin: 'https://elliotleelewis.com',
+		});
+		expect(status).toBe(200);
+	});
+
+	it('turns down a score sent from another site, without the database', async () => {
+		const { db, verify, send } = setUp();
+		const { status } = await send(submission(), {
+			origin: 'https://example.com',
+		});
+		expect(status).toBe(403);
+		expect(db.statements).toBe(0);
+		expect(verify).not.toHaveBeenCalled();
 	});
 
 	it('keeps only the top of the board', async () => {

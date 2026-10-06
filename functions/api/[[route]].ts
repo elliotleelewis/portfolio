@@ -9,9 +9,9 @@ import { isHuman } from '../_lib/turnstile';
 
 const app = createApp({
 	database: (env) => env.leaderboard && drizzle(env.leaderboard),
-	verify: async (env, token) =>
+	verify: async (env, token, visitor) =>
 		env.turnstileSecret !== undefined &&
-		isHuman(env.turnstileSecret, token),
+		isHuman(env.turnstileSecret, token, visitor),
 	blocked: (env) => readBlocked(env.blockedInitials),
 });
 

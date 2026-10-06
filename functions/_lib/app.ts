@@ -20,6 +20,7 @@ import { sValidator } from '@hono/standard-validator';
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { HTTPException } from 'hono/http-exception';
+import { secureHeaders } from 'hono/secure-headers';
 import * as z from 'zod/mini';
 
 import {
@@ -32,6 +33,7 @@ import {
 } from './board';
 import { INITIALS, isBlocked } from './initials';
 import { type Database, hasWrittenRow, readRow } from './store';
+import type { Visitor } from './turnstile';
 
 // The most scores the board takes in a day (UTC). One write each.
 export const DAILY_WRITE_LIMIT = 1000;
@@ -64,8 +66,12 @@ export interface Bindings {
 export interface AppOptions {
 	// The database, if it's bound.
 	database: (env: Bindings) => Database | undefined;
-	// Asks Turnstile whether a token is good.
-	verify: (env: Bindings, token: string) => Promise<boolean>;
+	// Asks Turnstile whether a token is good, and made on this site.
+	verify: (
+		env: Bindings,
+		token: string,
+		visitor: Visitor,
+	) => Promise<boolean>;
 	// Extra initials to turn away (see `readBlocked`).
 	blocked: (env: Bindings) => ReadonlySet<string>;
 	// Now, for counting the day's writes.
@@ -81,6 +87,23 @@ export const createApp = (options: AppOptions) =>
 	// eslint-disable-next-line @typescript-eslint/naming-convention -- Hono's name for it.
 	new Hono<{ Bindings: Bindings }>()
 		.basePath('/api')
+		// Headers that tell browsers to treat answers as just what they are
+		// (JSON, never a page to frame or a script to sniff).
+		.use(secureHeaders())
+		// Only the site itself saves scores. Browsers say where a request
+		// comes from, so another site's page can't send one through a
+		// visitor's browser.
+		.use(async (c, next) => {
+			const origin = c.req.header('Origin');
+			if (
+				origin !== undefined &&
+				c.req.method === 'POST' &&
+				origin !== new URL(c.req.url).origin
+			) {
+				return c.json({ error: 'invalid' } as const, 403);
+			}
+			await next();
+		})
 		.onError((error, c) => {
 			// Malformed JSON, or a body that isn't JSON.
 			if (error instanceof HTTPException && error.status === 400) {
@@ -118,6 +141,8 @@ export const createApp = (options: AppOptions) =>
 				}
 			}),
 			async (c) => {
+				// A saved score is the visitor's own, never one to cache.
+				c.header('Cache-Control', 'no-store');
 				const run = c.req.valid('json');
 				if (isBlocked(run.initials, options.blocked(c.env))) {
 					return c.json({ error: 'blocked' } as const, 400);
@@ -158,7 +183,10 @@ export const createApp = (options: AppOptions) =>
 					// Only once it would make the board, and only once: tokens
 					// are single use.
 					if (!isVerified) {
-						isVerified = await options.verify(c.env, run.token);
+						isVerified = await options.verify(c.env, run.token, {
+							hostname: new URL(c.req.url).hostname,
+							ip: c.req.header('CF-Connecting-IP'),
+						});
 						if (!isVerified) {
 							return c.json(
 								{ error: 'unverified' } as const,

@@ -115,6 +115,9 @@ export default defineConfig(
 			],
 			// Too keen: it would rename `props`, `ref` and `i`.
 			'unicorn/name-replacements': 'off',
+			// JSDoc comments keep the leading asterisk on each line, as jsdoc's
+			// own rules expect.
+			'unicorn/no-asterisk-prefix-in-documentation-comments': 'off',
 			// React, JSON and three.js all use null.
 			'unicorn/no-null': 'off',
 		},
@@ -141,6 +144,13 @@ export default defineConfig(
 					format: ['camelCase', 'PascalCase'],
 				},
 			],
+		},
+	},
+	{
+		// A tool's config is its default export, built by a call.
+		files: ['*.config.ts'],
+		rules: {
+			'unicorn/no-top-level-side-effects': 'off',
 		},
 	},
 	{

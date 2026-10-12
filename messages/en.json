@@ -281,7 +281,7 @@
   "place_livingston": "Livingston, Scotland",
   "place_manchester": "Manchester, UK",
   "trail_snap_event_insights": "Led Event Insights end to end across three teams: {#strong}patented{/strong} ({#link}US11894989B2{/link}) and launched at Snap Partner Summit 2022, giving Lens creators new metrics on their lenses.",
-  "trail_snap_payouts": "Led a four-team effort to build an engagement-based monthly payout program for Lens creators, driving Lens submissions up {#strong}300%{/strong} in its first month.",
+  "trail_snap_payouts": "Led a four-team effort to build an engagement-based monthly payout programme for Lens creators, driving Lens submissions up {#strong}300%{/strong} in its first month.",
   "trail_snap_load_times": "Cut My Lenses load times by {#strong}~40%{/strong} and grew end-to-end coverage of our P0 test cases from {#strong}20% to 75%{/strong}, so we could release faster.",
   "trail_snap_digital_goods": "Built tooling in My Lenses for creators to manage their digital goods, plus an internal payout system, letting some creators earn thousands of dollars a month.",
   "trail_snap_alerting": "Set up real-time error reporting and alerting, bringing mean time to resolve production issues under two hours.",

@@ -330,7 +330,7 @@ importers:
         specifier: ^1.0.0
         version: 1.1.0(@emnapi/core@1.11.3)(@emnapi/runtime@1.11.3)(prettier@3.9.9)
       rollup-plugin-license:
-        specifier: ^3.7.1
+        specifier: ^3.0.0
         version: 3.7.1(picomatch@4.0.7)(rollup@4.64.5)
       typescript:
         specifier: ~6.0.0

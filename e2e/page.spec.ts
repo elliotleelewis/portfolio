@@ -113,7 +113,13 @@ test('sets no cookies, so needs no consent banner', async ({
 	context,
 	page,
 }) => {
-	for (const path of ['/', '/game', '/cookies', '/no-such-page']) {
+	for (const path of [
+		'/',
+		'/game',
+		'/privacy',
+		'/cookies',
+		'/no-such-page',
+	]) {
 		await page.goto(path);
 		await page.waitForLoadState('networkidle');
 	}
@@ -135,14 +141,51 @@ test('explains cookies on a page linked from the footer', async ({ page }) => {
 		'href',
 		'https://elliotleelewis.com/cookies',
 	);
+	// Every key the site keeps in local storage.
+	for (const key of [
+		'hero-best-trees',
+		'hero-easter-egg-hits',
+		'hero-initials',
+		'theme',
+	]) {
+		await expect(page.getByText(key, { exact: true })).toBeVisible();
+	}
+	await page
+		.getByRole('link', { name: 'What the site collects about you' })
+		.click();
+	await expect(page).toHaveURL('/privacy');
 });
 
-test('clears what the game remembers from the cookies page', async ({
+test('has a privacy policy linked from the footer', async ({ page }) => {
+	await page.goto('/');
+	await page
+		.getByRole('contentinfo')
+		.getByRole('link', { name: 'Privacy' })
+		.click();
+	await expect(page).toHaveURL('/privacy');
+	await expect(
+		page.getByRole('heading', { level: 1, name: 'Privacy policy.' }),
+	).toBeVisible();
+	await expect(page.getByText(/^Last updated \w+ \d+, \d{4}$/)).toBeVisible();
+	await expect(
+		page.getByRole('link', { name: 'Message me on LinkedIn' }),
+	).toHaveAttribute('href', 'https://www.linkedin.com/in/elliotleelewis');
+	await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+		'href',
+		'https://elliotleelewis.com/privacy',
+	);
+	await page
+		.getByRole('link', { name: 'What’s kept on your device' })
+		.click();
+	await expect(page).toHaveURL('/cookies');
+});
+
+test('clears what the site remembers from the cookies page', async ({
 	page,
 }) => {
 	await page.goto('/cookies');
 	const clear = page.getByRole('button', {
-		name: 'Clear what the game remembers',
+		name: 'Clear what the site remembers',
 	});
 	const status = page.locator('#storage-status');
 	// Nothing saved yet.
@@ -159,7 +202,7 @@ test('clears what the game remembers from the cookies page', async ({
 	await page.reload();
 	await expect(status).toBeEmpty();
 	await clear.click();
-	await expect(status).toHaveText('Cleared. The game will start afresh.');
+	await expect(status).toHaveText('Cleared. Everything starts afresh.');
 	await expect(clear).toBeDisabled();
 	expect(await page.evaluate(() => localStorage.length)).toBe(0);
 });
@@ -199,7 +242,7 @@ test('describes the site for AI agents in llms.txt', async ({ request }) => {
 		.matchAll(/\]\((https:\/\/elliotleelewis\.com[^)]*)\)/g)
 		.map(([, url = '']) => new URL(url).pathname)
 		.toArray();
-	expect(pages).toEqual(['/', '/game', '/cookies']);
+	expect(pages).toEqual(['/', '/game', '/privacy', '/cookies']);
 	for (const path of pages) {
 		const page = await request.get(path);
 		expect(page.status()).toBe(200);

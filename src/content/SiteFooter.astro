@@ -92,6 +92,13 @@ const year = new Date().getFullYear();
 			<p class="font-mono text-xs tracking-widest text-snow/70 uppercase">
 				© <span id="footer-year">{year}</span> Elliot Lewis ·{' '}
 				<a
+					href="/privacy"
+					class="underline underline-offset-4 hover:text-accent focus-visible:text-accent focus-visible:outline-none"
+				>
+					{m.footer_privacy()}
+				</a>{' '}
+				·{' '}
+				<a
 					href="/cookies"
 					class="underline underline-offset-4 hover:text-accent focus-visible:text-accent focus-visible:outline-none"
 				>

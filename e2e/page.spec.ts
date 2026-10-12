@@ -249,6 +249,57 @@ test('describes the site for AI agents in llms.txt', async ({ request }) => {
 	}
 });
 
+test('credits the open-source code and fonts it sends in licenses.txt', async ({
+	request,
+}) => {
+	const response = await request.get('/licenses.txt');
+	expect(response.status()).toBe(200);
+	expect(response.headers()['content-type']).toMatch(/^text\/plain/);
+	const text = await response.text();
+	// The game's packages, Astro's and Paraglide's own scripts, and the fonts,
+	// each with its licence.
+	for (const name of [
+		'react (MIT)',
+		'three (MIT)',
+		'@react-three/fiber (MIT)',
+		'astro (MIT)',
+		'@inlang/paraglide-js (MIT)',
+		'Fonts (OFL-1.1)',
+	]) {
+		expect(text).toContain(`\n${name}\n`);
+	}
+	expect(text).toContain('SIL OPEN FONT LICENSE Version 1.1');
+});
+
+test('says how to report a security problem in security.txt', async ({
+	request,
+}) => {
+	const response = await request.get('/.well-known/security.txt');
+	expect(response.status()).toBe(200);
+	expect(response.headers()['content-type']).toMatch(/^text\/plain/);
+	const text = await response.text();
+	const fields = text
+		.trim()
+		.split('\n')
+		.map((line) => line.split(': ', 2));
+	const values = (field: string): string[] =>
+		fields
+			.filter(([name]) => name === field)
+			.map(([, value = '']) => value);
+	expect(values('Contact')).toContain(
+		'https://github.com/elliotleelewis/portfolio/security/advisories/new',
+	);
+	expect(values('Canonical')).toEqual([
+		'https://elliotleelewis.com/.well-known/security.txt',
+	]);
+	// RFC 9116 asks for under a year, and it shouldn't be near expiring
+	// straight after a build.
+	const [expires = ''] = values('Expires');
+	const days = (Date.parse(expires) - Date.now()) / (24 * 60 * 60 * 1000);
+	expect(days).toBeGreaterThan(90);
+	expect(days).toBeLessThan(365);
+});
+
 test('loads each font, in the styles each page uses', async ({ page }) => {
 	// The build downloads the fonts from Google Fonts, and carries on without
 	// them if that fails. The page would then quietly fall back to system

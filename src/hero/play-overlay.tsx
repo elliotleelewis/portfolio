@@ -3,7 +3,7 @@ import { type FC, useEffect, useRef } from 'react';
 
 import { m } from '../paraglide/messages';
 
-import { SCENE_ATOM } from './atoms';
+import { PHASE_ATOM, SCENE_ATOM } from './atoms';
 import { Button } from './button';
 import { useIsHydrated } from './hooks';
 
@@ -19,6 +19,7 @@ interface Props {
  */
 export const PlayOverlay: FC<Props> = ({ onPlay }) => {
 	const scene = useAtomValue(SCENE_ATOM);
+	const phase = useAtomValue(PHASE_ATOM);
 	const isHydrated = useIsHydrated();
 	const button = useRef<HTMLButtonElement>(null);
 	const previousScene = useRef(scene);
@@ -32,7 +33,12 @@ export const PlayOverlay: FC<Props> = ({ onPlay }) => {
 	}, [scene]);
 
 	return (
-		<div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 bg-linear-to-t from-scrim/70 to-transparent px-6 pt-24 pb-8 text-center text-snow transition-opacity duration-500 group-data-[state=playing]:opacity-0">
+		<div
+			className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 bg-linear-to-t from-scrim/70 to-transparent px-6 pt-24 pb-8 text-center text-snow transition-opacity duration-500 group-data-[state=playing]:opacity-0"
+			// It only fades out, so out of reach of Tab and screen readers
+			// during a run.
+			inert={phase === 'playing'}
+		>
 			<p className="text-sm tracking-widest text-snow/80 uppercase">
 				{m.hero_greeting()}
 			</p>

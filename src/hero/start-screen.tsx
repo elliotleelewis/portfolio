@@ -36,6 +36,9 @@ export const StartScreen: FC = () => {
 		<div
 			id="hero-start-screen"
 			data-show={isShown ? '' : undefined}
+			// It only fades out, so out of reach of Tab and screen readers
+			// during a run.
+			inert={!isShown}
 			className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center bg-linear-to-t from-scrim/70 to-transparent px-6 pt-24 pb-8 text-center text-snow opacity-0 transition-opacity duration-500 data-show:pointer-events-auto data-show:opacity-100"
 		>
 			<h1 className="font-display text-4xl font-semibold sm:text-5xl">

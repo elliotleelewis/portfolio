@@ -66,6 +66,7 @@ The site and the game share one look: a trail map on a misty mountain. Keep new 
 - **Page:** `src/pages/index.astro` puts the sections from `src/content/` together. Everything is static Astro, except for the hero.
 - **Text** goes through [Paraglide](https://paraglidejs.com), so the Astro pages and the React island share one set of messages:
   - Each message is in `messages/en.json`, and is called as a typed function, like `m.hero_play()`, from `../paraglide/messages`. Paraglide compiles them into `src/paraglide/`, which isn't committed. `pnpm install` compiles them (`prepare`), and so does every build and dev server (the Vite plugin in `astro.config.ts`).
+  - Lists of three or more take the Oxford comma: "trees, bears, and easter eggs". That goes for `public/llms.txt` too.
   - Name keys by where they're shown, in `snake_case`: `hero_…`, `trail_…`, `gallery_…`, `privacy_…`, `cookies_…`.
   - Counts use plural variants (see `hero_best`), numbers are formatted with `: number` (see `gallery_smashed`), and dates with `: datetime` (see `role_dates`, which takes months like `2024-04`), rather than choosing words or formatting in code.
   - Bold or links inside a sentence are markup, like `{#score}…{/score}` in `hero_result`, rendered in React with `ParaglideMessage` from `@inlang/paraglide-js-react`. On Astro pages, use `RichText` (`src/components/rich-text.tsx`) for `{#strong}` and `{#link}`: Astro renders it to HTML at build time, with no JavaScript.

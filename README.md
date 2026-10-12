@@ -124,3 +124,9 @@ Once, with the Cloudflare account on the Workers Free plan. On the Paid plan, re
 Commit messages and pull request titles follow [Conventional Commits](https://www.conventionalcommits.org). A Git hook checks commit messages with commitlint, and CI checks pull request titles. [Renovate](https://docs.renovatebot.com) keeps the dependencies up to date.
 
 If you're an AI agent working in this repo, read [AGENTS.md](AGENTS.md) first.
+
+## Licence
+
+The site is mine, and isn't open source: [LICENSE](LICENSE) reserves all rights. The open-source code and fonts it sends to browsers keep their own licences, and each build lists them at [/licenses.txt](https://elliotleelewis.com/licenses.txt).
+
+To report a security problem, use [GitHub's private vulnerability reporting](https://github.com/elliotleelewis/portfolio/security/advisories/new), as [/.well-known/security.txt](https://elliotleelewis.com/.well-known/security.txt) says.

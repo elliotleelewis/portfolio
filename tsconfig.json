@@ -3,5 +3,7 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "jsxImportSource": "react"
-  }
+  },
+  // TypeScript skips folders whose names start with a dot.
+  "include": [".astro/types.d.ts", "**/*", "src/pages/.well-known/**/*"]
 }

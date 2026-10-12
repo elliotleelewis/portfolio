@@ -1,6 +1,7 @@
 ---
-// What the site collects about visitors, who else sees it, and how to ask
-// me about it. Linked from the footer, next to the cookies page.
+// What leaves a visitor's device: what the site collects about them, who
+// else sees it, and how to ask me about it. What stays on the device is the
+// cookies page's. Linked from the footer.
 import Layout from '../layout/Layout.astro';
 import { m } from '../paraglide/messages';
 
@@ -9,10 +10,11 @@ import '../styles/global.css';
 // Bump this whenever the policy's substance changes.
 const UPDATED = '2026-10-12';
 const CLOUDFLARE_PRIVACY = 'https://www.cloudflare.com/privacypolicy/';
-const ICO = 'https://ico.org.uk/make-a-complaint/';
 const LINKEDIN = 'https://www.linkedin.com/in/elliotleelewis';
 const link =
 	'font-semibold text-accent underline underline-offset-4 hover:text-ink focus-visible:ring-4 focus-visible:ring-accent/50 focus-visible:outline-none';
+const heading = 'mt-12 font-display text-3xl font-semibold';
+const body = 'mt-4 leading-relaxed text-ink/85';
 ---
 
 <Layout
@@ -32,82 +34,47 @@ const link =
 		<p class="mt-4 font-mono text-xs tracking-widest text-muted uppercase">
 			{m.privacy_updated({ date: UPDATED })}
 		</p>
-
-		<h2 class="mt-12 font-display text-3xl font-semibold">
-			{m.privacy_visits_heading()}
-		</h2>
-		<p class="mt-4 leading-relaxed text-ink/85">
-			{m.privacy_visits_body()}
-		</p>
-		<p class="mt-4 leading-relaxed text-ink/85">
-			{m.privacy_analytics_body()}
-		</p>
-
-		<h2 class="mt-12 font-display text-3xl font-semibold">
-			{m.privacy_board_heading()}
-		</h2>
-		<p class="mt-4 leading-relaxed text-ink/85">{m.privacy_board_body()}</p>
-		<p class="mt-4 leading-relaxed text-ink/85">
-			{m.privacy_turnstile_body()}
-		</p>
-
-		<h2 class="mt-12 font-display text-3xl font-semibold">
-			{m.privacy_device_heading()}
-		</h2>
-		<p class="mt-4 leading-relaxed text-ink/85">
-			{m.privacy_device_body()}
-		</p>
 		<p class="mt-4 leading-relaxed">
 			<a href="/cookies" class={link}>
-				{m.privacy_device_link()}
+				{m.privacy_cookies_link()}
 			</a>
 		</p>
 
-		<h2 class="mt-12 font-display text-3xl font-semibold">
-			{m.privacy_others_heading()}
-		</h2>
-		<p class="mt-4 leading-relaxed text-ink/85">
-			{m.privacy_others_body()}
-		</p>
+		<h2 class={heading}>{m.privacy_visits_heading()}</h2>
+		<p class={body}>{m.privacy_visits_body()}</p>
+		<p class={body}>{m.privacy_analytics_body()}</p>
+
+		<h2 class={heading}>{m.privacy_board_heading()}</h2>
+		<p class={body}>{m.privacy_board_body()}</p>
+		<p class={body}>{m.privacy_turnstile_body()}</p>
+
+		<h2 class={heading}>{m.privacy_others_heading()}</h2>
+		<p class={body}>{m.privacy_others_body()}</p>
 		<p class="mt-4 leading-relaxed">
 			<a href={CLOUDFLARE_PRIVACY} class={link}>
 				{m.privacy_others_link()}
 			</a>
 		</p>
 
-		<h2 class="mt-12 font-display text-3xl font-semibold">
-			{m.privacy_why_heading()}
-		</h2>
-		<p class="mt-4 leading-relaxed text-ink/85">{m.privacy_why_body()}</p>
+		<h2 class={heading}>{m.privacy_use_heading()}</h2>
+		<p class={body}>{m.privacy_use_body()}</p>
 
-		<h2 class="mt-12 font-display text-3xl font-semibold">
-			{m.privacy_rights_heading()}
-		</h2>
-		<p class="mt-4 leading-relaxed text-ink/85">
-			{m.privacy_rights_body()}
-		</p>
-		<p class="mt-4 flex flex-wrap gap-x-6 gap-y-2 leading-relaxed">
+		<h2 class={heading}>{m.privacy_signals_heading()}</h2>
+		<p class={body}>{m.privacy_signals_body()}</p>
+
+		<h2 class={heading}>{m.privacy_rights_heading()}</h2>
+		<p class={body}>{m.privacy_rights_body()}</p>
+		<p class="mt-4 leading-relaxed">
 			<a href={LINKEDIN} class={link}>
 				{m.privacy_contact()}
 			</a>
-			<a href={ICO} class={link}>
-				{m.privacy_complain()}
-			</a>
 		</p>
 
-		<h2 class="mt-12 font-display text-3xl font-semibold">
-			{m.privacy_children_heading()}
-		</h2>
-		<p class="mt-4 leading-relaxed text-ink/85">
-			{m.privacy_children_body()}
-		</p>
+		<h2 class={heading}>{m.privacy_children_heading()}</h2>
+		<p class={body}>{m.privacy_children_body()}</p>
 
-		<h2 class="mt-12 font-display text-3xl font-semibold">
-			{m.privacy_changes_heading()}
-		</h2>
-		<p class="mt-4 leading-relaxed text-ink/85">
-			{m.privacy_changes_body()}
-		</p>
+		<h2 class={heading}>{m.privacy_changes_heading()}</h2>
+		<p class={body}>{m.privacy_changes_body()}</p>
 
 		<p class="mt-12">
 			<a

@@ -1,6 +1,6 @@
 ---
-// What the site stores on a visitor's device, and why. Linked from the
-// footer.
+// Everything the site may keep on a visitor's device, and how to clear it.
+// What leaves the device is the privacy page's. Linked from the footer.
 import Layout from '../layout/Layout.astro';
 import { m } from '../paraglide/messages';
 
@@ -8,6 +8,13 @@ import '../styles/global.css';
 
 const CLOUDFLARE_COOKIES =
 	'https://developers.cloudflare.com/fundamentals/reference/policies-compliances/cloudflare-cookies/';
+// What the site keeps in local storage (see src/hero/atoms.ts).
+const STORAGE = [
+	{ key: 'hero-best-trees', what: m.cookies_storage_best() },
+	{ key: 'hero-easter-egg-hits', what: m.cookies_storage_easter_eggs() },
+	{ key: 'hero-initials', what: m.cookies_storage_initials() },
+	{ key: 'theme', what: m.cookies_storage_theme() },
+];
 const link =
 	'font-semibold text-accent underline underline-offset-4 hover:text-ink focus-visible:ring-4 focus-visible:ring-accent/50 focus-visible:outline-none';
 ---
@@ -26,6 +33,11 @@ const link =
 			<span class="text-accent">.</span>
 		</h1>
 		<p class="mt-6 text-lg/relaxed text-ink/85">{m.cookies_intro()}</p>
+		<p class="mt-4 leading-relaxed">
+			<a href="/privacy" class={link}>
+				{m.cookies_privacy_link()}
+			</a>
+		</p>
 
 		<h2 class="mt-12 font-display text-3xl font-semibold">
 			{m.cookies_cloudflare_heading()}
@@ -50,12 +62,22 @@ const link =
 		</p>
 
 		<h2 class="mt-12 font-display text-3xl font-semibold">
-			{m.cookies_game_heading()}
+			{m.cookies_storage_heading()}
 		</h2>
-		<p class="mt-4 leading-relaxed text-ink/85">{m.cookies_game_body()}</p>
+		<p class="mt-4 leading-relaxed text-ink/85">
+			{m.cookies_storage_body()}
+		</p>
+		<dl class="mt-6 grid gap-x-6 gap-y-3 rounded-2xl border border-line bg-surface p-5 sm:grid-cols-[auto_1fr]">
+			{STORAGE.map(({ key, what }) => (
+				<>
+					<dt class="font-mono text-sm">{key}</dt>
+					<dd>{what}</dd>
+				</>
+			))}
+		</dl>
 		<div
 			id="storage"
-			class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2"
+			class="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2"
 			hidden
 		>
 			<button
@@ -63,27 +85,22 @@ const link =
 				type="button"
 				class="cursor-pointer rounded-full border border-line px-5 py-2.5 font-semibold focus-visible:ring-4 focus-visible:ring-accent/50 focus-visible:outline-none enabled:hover:bg-surface disabled:cursor-default disabled:opacity-60"
 			>
-				{m.cookies_game_clear()}
+				{m.cookies_storage_clear()}
 			</button>
 			<p
 				id="storage-status"
 				class="text-sm text-ink/70"
 				aria-live="polite"
-				data-cleared={m.cookies_game_cleared()}
-				data-empty={m.cookies_game_empty()}
+				data-cleared={m.cookies_storage_cleared()}
+				data-empty={m.cookies_storage_empty()}
 			></p>
 		</div>
 
 		<h2 class="mt-12 font-display text-3xl font-semibold">
-			{m.cookies_board_heading()}
-		</h2>
-		<p class="mt-4 leading-relaxed text-ink/85">{m.cookies_board_body()}</p>
-
-		<h2 class="mt-12 font-display text-3xl font-semibold">
-			{m.cookies_analytics_heading()}
+			{m.cookies_nothing_else_heading()}
 		</h2>
 		<p class="mt-4 leading-relaxed text-ink/85">
-			{m.cookies_analytics_body()}
+			{m.cookies_nothing_else_body()}
 		</p>
 
 		<p class="mt-12">

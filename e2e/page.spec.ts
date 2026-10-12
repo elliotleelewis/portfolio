@@ -141,6 +141,19 @@ test('explains cookies on a page linked from the footer', async ({ page }) => {
 		'href',
 		'https://elliotleelewis.com/cookies',
 	);
+	// Every key the site keeps in local storage.
+	for (const key of [
+		'hero-best-trees',
+		'hero-easter-egg-hits',
+		'hero-initials',
+		'theme',
+	]) {
+		await expect(page.getByText(key, { exact: true })).toBeVisible();
+	}
+	await page
+		.getByRole('link', { name: 'What the site collects about you' })
+		.click();
+	await expect(page).toHaveURL('/privacy');
 });
 
 test('has a privacy policy linked from the footer', async ({ page }) => {
@@ -162,17 +175,17 @@ test('has a privacy policy linked from the footer', async ({ page }) => {
 		'https://elliotleelewis.com/privacy',
 	);
 	await page
-		.getByRole('link', { name: 'What’s stored on your device' })
+		.getByRole('link', { name: 'What’s kept on your device' })
 		.click();
 	await expect(page).toHaveURL('/cookies');
 });
 
-test('clears what the game remembers from the cookies page', async ({
+test('clears what the site remembers from the cookies page', async ({
 	page,
 }) => {
 	await page.goto('/cookies');
 	const clear = page.getByRole('button', {
-		name: 'Clear what the game remembers',
+		name: 'Clear what the site remembers',
 	});
 	const status = page.locator('#storage-status');
 	// Nothing saved yet.
@@ -189,7 +202,7 @@ test('clears what the game remembers from the cookies page', async ({
 	await page.reload();
 	await expect(status).toBeEmpty();
 	await clear.click();
-	await expect(status).toHaveText('Cleared. The game will start afresh.');
+	await expect(status).toHaveText('Cleared. Everything starts afresh.');
 	await expect(clear).toBeDisabled();
 	expect(await page.evaluate(() => localStorage.length)).toBe(0);
 });

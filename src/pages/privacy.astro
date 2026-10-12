@@ -1,0 +1,121 @@
+---
+// What the site collects about visitors, who else sees it, and how to ask
+// me about it. Linked from the footer, next to the cookies page.
+import Layout from '../layout/Layout.astro';
+import { m } from '../paraglide/messages';
+
+import '../styles/global.css';
+
+// Bump this whenever the policy's substance changes.
+const UPDATED = '2026-10-12';
+const CLOUDFLARE_PRIVACY = 'https://www.cloudflare.com/privacypolicy/';
+const ICO = 'https://ico.org.uk/make-a-complaint/';
+const LINKEDIN = 'https://www.linkedin.com/in/elliotleelewis';
+const link =
+	'font-semibold text-accent underline underline-offset-4 hover:text-ink focus-visible:ring-4 focus-visible:ring-accent/50 focus-visible:outline-none';
+---
+
+<Layout
+	title={m.privacy_title()}
+	description={m.privacy_description()}
+	path="/privacy"
+>
+	<main class="mx-auto max-w-3xl px-5 py-16 sm:px-8 sm:py-24">
+		<p class="font-mono text-xs tracking-[0.25em] text-accent uppercase">
+			{m.privacy_eyebrow()}
+		</p>
+		<h1 class="mt-4 font-display text-5xl font-semibold tracking-tight sm:text-7xl">
+			{m.privacy_heading()}
+			<span class="text-accent">.</span>
+		</h1>
+		<p class="mt-6 text-lg/relaxed text-ink/85">{m.privacy_intro()}</p>
+		<p class="mt-4 font-mono text-xs tracking-widest text-muted uppercase">
+			{m.privacy_updated({ date: UPDATED })}
+		</p>
+
+		<h2 class="mt-12 font-display text-3xl font-semibold">
+			{m.privacy_visits_heading()}
+		</h2>
+		<p class="mt-4 leading-relaxed text-ink/85">
+			{m.privacy_visits_body()}
+		</p>
+		<p class="mt-4 leading-relaxed text-ink/85">
+			{m.privacy_analytics_body()}
+		</p>
+
+		<h2 class="mt-12 font-display text-3xl font-semibold">
+			{m.privacy_board_heading()}
+		</h2>
+		<p class="mt-4 leading-relaxed text-ink/85">{m.privacy_board_body()}</p>
+		<p class="mt-4 leading-relaxed text-ink/85">
+			{m.privacy_turnstile_body()}
+		</p>
+
+		<h2 class="mt-12 font-display text-3xl font-semibold">
+			{m.privacy_device_heading()}
+		</h2>
+		<p class="mt-4 leading-relaxed text-ink/85">
+			{m.privacy_device_body()}
+		</p>
+		<p class="mt-4 leading-relaxed">
+			<a href="/cookies" class={link}>
+				{m.privacy_device_link()}
+			</a>
+		</p>
+
+		<h2 class="mt-12 font-display text-3xl font-semibold">
+			{m.privacy_others_heading()}
+		</h2>
+		<p class="mt-4 leading-relaxed text-ink/85">
+			{m.privacy_others_body()}
+		</p>
+		<p class="mt-4 leading-relaxed">
+			<a href={CLOUDFLARE_PRIVACY} class={link}>
+				{m.privacy_others_link()}
+			</a>
+		</p>
+
+		<h2 class="mt-12 font-display text-3xl font-semibold">
+			{m.privacy_why_heading()}
+		</h2>
+		<p class="mt-4 leading-relaxed text-ink/85">{m.privacy_why_body()}</p>
+
+		<h2 class="mt-12 font-display text-3xl font-semibold">
+			{m.privacy_rights_heading()}
+		</h2>
+		<p class="mt-4 leading-relaxed text-ink/85">
+			{m.privacy_rights_body()}
+		</p>
+		<p class="mt-4 flex flex-wrap gap-x-6 gap-y-2 leading-relaxed">
+			<a href={LINKEDIN} class={link}>
+				{m.privacy_contact()}
+			</a>
+			<a href={ICO} class={link}>
+				{m.privacy_complain()}
+			</a>
+		</p>
+
+		<h2 class="mt-12 font-display text-3xl font-semibold">
+			{m.privacy_children_heading()}
+		</h2>
+		<p class="mt-4 leading-relaxed text-ink/85">
+			{m.privacy_children_body()}
+		</p>
+
+		<h2 class="mt-12 font-display text-3xl font-semibold">
+			{m.privacy_changes_heading()}
+		</h2>
+		<p class="mt-4 leading-relaxed text-ink/85">
+			{m.privacy_changes_body()}
+		</p>
+
+		<p class="mt-12">
+			<a
+				href="/"
+				class="inline-block rounded-full bg-ink px-5 py-2.5 font-semibold text-paper hover:bg-ink/85 focus-visible:ring-4 focus-visible:ring-accent/50 focus-visible:outline-none"
+			>
+				{m.back_to_trailhead()}
+			</a>
+		</p>
+	</main>
+</Layout>

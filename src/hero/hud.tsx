@@ -7,6 +7,7 @@ import {
 	CALLOUT_ATOM,
 	HINT_ATOM,
 	METRES_ATOM,
+	PHASE_ATOM,
 	SCORE_ATOM,
 	WAITING_ATOM,
 } from './atoms';
@@ -27,6 +28,7 @@ export const Hud: FC = () => {
 	const isHintShown = useAtomValue(HINT_ATOM);
 	// Out of the way of the start screen until the run begins.
 	const isWaiting = useAtomValue(WAITING_ATOM);
+	const phase = useAtomValue(PHASE_ATOM);
 
 	return (
 		<div
@@ -36,6 +38,9 @@ export const Hud: FC = () => {
 					: 'pointer-events-none absolute inset-0 opacity-0 transition-opacity delay-700 duration-700 group-data-[state=playing]:opacity-100'
 			}
 			aria-live="polite"
+			// It only fades out, so out of reach of Tab and screen readers
+			// until a run shows it.
+			inert={isWaiting || phase !== 'playing'}
 		>
 			<div className="absolute inset-s-4 top-4 flex gap-2 font-mono text-sm text-ink group-data-[mode=gallery]:hidden sm:text-base">
 				<div className="rounded-lg bg-surface/70 px-3 py-1.5 backdrop-blur-sm">

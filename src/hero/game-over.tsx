@@ -143,6 +143,9 @@ export const GameOver: FC = () => {
 			className="pointer-events-none absolute inset-0 flex items-center justify-center bg-scrim/30 p-6 opacity-0 transition-opacity duration-500 data-show:pointer-events-auto data-show:opacity-100"
 			role="dialog"
 			aria-labelledby="hero-over-title"
+			// It only fades out, so out of reach of Tab and screen readers
+			// until a run ends.
+			inert={!isShown}
 		>
 			<Card className="max-h-full w-full max-w-sm overflow-y-auto p-6 text-center">
 				{isEntering ? (

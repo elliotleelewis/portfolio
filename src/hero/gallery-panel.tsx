@@ -3,7 +3,7 @@ import { type FC, useEffect, useRef } from 'react';
 
 import { m } from '../paraglide/messages';
 
-import { GALLERY_ATOM, SCENE_ATOM } from './atoms';
+import { GALLERY_ATOM, MODE_ATOM, PHASE_ATOM, SCENE_ATOM } from './atoms';
 import { Button } from './button';
 import { Card } from './card';
 import { useController } from './context';
@@ -20,6 +20,9 @@ export const GalleryPanel: FC = () => {
 	const { index, caption, count, hits } = useAtomValue(GALLERY_ATOM);
 	const smashes = hits[index] ?? 0;
 	const next = useRef<HTMLButtonElement>(null);
+	const mode = useAtomValue(MODE_ATOM);
+	const phase = useAtomValue(PHASE_ATOM);
+	const isShown = mode === 'gallery' && phase === 'playing';
 
 	useEffect(() => {
 		if (scene === 'gallery') {
@@ -34,6 +37,9 @@ export const GalleryPanel: FC = () => {
 			role="region"
 			aria-label={m.gallery_label()}
 			aria-roledescription={m.gallery_carousel()}
+			// It only fades out, so out of reach of Tab and screen readers
+			// outside the gallery.
+			inert={!isShown}
 		>
 			<div className="flex w-full max-w-md items-center gap-2">
 				<Button

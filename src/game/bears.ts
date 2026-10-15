@@ -243,12 +243,14 @@ export class Bears {
 		rig.pose.rotation.z = Math.sin(time * 1.3 + bear.gait) * 0.06;
 		const ahead = player.z - rig.root.position.z;
 		// Spot me early enough to be on the ground as I arrive.
-		if (!(
-			this._player.isRolling &&
-			!this._hooks.isCaught() &&
-			ahead > -2 &&
-			ahead < this._player.speed * 2.6 + 8
-		)) {
+		if (
+			!(
+				this._player.isRolling &&
+				!this._hooks.isCaught() &&
+				ahead > -2 &&
+				ahead < this._player.speed * 2.6 + 8
+			)
+		) {
 			return;
 		}
 

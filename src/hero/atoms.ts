@@ -12,7 +12,8 @@ export type SceneKind = 'game' | 'gallery';
 
 // A scene on the stage, and which kind it is.
 export type ShownScene =
-	{ kind: 'game'; scene: Game } | { kind: 'gallery'; scene: Gallery };
+	| { kind: 'game'; scene: Game }
+	| { kind: 'gallery'; scene: Gallery };
 
 export interface Callout {
 	text: string;

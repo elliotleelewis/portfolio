@@ -23,7 +23,7 @@ pnpm e2e
 
 ## Code style
 
-ESLint enforces most of this, with strict TypeScript, unicorn, jsdoc, jsx-a11y and Tailwind rules. Prettier handles formatting: tabs, single quotes, trailing commas.
+ESLint enforces most of this, with strict TypeScript, unicorn, jsdoc, jsx-a11y and Tailwind rules. [oxfmt](https://oxc.rs/docs/guide/usage/formatter) handles formatting (`.oxfmtrc.json`), including the Astro files: tabs, single quotes, trailing commas.
 
 - **Names:**
   - Most things are `camelCase` and types are `PascalCase`.

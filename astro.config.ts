@@ -108,14 +108,19 @@ export default defineConfig({
 		// the fallback for browsers without AVIF. Effort 3 encodes six times
 		// faster than the default 4, for files about 7% bigger at the same
 		// quality. The dev server encodes on every request, and at 4 it took
-		// 14 seconds to show the hero photo.
+		// 14 seconds to show the hero photo. Astro's image cache
+		// (node_modules/.astro) ignores these settings, so delete it after
+		// changing them, or builds keep the old images.
 		service: sharpImageService({
 			avif: { quality: 80, chromaSubsampling: '4:4:4', effort: 3 },
 			webp: { quality: 90 },
 		}),
 	},
 	// Every font comes from Google Fonts, and the build hosts it with the
-	// site. A browser only downloads the styles a page uses.
+	// site. A browser only downloads the styles a page uses. If the download
+	// fails, the build carries on without them, so the e2e test "loads each
+	// font" checks they're there. Each family also needs a <Font> in
+	// src/layout/Layout.astro.
 	fonts: [
 		// Headings are semibold, and one line italic.
 		fraunces(600, 'normal'),
@@ -147,7 +152,9 @@ export default defineConfig({
 			// Compiles messages/ into typed functions in src/paraglide/, for
 			// the Astro pages and the React island alike. English is the only
 			// language so far. Keep the strategy in step with `prepare` in
-			// package.json.
+			// package.json. Adding one means a messages/{locale}.json, the
+			// locale in project.inlang/settings.json, Astro's i18n routing,
+			// and a `url` strategy here and in `prepare`.
 			paraglideVitePlugin({
 				project: './project.inlang',
 				outdir: './src/paraglide',

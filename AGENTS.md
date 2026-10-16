@@ -96,4 +96,4 @@ The site and the game share one look: a trail map on a misty mountain. Keep new 
 
 - [Conventional Commits](https://www.conventionalcommits.org) for commit messages and PR titles (`feat: …`, `fix: …`, `refactor: …`, `chore: …`). A Git hook and CI check them.
 - One change per pull request. Say what changed and how you checked it.
-- Don't edit `pnpm-lock.yaml` by hand.
+- Change dependencies in `package.json` and run `pnpm install`; never edit `pnpm-lock.yaml` by hand. Renovate keeps them up to date.

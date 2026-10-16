@@ -73,17 +73,14 @@ test.describe('gallery', () => {
 				JSON.stringify({ outhouse: 1234, jailbreak: 1 }),
 			);
 		});
-		await page.reload();
-		await startRun(page);
-		await crash(page);
-		await page.getByRole('button', { name: 'See the easter eggs' }).click();
+		// Straight in from the game page's start screen, without a run first.
+		// Opening it after a run has a test of its own, below.
+		await page.goto('/game');
+		await page.locator('#hero-start-gallery').click();
 		// Opening the gallery loads and draws a whole new scene.
 		await expect(page.locator('#hero')).toHaveAttribute(
 			'data-mode',
 			'gallery',
-			{
-				timeout: 60_000,
-			},
 		);
 	});
 
@@ -139,28 +136,44 @@ test.describe('gallery', () => {
 			'Barrel into it on the trail to find out',
 		);
 	});
+});
 
-	test('hides the game HUD, even while leaving', async ({ page }) => {
-		const score = page.locator('#hero-score');
-		await expect(score).toBeHidden();
-		await page.locator('#hero-exit').click();
-		// Regression: the HUD used to flash back up during the fade out. Watch
-		// it until the fade has finished, counting anything with an opacity of
-		// 0 (on it or around it) as unseen.
-		const wasSeen = await page.evaluate(async () => {
-			const element = document.querySelector('#hero-score');
-			const start = performance.now();
-			let isSeen = false;
-			while (performance.now() - start < 2500) {
-				isSeen ||=
-					element?.checkVisibility({ opacityProperty: true }) ??
-					false;
-				await new Promise((resolve) => requestAnimationFrame(resolve));
+test('opens the gallery after a run, and hides the game HUD, even while leaving', async ({
+	page,
+}) => {
+	await startRun(page);
+	await crash(page);
+	await page.getByRole('button', { name: 'See the easter eggs' }).click();
+	await expect(page.locator('#hero')).toHaveAttribute('data-mode', 'gallery');
+	const score = page.locator('#hero-score');
+	await expect(score).toBeHidden();
+	await page.locator('#hero-exit').click();
+	// Regression: the HUD used to flash back up during the fade out. Watch
+	// it until the fade has finished, counting anything with an opacity of
+	// 0 (on it or around it) as unseen.
+	const wasSeen = await page.evaluate(async () => {
+		const element = document.querySelector('#hero-score');
+		const start = performance.now();
+		let isSeen = false;
+		while (performance.now() - start < 2500) {
+			isSeen ||=
+				element?.checkVisibility({ opacityProperty: true }) ?? false;
+			const isFading = document
+				.getAnimations()
+				.some(
+					(animation) =>
+						animation instanceof CSSTransition &&
+						animation.playState === 'running',
+				);
+			// A moment for the fades to begin, then done once they're over.
+			if (!isFading && performance.now() - start > 100) {
+				break;
 			}
-			return isSeen;
-		});
-		expect(wasSeen).toBe(false);
+			await new Promise((resolve) => requestAnimationFrame(resolve));
+		}
+		return isSeen;
 	});
+	expect(wasSeen).toBe(false);
 });
 
 test.describe('on a desktop', () => {

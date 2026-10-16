@@ -39,7 +39,7 @@ test('waits on its start screen, over the game, until I start', async ({
 	await expect(
 		page.getByRole('heading', { name: 'The quick way down' }),
 	).toBeVisible();
-	await expect(page.locator('#hero-start')).toBeEnabled({ timeout: 60_000 });
+	await expect(page.locator('#hero-start')).toBeEnabled();
 	await expect(page.locator('#hero-stage canvas')).toBeVisible();
 	await expect(page.locator('#hero-start')).toBeFocused();
 	// However long it waits, the run doesn't start on its own.
@@ -98,9 +98,7 @@ test('shows my best run on the start screen', async ({ page }) => {
 });
 
 test('opens the easter eggs from the start screen', async ({ page }) => {
-	await expect(page.locator('#hero-start-gallery')).toBeEnabled({
-		timeout: 60_000,
-	});
+	await expect(page.locator('#hero-start-gallery')).toBeEnabled();
 	await page.locator('#hero-start-gallery').click();
 	await expect(page.locator('#hero')).toHaveAttribute('data-mode', 'gallery');
 	await expect(page.locator('#hero-start-screen')).not.toHaveAttribute(

@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test';
 import { expect, test as base } from '@playwright/test';
 
 export { expect } from '@playwright/test';
@@ -54,3 +55,19 @@ export const test = base.extend<{ pageErrors: string[] }>({
 		{ auto: true },
 	],
 });
+
+/**
+ * Ends every fade in progress, as though it had played out. Tests that judge
+ * how the page ends up, like its colours or what Tab can reach, needn't sit
+ * through the site's slower fades.
+ * @param page - The page.
+ */
+export const finishFades = async (page: Page): Promise<void> => {
+	await page.evaluate(() => {
+		for (const animation of document.getAnimations()) {
+			if (animation instanceof CSSTransition) {
+				animation.finish();
+			}
+		}
+	});
+};

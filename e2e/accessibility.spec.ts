@@ -1,26 +1,27 @@
 import { AxeBuilder } from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 
-import { expect, test } from './fixtures';
+import { expect, finishFades, test } from './fixtures';
 import { crash, startFromStartScreen, startRun } from './hero';
 import { mockLeaderboard } from './leaderboard';
 
 /**
  * Checks the page as it is now against WCAG 2.2 AA, and best practice.
  * @param page - The page to check.
+ * @param within - Only the part of the page to check, when the rest has a
+ * test of its own.
  */
-const expectNoViolations = async (page: Page): Promise<void> => {
+const expectNoViolations = async (
+	page: Page,
+	within?: string,
+): Promise<void> => {
 	// Colours are only fair to judge once things have finished fading in.
-	await page.waitForFunction(() =>
-		document
-			.getAnimations()
-			.every(
-				(animation) =>
-					!(animation instanceof CSSTransition) ||
-					animation.playState === 'finished',
-			),
-	);
-	const { violations } = await new AxeBuilder({ page })
+	await finishFades(page);
+	const builder = new AxeBuilder({ page });
+	if (within) {
+		builder.include(within);
+	}
+	const { violations } = await builder
 		.withTags([
 			'wcag2a',
 			'wcag2aa',
@@ -71,26 +72,45 @@ for (const colorScheme of ['light', 'dark'] as const) {
 			await expectNoViolations(page);
 		});
 
-		test('the game page is accessible', async ({ page }) => {
+		test("the game page's start screen is accessible", async ({ page }) => {
 			await page.goto('/game');
-			await expect(page.locator('#hero-start')).toBeEnabled({
-				timeout: 60_000,
-			});
+			await expect(page.locator('#hero-start')).toBeEnabled();
 			await expectNoViolations(page);
+		});
+
+		test('a run on the game page is accessible', async ({ page }) => {
+			await page.goto('/game');
 			await startFromStartScreen(page);
 			await expectNoViolations(page);
+		});
+
+		test("the game page's game-over card is accessible", async ({
+			page,
+		}) => {
+			await page.goto('/game');
+			await startFromStartScreen(page);
 			await crash(page);
 			await expectNoViolations(page);
 		});
 
 		test('the easter egg gallery is accessible', async ({ page }) => {
 			await page.goto('/game');
-			await expect(page.locator('#hero-start-gallery')).toBeEnabled({
-				timeout: 60_000,
-			});
+			await expect(page.locator('#hero-start-gallery')).toBeEnabled();
 			await page.locator('#hero-start-gallery').click();
 			await expect(page.locator('#hero-gallery-caption')).not.toBeEmpty();
 			await expectNoViolations(page);
+		});
+
+		test('entering initials for the leaderboard is accessible', async ({
+			page,
+		}) => {
+			await mockLeaderboard(page);
+			await page.goto('/');
+			await startRun(page);
+			await crash(page);
+			await expect(page.locator('#hero-initials-save')).toBeEnabled();
+			// The rest of the page is the home page's test.
+			await expectNoViolations(page, '#hero');
 		});
 
 		test('the leaderboard is accessible', async ({ page }) => {
@@ -98,19 +118,18 @@ for (const colorScheme of ['light', 'dark'] as const) {
 			await page.goto('/');
 			await startRun(page);
 			await crash(page);
-			await expect(page.locator('#hero-initials-save')).toBeEnabled();
-			await expectNoViolations(page);
 			await page.locator('#hero-initials-save').click();
 			await expect(
 				page.locator('#hero-board tr[data-mine]'),
 			).toBeVisible();
-			await expectNoViolations(page);
+			await expectNoViolations(page, '#hero');
 		});
 
 		test('the game in the hero is accessible', async ({ page }) => {
 			await page.goto('/');
 			await startRun(page);
-			await expectNoViolations(page);
+			// The rest of the page is the home page's test.
+			await expectNoViolations(page, '#hero');
 		});
 	});
 }

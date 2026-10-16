@@ -12,7 +12,8 @@ const launchOptions = {
 
 export default defineConfig({
 	testDir: 'e2e',
-	// Software WebGL is slow; the game tests fast-forward, but still take time.
+	// Software WebGL is slow. The game tests fast-forward, and skip drawing
+	// the scene (see fixtures.ts), but still take time.
 	timeout: 90_000,
 	expect: { timeout: 15_000 },
 	fullyParallel: true,

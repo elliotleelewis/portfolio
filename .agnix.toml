@@ -1,0 +1,4 @@
+target = "ClaudeCode"
+# Only Claude Code reads AGENTS.md here. The Codex rules misread bare file
+# names in it as paths from the repo root.
+tools = ["claude-code"]

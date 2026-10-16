@@ -15,7 +15,7 @@ pnpm build
 pnpm e2e
 ```
 
-- `pnpm lint` fails on warnings too. `pnpm lint:fix` and `pnpm format:fix` fix most of it, including import order and Tailwind class order.
+- `pnpm lint` fails on warnings too. It also checks this file with [agnix](https://github.com/agent-sh/agnix); `pnpm exec agnix explain <rule>` says why a rule fired. `pnpm lint:fix` and `pnpm format:fix` fix most of it, including import order and Tailwind class order.
 - `pnpm knip` fails on unused dependencies, files and exports. Delete them, or stop exporting what only its own file uses. If something is used in a way it can't see, say so in `knip.ts`.
 - The build needs Node 24: the page's `dir` comes from `Intl.Locale`'s `getTextInfo()`.
 - If Playwright's own browser isn't installed, point `PLAYWRIGHT_CHROMIUM_EXECUTABLE` at a Chromium you have.
@@ -29,6 +29,8 @@ pnpm e2e
 - **Migrations only add.** The live code runs against them until the deploy finishes. Change `functions/_lib/schema.ts` and run `pnpm db:generate`; never write them by hand.
 - **`src/` and `functions/` share no code.** `src/` may only `import type` from `functions/` (`.astro` files nothing), and `functions/` never imports from `src/`. ESLint enforces it.
 - **The first page load stays small.** The game, the leaderboard's code and Turnstile all load lazily. Import types with `import type { … }`, never `import { type … }`: under `verbatimModuleSyntax` the second still loads the module (it once pulled three.js into the first load).
+- **The page mirrors for right-to-left.** Use logical Tailwind classes for anything to the side (`ps`/`pe`, `inset-s`/`inset-e`, `border-s`), never `left`/`right`.
+- **Colour follows the visitor's theme pick.** Use a `light-dark()` token, never `prefers-color-scheme` or Tailwind's `dark:`, which ignore the pick.
 - **`public/llms.txt`** restates `src/content/`, so update it when that changes. Links only in the `##` sections, plain ASCII.
 - **Licences:** every package sent to browsers is credited in `/licenses.txt`, and the build fails on one without a permissive licence. See `astro.config.ts`.
 
@@ -40,7 +42,6 @@ ESLint (strict TypeScript, unicorn, jsdoc, jsx-a11y, Tailwind) and oxfmt (tabs, 
 - **Comments:** functions need JSDoc with `@param` and `@returns`. Comments say why, not what. Game code is in the first person, from the player's side ("where I am", "a bear got me").
 - **React components** are typed with `FC`: `const Foo: FC<Props> = ({ bar }) => …`.
 - **No `as` or non-null `!`.** Narrow the type, or restructure.
-- **Tailwind:** logical classes for anything to the side (`ps`/`pe`, `inset-s`/`inset-e`, `border-s`), never `left`/`right`, so the page mirrors for right-to-left.
 - **Imports:** groups of packages, then `../`, then `./`. `pnpm lint:fix` sorts them.
 
 ## Design
@@ -53,7 +54,7 @@ The site and the game share one look: a trail map on a misty mountain. Keep new 
   - `danger` only for errors. `pine` and `ridge-*` only for the landscape.
   - Over the hero's photo and scene: `snow` text on a `scrim` gradient (`from-scrim/70`), the same in both modes. `fog` is the scene's haze before it's drawn.
   - The 3D scene is day in light mode, night in dark. Its light comes from the `--scene-*` tokens and `accent` (my lantern), read by `src/game/atmosphere.ts`: change them in `global.css`, not the game. The world's own colours (grass, rock, bears, easter eggs) are set in `src/game/`; check them under the night light too.
-- **Light and dark mode** follow the device unless the visitor picks one (`src/hero/theme-picker.tsx`), which sets `data-theme` on `<html>`. Never use `prefers-color-scheme` or Tailwind's `dark:` for colour: they ignore the pick. Use a `light-dark()` token.
+- **Light and dark mode** follow the device unless the visitor picks one (`src/hero/theme-picker.tsx`), which sets `data-theme` on `<html>`.
 - **Type:** Fraunces (`font-display`) semibold for headings, `tracking-tight` on big ones. Inter (`font-sans`) for text. JetBrains Mono (`font-mono`) for numbers, scores and labels; eyebrows are `font-mono text-xs tracking-[0.25em] text-accent uppercase`. Combo callouts can go bolder.
 - **Shape:** `rounded-xl` cards on the page, `rounded-2xl` cards over the game, `rounded-full` buttons and pills, `rounded-lg` small chips.
 - **Focus:** anything pressable has `focus-visible:ring-4`, `ring-accent/50` on the page and `ring-accent/70` over the game.

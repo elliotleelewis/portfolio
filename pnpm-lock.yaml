@@ -278,6 +278,9 @@ importers:
       '@types/three':
         specifier: ^0.186.0
         version: 0.186.0
+      agnix:
+        specifier: ^0.57.0
+        version: 0.57.0
       drizzle-kit:
         specifier: ^0.31.0
         version: 0.31.11
@@ -3478,6 +3481,13 @@ packages:
   acorn@8.18.0:
     resolution: {integrity: sha512-lGq+9yr1/GuAWaVYIHRjvvySG5/4VfKIvC8EWxStPdcDh/Ka7FG3twP6v4d5BkravUilhIAsG4Qj83t02LWUPQ==}
     engines: {node: '>=0.4.0'}
+    hasBin: true
+
+  agnix@0.57.0:
+    resolution: {integrity: sha512-AQO0xi4dk4mgYXcIYivbH3vjh14/pg7kipZ//X1nqlAQ1lJTtoLJ4U4vhnpBK2ldMOUVQFenhhbXKGvAa1MVng==}
+    engines: {node: '>=16.0.0'}
+    cpu: [x64, arm64]
+    os: [darwin, linux, win32]
     hasBin: true
 
   ajv-draft-04@1.0.0:
@@ -8719,6 +8729,8 @@ snapshots:
       acorn: 8.18.0
 
   acorn@8.18.0: {}
+
+  agnix@0.57.0: {}
 
   ajv-draft-04@1.0.0(ajv@8.20.0):
     optionalDependencies:

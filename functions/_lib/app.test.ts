@@ -134,22 +134,22 @@ interface SetUpOptions {
 
 const setUp = ({ isBound = true, blocked = [] }: SetUpOptions = {}): {
 	db: TestDatabase;
-	verify: ReturnType<
+	isHuman: ReturnType<
 		typeof vi.fn<(token: string, visitor: Visitor) => Promise<boolean>>
 	>;
 	send: (body: unknown, headers?: Record<string, string>) => Promise<Answer>;
 	get: () => Promise<Answer>;
 } => {
 	const db = new TestDatabase();
-	const verify = vi.fn<(token: string, visitor: Visitor) => Promise<boolean>>(
-		async () => {
-			await Promise.resolve();
-			return true;
-		},
-	);
+	const isHuman = vi.fn<
+		(token: string, visitor: Visitor) => Promise<boolean>
+	>(async () => {
+		await Promise.resolve();
+		return true;
+	});
 	const app = createApp({
 		database: () => (isBound ? db.db : undefined),
-		verify: async (_env, token, visitor) => verify(token, visitor),
+		verify: async (_env, token, visitor) => isHuman(token, visitor),
 		blocked: () => new Set(blocked),
 		now: () => now,
 	});
@@ -173,7 +173,7 @@ const setUp = ({ isBound = true, blocked = [] }: SetUpOptions = {}): {
 		);
 		return answer(response);
 	};
-	return { db, verify, send, get };
+	return { db, isHuman, send, get };
 };
 
 describe('headers', () => {
@@ -234,7 +234,7 @@ describe('getScores', () => {
 
 describe('postScores', () => {
 	it('puts a score on the board, in one row write', async () => {
-		const { db, verify, send } = setUp();
+		const { db, isHuman, send } = setUp();
 		const { body } = await send(submission());
 		expect(body).toEqual({
 			entries: [{ initials: 'ELL', trees: 40, metres: 600 }],
@@ -245,16 +245,16 @@ describe('postScores', () => {
 			{ initials: 'ELL', trees: 40, metres: 600 },
 		]);
 		expect(db.rowsWritten).toBe(1);
-		expect(verify).toHaveBeenCalledWith('token', {
+		expect(isHuman).toHaveBeenCalledWith('token', {
 			hostname: 'elliotleelewis.com',
 			ip: undefined,
 		});
 	});
 
 	it('tells the check for a person where the token came from', async () => {
-		const { verify, send } = setUp();
+		const { isHuman, send } = setUp();
 		await send(submission(), { 'CF-Connecting-IP': '192.0.2.1' });
-		expect(verify).toHaveBeenCalledWith('token', {
+		expect(isHuman).toHaveBeenCalledWith('token', {
 			hostname: 'elliotleelewis.com',
 			ip: '192.0.2.1',
 		});
@@ -269,13 +269,13 @@ describe('postScores', () => {
 	});
 
 	it('turns down a score sent from another site, without the database', async () => {
-		const { db, verify, send } = setUp();
+		const { db, isHuman, send } = setUp();
 		const { status } = await send(submission(), {
 			origin: 'https://example.com',
 		});
 		expect(status).toBe(403);
 		expect(db.statements).toBe(0);
-		expect(verify).not.toHaveBeenCalled();
+		expect(isHuman).not.toHaveBeenCalled();
 	});
 
 	it('keeps only the top of the board', async () => {
@@ -287,7 +287,7 @@ describe('postScores', () => {
 	});
 
 	it('turns down anything that is not a submission, without the database', async () => {
-		const { db, verify, send } = setUp();
+		const { db, isHuman, send } = setUp();
 		for (const body of [
 			'not json',
 			{},
@@ -299,7 +299,7 @@ describe('postScores', () => {
 			expect(status).toBe(400);
 		}
 		expect(db.statements).toBe(0);
-		expect(verify).not.toHaveBeenCalled();
+		expect(isHuman).not.toHaveBeenCalled();
 	});
 
 	it('turns down a body too big to be a submission', async () => {
@@ -337,15 +337,15 @@ describe('postScores', () => {
 	});
 
 	it('turns down a score that fails the check for a person', async () => {
-		const { db, verify, send } = setUp();
-		verify.mockResolvedValue(false);
+		const { db, isHuman, send } = setUp();
+		isHuman.mockResolvedValue(false);
 		const { status } = await send(submission());
 		expect(status).toBe(403);
 		expect(db.rowsWritten).toBe(0);
 	});
 
 	it('answers with the board, without writing, when the score misses out', async () => {
-		const { db, verify, send } = setUp();
+		const { db, isHuman, send } = setUp();
 		db.row = {
 			version: 3,
 			day: '',
@@ -360,11 +360,11 @@ describe('postScores', () => {
 		});
 		expect(db.rowsWritten).toBe(0);
 		// No need to spend the token on a score that won't be saved.
-		expect(verify).not.toHaveBeenCalled();
+		expect(isHuman).not.toHaveBeenCalled();
 	});
 
 	it('keeps both scores when another lands first', async () => {
-		const { db, verify, send } = setUp();
+		const { db, isHuman, send } = setUp();
 		db.beforeWrite = () => {
 			db.row = {
 				version: 1,
@@ -382,7 +382,7 @@ describe('postScores', () => {
 			{ initials: 'ELL', trees: 40, metres: 600 },
 		]);
 		// Tokens are single use.
-		expect(verify).toHaveBeenCalledOnce();
+		expect(isHuman).toHaveBeenCalledOnce();
 	});
 
 	it('stops taking scores once the day has had its writes', async () => {

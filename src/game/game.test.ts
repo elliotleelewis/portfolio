@@ -2,6 +2,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
 
+import { fakeSound } from './fake-audio';
 import { Game, type GameCallbacks } from './game';
 
 const ignore = (): void => {
@@ -47,5 +48,21 @@ describe('Game', () => {
 		game.advance(2.5);
 		expect(state.isRolling).toBe(true);
 		game.dispose();
+	});
+
+	it('is silent until it has sound, then plays the run', () => {
+		const { game } = setup(false);
+		const { sound, output } = fakeSound();
+		game.advance(8);
+		expect(output.sources).toEqual([]);
+		game.attachSound(sound);
+		game.advance(0.5);
+		// Rolling along.
+		const [rumble] = output.sources;
+		expect(rumble.gain?.gain.value).toBeGreaterThan(0);
+		game.catchPlayer();
+		expect(output.played()).toEqual(['roar', 'thud']);
+		game.dispose();
+		expect(rumble.stoppedAt).toBeDefined();
 	});
 });

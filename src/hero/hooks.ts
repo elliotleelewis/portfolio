@@ -20,8 +20,8 @@ const keys = new Map<string, HeldInput>([
 
 /**
  * Keyboard controls while a scene is up: arrows (or WASD) steer the game or
- * move through the gallery, and Escape leaves (back to the photo, or to the
- * start screen on the game's own page).
+ * move through the gallery, M mutes the game, and Escape leaves (back to the
+ * photo, or to the start screen on the game's own page).
  */
 export const useKeyboardControls = (): void => {
 	const controller = useController();
@@ -54,6 +54,17 @@ export const useKeyboardControls = (): void => {
 					controller.nextEgg();
 				} else {
 					controller.previousEgg();
+				}
+				return;
+			}
+			if (event.code === 'KeyM') {
+				// Not while typing initials, when M is a letter.
+				if (
+					event.type === 'keydown' &&
+					!event.repeat &&
+					controller.isSteerable
+				) {
+					controller.toggleMuted();
 				}
 				return;
 			}

@@ -75,6 +75,7 @@ The site and the game share one look: a trail map on a misty mountain. Keep new 
   - Components free what they create; game parts free theirs in `dispose()`.
   - Put anything new on the slope at least `APPEAR_AHEAD` ahead of the player (`world.ts`), so it arrives inside the haze.
   - My rig (`character.ts`) and the bears' (`bear.ts`) merge each joint's pieces into one mesh per material. Animate joints; keep a piece out of the merge to move it alone, as my eyes are.
+  - Sound: a new sound is a line of ZzFX parameters in `sounds.ts`, played by `GameAudio` (`game-audio.ts`), never by `Game` itself. Check it on a phone's speaker, which drops the lows. ZzFX makes its audio context as it loads, so it's only imported after a press (`wakeSound` in the controller).
   - Right-to-left: the page's `Mirror` (`direction.ts`) flips the camera's side, the sun and the gallery row. Steering stays physical: ← turns screen-left.
 - **Easter eggs** (`src/game/easter-eggs/`, listed in `index.ts`) merge parts that share a parent and material (`mergeStill` in `merge.ts`). Keep your own references to parts you animate, never walk `children`, and animate glowing, see-through or textured materials rather than a plain one's colour.
 - **Leaderboard** (`functions/`): a Hono app, `createApp` in `functions/_lib/app.ts`. Chain new routes there so their types reach the page's client (`src/hero/leaderboard.ts`).

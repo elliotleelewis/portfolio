@@ -54,9 +54,9 @@ const along = (value: number): -1 | 1 => (value < 0 ? -1 : 1);
 export const swipeStep = (offset: number, velocity: number): -1 | 0 | 1 => {
 	if (Math.abs(velocity) >= flickSpeed) {
 		// A flick back against the drag cancels it.
-		return offset !== 0 && along(velocity) !== along(offset)
-			? 0
-			: along(velocity);
+		return offset === 0 || along(velocity) === along(offset)
+			? along(velocity)
+			: 0;
 	}
 	return Math.abs(offset) >= 0.5 ? along(offset) : 0;
 };

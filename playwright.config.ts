@@ -12,9 +12,10 @@ const launchOptions = {
 
 export default defineConfig({
 	testDir: 'e2e',
-	// Software WebGL is slow; the game tests fast-forward, but still take time.
-	timeout: 90_000,
-	expect: { timeout: 15_000 },
+	// A test that takes longer than this is a slow test, and fails, so the
+	// suite stays quick. The game tests fast-forward, and skip drawing the
+	// scene (see fixtures.ts), to keep inside it.
+	timeout: 10_000,
 	fullyParallel: true,
 	workers: isCi ? 2 : undefined,
 	forbidOnly: isCi,

@@ -73,17 +73,14 @@ test.describe('gallery', () => {
 				JSON.stringify({ outhouse: 1234, jailbreak: 1 }),
 			);
 		});
-		await page.reload();
-		await startRun(page);
-		await crash(page);
-		await page.getByRole('button', { name: 'See the easter eggs' }).click();
+		// Straight in from the game page's start screen, without a run first.
+		// Opening it after a run has a test of its own, below.
+		await page.goto('/game');
+		await page.locator('#hero-start-gallery').click();
 		// Opening the gallery loads and draws a whole new scene.
 		await expect(page.locator('#hero')).toHaveAttribute(
 			'data-mode',
 			'gallery',
-			{
-				timeout: 60_000,
-			},
 		);
 	});
 
@@ -139,8 +136,22 @@ test.describe('gallery', () => {
 			'Barrel into it on the trail to find out',
 		);
 	});
+});
 
-	test('hides the game HUD, even while leaving', async ({ page }) => {
+test.describe('while animations play', () => {
+	// The HUD's regression was in a fade, so this one has to watch it play.
+	test.use({ animations: 'play' });
+
+	test('opens the gallery after a run, and hides the game HUD, even while leaving', async ({
+		page,
+	}) => {
+		await startRun(page);
+		await crash(page);
+		await page.getByRole('button', { name: 'See the easter eggs' }).click();
+		await expect(page.locator('#hero')).toHaveAttribute(
+			'data-mode',
+			'gallery',
+		);
 		const score = page.locator('#hero-score');
 		await expect(score).toBeHidden();
 		await page.locator('#hero-exit').click();
@@ -155,6 +166,17 @@ test.describe('gallery', () => {
 				isSeen ||=
 					element?.checkVisibility({ opacityProperty: true }) ??
 					false;
+				const isFading = document
+					.getAnimations()
+					.some(
+						(animation) =>
+							animation instanceof CSSTransition &&
+							animation.playState === 'running',
+					);
+				// A moment for the fades to begin, then done once they're over.
+				if (!isFading && performance.now() - start > 100) {
+					break;
+				}
 				await new Promise((resolve) => requestAnimationFrame(resolve));
 			}
 			return isSeen;

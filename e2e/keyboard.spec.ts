@@ -21,16 +21,6 @@ const unseenTabStops = async (page: Page): Promise<string[]> => {
 				element.dataset.visible = '';
 			}
 		});
-	// Fades still running would catch a panel on its way in.
-	await page.waitForFunction(() =>
-		document
-			.getAnimations()
-			.every(
-				(animation) =>
-					!(animation instanceof CSSTransition) ||
-					animation.playState !== 'running',
-			),
-	);
 	await page.evaluate(() => {
 		if (document.activeElement instanceof HTMLElement) {
 			document.activeElement.blur();
@@ -112,7 +102,7 @@ test('only tabs to what can be seen on the start screen and in the gallery', asy
 	page,
 }) => {
 	await page.goto('/game');
-	await expect(page.locator('#hero-start')).toBeEnabled({ timeout: 60_000 });
+	await expect(page.locator('#hero-start')).toBeEnabled();
 	expect(await unseenTabStops(page)).toEqual([]);
 	await page.locator('#hero-start-gallery').click();
 	await expect(page.locator('#hero-gallery-caption')).not.toBeEmpty();

@@ -19,9 +19,7 @@ interface HeroHandle {
 export const startRun = async (page: Page): Promise<void> => {
 	const hero = page.locator('#hero');
 	await page.locator('#hero-play').click();
-	await expect(hero).toHaveAttribute('data-state', 'playing', {
-		timeout: 60_000,
-	});
+	await expect(hero).toHaveAttribute('data-state', 'playing');
 	await advance(page, 8);
 };
 
@@ -31,7 +29,7 @@ export const startRun = async (page: Page): Promise<void> => {
  */
 export const startFromStartScreen = async (page: Page): Promise<void> => {
 	const start = page.locator('#hero-start');
-	await expect(start).toBeEnabled({ timeout: 60_000 });
+	await expect(start).toBeEnabled();
 	await start.click();
 	await expect(page.locator('#hero-start-screen')).not.toHaveAttribute(
 		'data-show',
@@ -104,12 +102,8 @@ export const startNewRun = async (
 		handle.hero.previousGame = handle.hero.game;
 	});
 	await action();
-	await page.waitForFunction(
-		() => {
-			const handle = globalThis as unknown as HeroHandle;
-			return handle.hero.game !== handle.hero.previousGame;
-		},
-		undefined,
-		{ timeout: 60_000 },
-	);
+	await page.waitForFunction(() => {
+		const handle = globalThis as unknown as HeroHandle;
+		return handle.hero.game !== handle.hero.previousGame;
+	});
 };

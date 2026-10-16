@@ -1,7 +1,7 @@
 import { AxeBuilder } from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 
-import { expect, finishAnimations, test } from './fixtures';
+import { expect, test } from './fixtures';
 import { crash, startFromStartScreen, startRun } from './hero';
 import { mockLeaderboard } from './leaderboard';
 
@@ -15,8 +15,6 @@ const expectNoViolations = async (
 	page: Page,
 	within?: string,
 ): Promise<void> => {
-	// Colours are only fair to judge once things have finished fading in.
-	await finishAnimations(page);
 	const builder = new AxeBuilder({ page });
 	if (within) {
 		builder.include(within);

@@ -1,19 +1,41 @@
-import type { Page } from '@playwright/test';
 import { expect, test as base } from '@playwright/test';
 
 export { expect } from '@playwright/test';
 
-// Every test fails if the page throws an uncaught error.
-export const test = base.extend<{ pageErrors: string[] }>({
+export const test = base.extend<{
+	animations: 'instant' | 'play';
+	pageErrors: string[];
+}>({
+	// Fades and other animations end the moment they start, so tests needn't
+	// sit through them. A test of the motion itself can play them with
+	// `test.use({ animations: 'play' })`.
+	animations: ['instant', { option: true }],
 	// Astro's dev toolbar sits at the bottom of the window, where it can cover
 	// what a test clicks (the play button, on the game's own page). Tests
 	// never use it, so take it away as soon as it's added.
-	page: async ({ page, headless }, use) => {
+	page: async ({ page, headless, animations }, use) => {
 		await page.addInitScript(() => {
 			new MutationObserver(() => {
 				document.querySelector('astro-dev-toolbar')?.remove();
 			}).observe(document, { childList: true, subtree: true });
 		});
+		if (animations === 'instant') {
+			await page.addInitScript(() => {
+				const sheet = new CSSStyleSheet();
+				sheet.replaceSync(`
+					*, *::before, *::after {
+						animation-delay: 0s !important;
+						animation-duration: 0s !important;
+						transition-delay: 0s !important;
+						transition-duration: 0s !important;
+					}
+				`);
+				document.adoptedStyleSheets = [
+					...document.adoptedStyleSheets,
+					sheet,
+				];
+			});
+		}
 		// Drawing the 3D scene is most of what the tests wait on: WebGL runs
 		// on the CPU here, at a few frames a second, and every worker draws at
 		// once. No test looks at the picture, so the scene is stepped and
@@ -43,6 +65,7 @@ export const test = base.extend<{ pageErrors: string[] }>({
 		}
 		await use(page);
 	},
+	// Every test fails if the page throws an uncaught error.
 	pageErrors: [
 		async ({ page }, use) => {
 			const errors: string[] = [];
@@ -55,21 +78,3 @@ export const test = base.extend<{ pageErrors: string[] }>({
 		{ auto: true },
 	],
 });
-
-/**
- * Ends every animation in progress (transitions, CSS animations and the
- * rest), as though it had played out. Tests that judge how the page ends up,
- * like its colours or what Tab can reach, needn't sit through the site's
- * slower fades. Ones that loop forever have no end, so they keep going.
- * @param page - The page.
- */
-export const finishAnimations = async (page: Page): Promise<void> => {
-	await page.evaluate(() => {
-		for (const animation of document.getAnimations()) {
-			const end = animation.effect?.getComputedTiming().endTime;
-			if (end !== undefined && end !== Infinity) {
-				animation.finish();
-			}
-		}
-	});
-};

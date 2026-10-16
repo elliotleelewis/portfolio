@@ -1,0 +1,5 @@
+target = "ClaudeCode"
+tools = ["claude-code"]
+
+[rules]
+disabled_rules = ["XP-006", "PE-001"]

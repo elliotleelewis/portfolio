@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 
-import { expect, finishFades, test } from './fixtures';
+import { expect, finishAnimations, test } from './fixtures';
 import { crash, startRun } from './hero';
 
 /**
@@ -22,7 +22,7 @@ const unseenTabStops = async (page: Page): Promise<string[]> => {
 			}
 		});
 	// Fades still running would catch a panel on its way in.
-	await finishFades(page);
+	await finishAnimations(page);
 	await page.evaluate(() => {
 		if (document.activeElement instanceof HTMLElement) {
 			document.activeElement.blur();

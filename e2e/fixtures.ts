@@ -57,15 +57,17 @@ export const test = base.extend<{ pageErrors: string[] }>({
 });
 
 /**
- * Ends every fade in progress, as though it had played out. Tests that judge
- * how the page ends up, like its colours or what Tab can reach, needn't sit
- * through the site's slower fades.
+ * Ends every animation in progress (transitions, CSS animations and the
+ * rest), as though it had played out. Tests that judge how the page ends up,
+ * like its colours or what Tab can reach, needn't sit through the site's
+ * slower fades. Ones that loop forever have no end, so they keep going.
  * @param page - The page.
  */
-export const finishFades = async (page: Page): Promise<void> => {
+export const finishAnimations = async (page: Page): Promise<void> => {
 	await page.evaluate(() => {
 		for (const animation of document.getAnimations()) {
-			if (animation instanceof CSSTransition) {
+			const end = animation.effect?.getComputedTiming().endTime;
+			if (end !== undefined && end !== Infinity) {
 				animation.finish();
 			}
 		}

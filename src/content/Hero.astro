@@ -5,12 +5,16 @@ import { Hero } from '../hero/hero';
 import hero from '../media/hero.webp';
 import { m } from '../paraglide/messages';
 
+// hero.webp is a lossless, full-resolution crop of the original, in Display
+// P3: Astro converts it to sRGB and encodes each size (see `image` in
+// astro.config.ts). The e2e test "loads a sharp enough photo" checks it.
+//
 // The photo covers the hero, so it's drawn at whichever is wider: the hero's
 // width, or its height (85svh, at least 30rem) times the photo's shape
 // (1717 × 1867). On a phone that's the height, so the photo is wider than
 // the screen. Without allowing for it, phones would get a photo too small,
 // stretched to fit. The width is the page's (at most 72rem, less its padding
-// of 1rem, or 2rem from 640px up).
+// of 1rem, or 2rem from 640px up). Update it if the hero's layout changes.
 const sizes = [
 	'(min-width: 640px) max(min(100vw, 1152px) - 64px, 78.2vh, 442px)',
 	'max(100vw - 32px, 78.2vh, 442px)',

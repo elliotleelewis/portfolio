@@ -92,6 +92,8 @@ export interface BearsHooks {
 	isCaught: () => boolean;
 	// A charging bear has reached me.
 	onCatch: (bear: BearActor) => void;
+	// A bear up a tree has spotted me, and is about to climb down.
+	onSpot: (bear: BearActor) => void;
 	// Whether something at (x, z) is in the camera's way.
 	isInTheWay: (x: number, z: number) => boolean;
 }
@@ -269,6 +271,7 @@ export class Bears {
 		rig.alert.visible = true;
 		rig.head.rotation.set(0.5, 0, 0);
 		rig.pose.rotation.z = 0;
+		this._hooks.onSpot(bear);
 	}
 
 	private updateClimbing(bear: BearActor, dt: number): void {

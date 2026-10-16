@@ -16,6 +16,7 @@ import { EasterEggTrail, type PlacedEasterEgg } from './easter-egg-trail';
 import type { Shattered } from './easter-eggs';
 import { Effects } from './effects';
 import type { Forest, ForestHooks, Tree } from './forest';
+import { GameAudio } from './game-audio';
 import { fadeIntoHaze } from './haze';
 import {
 	LOOK_START,
@@ -25,6 +26,7 @@ import {
 	STAR_START,
 } from './player';
 import { bearBlastPoints, nextCombo } from './scoring';
+import type { Sound } from './sound';
 import type { StageScene } from './stage-scene';
 import { SYSTEM_ORDER, Systems } from './systems';
 import { isBlockingChaseView, isInChaseCameraWay } from './view';
@@ -85,6 +87,8 @@ export class Game implements StageScene {
 	private readonly _effects = new Effects();
 	private readonly _bears: Bears;
 	private readonly _trail: EasterEggTrail;
+	// What I hear, once the page has sound.
+	private _audio: GameAudio | undefined;
 
 	private _time = 0;
 	private _isHeld: boolean;
@@ -144,6 +148,7 @@ export class Game implements StageScene {
 
 		this._player = new Player({
 			onRolling: () => {
+				this._audio?.setOff();
 				this._callbacks.onRolling();
 			},
 			onMove: () => {
@@ -162,6 +167,9 @@ export class Game implements StageScene {
 			isCaught: () => this._caughtAt !== undefined,
 			onCatch: (bear) => {
 				this.caught(bear);
+			},
+			onSpot: (bear) => {
+				this._audio?.spot(bear.rig.root, this.camera);
 			},
 			isInTheWay: (x, z) =>
 				isInChaseCameraWay(
@@ -195,6 +203,9 @@ export class Game implements StageScene {
 			// Once everything that moves the bears has.
 			this._bears.draw();
 			this._bears.pinAlerts(this.camera);
+		});
+		this.systems.add(SYSTEM_ORDER.sound, () => {
+			this._audio?.roll(this._player.speed);
 		});
 	}
 
@@ -271,6 +282,7 @@ export class Game implements StageScene {
 		this._lastHit = this._time;
 		this._score += this._combo;
 		this._callbacks.onScore(this._score, this._combo);
+		this._audio?.fell(this._combo);
 		this._camera.shake(0.18, 0.35);
 
 		// A burst of needles and bark.
@@ -314,6 +326,7 @@ export class Game implements StageScene {
 		);
 		this._effects.shatter(shattered, centre, this._player.speed);
 		this._effects.explode(centre);
+		this._audio?.smash();
 		this.blastBears(placed);
 		// Plus a spray of dirt and needles.
 		this._effects.burst({
@@ -341,6 +354,7 @@ export class Game implements StageScene {
 		if (count === 0) {
 			return;
 		}
+		this._audio?.blast(count);
 		const points = bearBlastPoints(count);
 		this._score += points;
 		this._callbacks.onScore(this._score, this._combo);
@@ -356,6 +370,7 @@ export class Game implements StageScene {
 		// in shot.
 		this._bears.maul(bear, this._v.copy(this._camera.offset).negate());
 		this._camera.shake(0.5);
+		this._audio?.caught();
 	}
 
 	public get scene(): Scene {
@@ -458,6 +473,15 @@ export class Game implements StageScene {
 	}
 
 	/**
+	 * Gives the game the page's sound, so I can hear the run. Before it has
+	 * one (until a press lets sound start), the run is silent.
+	 * @param sound - The page's sound.
+	 */
+	public attachSound(sound: Sound): void {
+		this._audio ??= new GameAudio(sound);
+	}
+
+	/**
 	 * Gets ready to be drawn: compiling shaders up front, so nothing
 	 * stutters the first time it's needed.
 	 * @param renderer - The renderer that will draw the game.
@@ -513,5 +537,6 @@ export class Game implements StageScene {
 		this._bears.dispose();
 		this._trail.dispose();
 		this._effects.dispose();
+		this._audio?.dispose();
 	}
 }

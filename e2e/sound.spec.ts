@@ -12,13 +12,18 @@ test.beforeEach(async ({ page }) => {
 	// Keep each audio context the page makes, to see whether it's playing.
 	await page.addInitScript(() => {
 		const contexts: AudioContext[] = [];
-		(globalThis as unknown as AudioHandle).audioContexts = contexts;
-		globalThis.AudioContext = class extends AudioContext {
-			public constructor(options?: AudioContextOptions) {
-				super(options);
-				contexts.push(this);
-			}
-		};
+		Object.defineProperties(globalThis, {
+			audioContexts: { value: contexts },
+			// eslint-disable-next-line @typescript-eslint/naming-convention -- The browser's name for it.
+			AudioContext: {
+				value: class extends AudioContext {
+					public constructor(options?: AudioContextOptions) {
+						super(options);
+						contexts.push(this);
+					}
+				},
+			},
+		});
 	});
 });
 

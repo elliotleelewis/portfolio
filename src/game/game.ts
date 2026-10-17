@@ -148,7 +148,6 @@ export class Game implements StageScene {
 
 		this._player = new Player({
 			onRolling: () => {
-				this._audio?.setOff();
 				this._callbacks.onRolling();
 			},
 			onMove: () => {
@@ -167,9 +166,6 @@ export class Game implements StageScene {
 			isCaught: () => this._caughtAt !== undefined,
 			onCatch: (bear) => {
 				this.caught(bear);
-			},
-			onSpot: (bear) => {
-				this._audio?.spot(bear.rig.root, this.camera);
 			},
 			isInTheWay: (x, z) =>
 				isInChaseCameraWay(
@@ -282,7 +278,6 @@ export class Game implements StageScene {
 		this._lastHit = this._time;
 		this._score += this._combo;
 		this._callbacks.onScore(this._score, this._combo);
-		this._audio?.fell(this._combo);
 		this._camera.shake(0.18, 0.35);
 
 		// A burst of needles and bark.
@@ -326,7 +321,6 @@ export class Game implements StageScene {
 		);
 		this._effects.shatter(shattered, centre, this._player.speed);
 		this._effects.explode(centre);
-		this._audio?.smash();
 		this.blastBears(placed);
 		// Plus a spray of dirt and needles.
 		this._effects.burst({
@@ -354,7 +348,6 @@ export class Game implements StageScene {
 		if (count === 0) {
 			return;
 		}
-		this._audio?.blast(count);
 		const points = bearBlastPoints(count);
 		this._score += points;
 		this._callbacks.onScore(this._score, this._combo);
@@ -370,7 +363,6 @@ export class Game implements StageScene {
 		// in shot.
 		this._bears.maul(bear, this._v.copy(this._camera.offset).negate());
 		this._camera.shake(0.5);
-		this._audio?.caught();
 	}
 
 	public get scene(): Scene {
@@ -478,7 +470,7 @@ export class Game implements StageScene {
 	 * @param sound - The page's sound.
 	 */
 	public attachSound(sound: Sound): void {
-		this._audio ??= new GameAudio(sound);
+		this._audio ??= new GameAudio(sound.listener, this.camera);
 	}
 
 	/**

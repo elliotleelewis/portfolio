@@ -3,23 +3,35 @@ import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { advance, startFromStartScreen, startRun } from './hero';
 
-// The audio contexts the page has made, kept by the stand-in below.
+// The audio contexts the page has made, and how many recordings they've
+// decoded, kept by the stand-in below.
 interface AudioHandle {
 	audioContexts: AudioContext[];
+	decodedClips: { count: number };
 }
 
 test.beforeEach(async ({ page }) => {
 	// Keep each audio context the page makes, to see whether it's playing.
 	await page.addInitScript(() => {
 		const contexts: AudioContext[] = [];
+		const decoded = { count: 0 };
 		Object.defineProperties(globalThis, {
 			audioContexts: { value: contexts },
+			decodedClips: { value: decoded },
 			// eslint-disable-next-line @typescript-eslint/naming-convention -- The browser's name for it.
 			AudioContext: {
 				value: class extends AudioContext {
 					public constructor(options?: AudioContextOptions) {
 						super(options);
 						contexts.push(this);
+					}
+
+					public override async decodeAudioData(
+						...args: Parameters<AudioContext['decodeAudioData']>
+					): Promise<AudioBuffer> {
+						const buffer = await super.decodeAudioData(...args);
+						decoded.count += 1;
+						return buffer;
 					}
 				},
 			},
@@ -79,4 +91,18 @@ test("waits for the start button on the game's own page", async ({ page }) => {
 	expect(await soundState(page)).toBe('none');
 	await startFromStartScreen(page);
 	await expect.poll(() => soundState(page)).toBe('running');
+});
+
+test('loads and decodes every recording once the sound starts', async ({
+	page,
+}) => {
+	await page.goto('/');
+	await startRun(page);
+	await expect
+		.poll(() =>
+			page.evaluate(
+				() => (globalThis as unknown as AudioHandle).decodedClips.count,
+			),
+		)
+		.toBe(14);
 });

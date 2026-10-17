@@ -1,0 +1,10 @@
+The game's sounds, which the site hosts itself. They're in the public domain
+(CC0 1.0), so need no notice, but they're credited here with thanks:
+
+Kenney (www.kenney.nl): Impact Sounds, RPG Audio, Sci-fi Sounds and Music
+Jingles, trimmed and re-encoded.
+Bear growls: the U.S. Fish & Wildlife Service, shared by AntumDeluge on
+OpenGameArt (https://opengameart.org/content/bear-growls).
+
+Creative Commons Zero v1.0 Universal:
+https://creativecommons.org/publicdomain/zero/1.0/

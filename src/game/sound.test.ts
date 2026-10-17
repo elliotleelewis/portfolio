@@ -1,9 +1,14 @@
 // three.js makes its audio context through `window`.
 // @vitest-environment happy-dom
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { CLIPS } from './clips';
 import { fakeAudioContext } from './fake-audio-context';
 import { Sound } from './sound';
+
+afterEach(() => {
+	vi.unstubAllGlobals();
+});
 
 describe('Sound', () => {
 	it('hears through three.js, on its shared audio context', () => {
@@ -42,5 +47,25 @@ describe('Sound', () => {
 		sound.setMuted(true);
 		sound.wake();
 		expect(context.state).toBe('suspended');
+	});
+
+	it('loads every recording, leaving out any that will not load', async () => {
+		fakeAudioContext();
+		const [missing] = CLIPS.roar;
+		vi.stubGlobal(
+			'fetch',
+			vi.fn((request: Request) =>
+				Promise.resolve(
+					request.url.endsWith(missing)
+						? new Response('', { status: 404 })
+						: new Response(new ArrayBuffer(8)),
+				),
+			),
+		);
+		const sound = new Sound();
+		await sound.load();
+		expect(sound.clips('tree')).toHaveLength(CLIPS.tree.length);
+		expect(sound.clips('growl')).toHaveLength(1);
+		expect(sound.clips('roar')).toEqual([]);
 	});
 });

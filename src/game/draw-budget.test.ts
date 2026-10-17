@@ -167,6 +167,9 @@ const allTheBears = (): Bears => {
 			onCatch: () => {
 				// Not needed here.
 			},
+			onSpot: () => {
+				// Not needed here.
+			},
 			isInTheWay: () => false,
 		},
 	);

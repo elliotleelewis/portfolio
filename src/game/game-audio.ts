@@ -1,4 +1,13 @@
-import { Audio, type AudioListener, type Camera, MathUtils } from 'three';
+import {
+	Audio,
+	type Camera,
+	MathUtils,
+	type Object3D,
+	PositionalAudio,
+} from 'three';
+
+import type { ClipName } from './clips';
+import type { Sound } from './sound';
 
 // The fastest I go, flat out: the rumble's at its loudest and brightest.
 const topSpeed = 38;
@@ -14,6 +23,42 @@ const resonance = 6;
 const smoothing = 0.1;
 // How long the rumble takes to fade out once the run's over, in seconds.
 const fadeOut = 0.3;
+// The recordings are levelled to the same peak: this sets them under the
+// rumble's level, so they stand out without blaring.
+const effectsVolume = 0.5;
+// How much a recording's pitch varies from one play to the next.
+const defaultVariation = 0.05;
+// Within this distance, a sound from the slope is as loud as it gets.
+const hearingDistance = 15;
+// A major pentatonic scale, in semitones: a combo climbs it, a note a tree.
+const scale = [0, 2, 4, 7, 9];
+// The highest note a combo reaches, in steps up the scale.
+const highestStep = 10;
+
+interface PlayOptions {
+	// 1 as recorded, 0.5 half as loud.
+	volume?: number;
+	// How fast to play it, which sets its pitch: 2 is an octave up.
+	rate?: number;
+	// How much its pitch may vary, as a share of `rate`.
+	variation?: number;
+	// Seconds to wait before it plays.
+	delay?: number;
+	// Where on the slope it comes from, if it's somewhere in particular.
+	from?: Object3D;
+}
+
+/**
+ * How fast to play the combo's note, so a bigger combo rings higher.
+ * @param combo - The combo, from 2 (the first tree that builds one).
+ * @returns The rate: 1 for the first, 2 an octave up.
+ */
+export const comboRate = (combo: number): number => {
+	const step = MathUtils.clamp(combo - 2, 0, highestStep);
+	const semitones =
+		Math.floor(step / scale.length) * 12 + scale[step % scale.length];
+	return 2 ** (semitones / 12);
+};
 
 /**
  * A second of white noise, to loop. Noise has no seam to hear where the loop
@@ -36,17 +81,22 @@ const whiteNoise = (context: BaseAudioContext): AudioBuffer => {
 
 /**
  * What a run sounds like: the rush of me rolling down the mountain, louder
- * and brighter the faster I go. I hear it from the camera.
+ * and brighter the faster I go, and recordings of trees going down, easter
+ * eggs going up and bears. I hear it all from the camera, so a bear sounds
+ * from where it is.
  */
 export class GameAudio {
+	private readonly _sound: Sound;
 	private readonly _rumble: Audio;
 	private readonly _filter: BiquadFilterNode;
 
 	/**
-	 * @param listener - The page's listener.
+	 * @param sound - The page's sound.
 	 * @param camera - The camera I'm seen through, which I hear from too.
 	 */
-	public constructor(listener: AudioListener, camera: Camera) {
+	public constructor(sound: Sound, camera: Camera) {
+		this._sound = sound;
+		const { listener } = sound;
 		camera.add(listener);
 		const { context } = listener;
 		this._filter = context.createBiquadFilter();
@@ -64,6 +114,44 @@ export class GameAudio {
 	}
 
 	/**
+	 * Plays one of a sound's recordings, once, then lets it go.
+	 * @param name - Which sound.
+	 * @param options - How loud, how high, when and where.
+	 */
+	private play(name: ClipName, options: PlayOptions = {}): void {
+		const clips = this._sound.clips(name);
+		if (!this._sound.isAudible || clips.length === 0) {
+			return;
+		}
+		const {
+			volume = 1,
+			rate = 1,
+			variation = defaultVariation,
+			delay = 0,
+			from,
+		} = options;
+		const { listener } = this._sound;
+		let audio: Audio<AudioNode>;
+		if (from) {
+			const positional = new PositionalAudio(listener);
+			positional.setRefDistance(hearingDistance);
+			from.add(positional);
+			audio = positional;
+		} else {
+			audio = new Audio(listener);
+		}
+		audio.setBuffer(clips[Math.floor(Math.random() * clips.length)]);
+		audio.gain.gain.value = volume * effectsVolume;
+		audio.setPlaybackRate(rate * (1 + (Math.random() * 2 - 1) * variation));
+		audio.onEnded = () => {
+			audio.disconnect();
+			audio.gain.disconnect();
+			audio.removeFromParent();
+		};
+		audio.play(delay);
+	}
+
+	/**
 	 * Sets the rumble by how fast I'm going.
 	 * @param speed - How fast I'm going down the slope.
 	 */
@@ -76,6 +164,57 @@ export class GameAudio {
 			now,
 			smoothing,
 		);
+	}
+
+	/**
+	 * A tree goes down, ringing out a note up the scale if it builds a
+	 * combo.
+	 * @param combo - The combo it makes.
+	 */
+	public fell(combo: number): void {
+		this.play('tree', { volume: 0.8 });
+		this.play('creak', { volume: 0.35, delay: 0.05 });
+		if (combo > 1) {
+			// It's a tune, so in tune.
+			this.play('pluck', {
+				volume: 0.6,
+				rate: comboRate(combo),
+				variation: 0,
+			});
+		}
+	}
+
+	public smash(): void {
+		this.play('explosion', { volume: 0.9 });
+		this.play('thump', { volume: 0.8 });
+		this.play('found', { volume: 0.7, delay: 0.35, variation: 0 });
+	}
+
+	/**
+	 * Bears go flying, one yelp each, higher as they go.
+	 * @param bears - How many.
+	 */
+	public blast(bears: number): void {
+		for (let i = 0; i < bears; i++) {
+			this.play('growl', {
+				volume: 0.5,
+				rate: 1.5 + i * 0.1,
+				delay: 0.3 + i * 0.15,
+			});
+		}
+	}
+
+	/**
+	 * A bear up a tree spots me, and growls from where it is.
+	 * @param bear - The bear.
+	 */
+	public spot(bear: Object3D): void {
+		this.play('growl', { from: bear });
+	}
+
+	public caught(): void {
+		this.play('roar');
+		this.play('thud', { volume: 0.8, delay: 0.25 });
 	}
 
 	public dispose(): void {

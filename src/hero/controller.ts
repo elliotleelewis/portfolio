@@ -2,6 +2,7 @@ import type { createStore } from 'jotai';
 
 import type { Gallery } from '../game/gallery';
 import type { Game, GameInput } from '../game/game';
+import type { Sound } from '../game/sound';
 import type { StageScene } from '../game/stage-scene';
 import { m } from '../paraglide/messages';
 
@@ -18,6 +19,7 @@ import {
 	INITIALS_ATOM,
 	METRES_ATOM,
 	MODE_ATOM,
+	MUTED_ATOM,
 	PHASE_ATOM,
 	RESULT_ATOM,
 	SCENE_ATOM,
@@ -71,10 +73,48 @@ export class HeroController {
 	// The leaderboard's code, loaded with the board.
 	private _leaderboard: LeaderboardModule | undefined;
 	private _boardLoad: Promise<void> | undefined;
+	// The game's sound, loaded with the first press that starts a run.
+	private _sound: Sound | undefined;
+	private _soundLoad: Promise<void> | undefined;
 
 	public constructor(store: Store, options: HeroOptions = {}) {
 		this._store = store;
 		this._hasStartScreen = options.hasStartScreen ?? false;
+		store.sub(MUTED_ATOM, () => {
+			this._sound?.setMuted(this.isMuted);
+		});
+	}
+
+	// Storage could hold anything, so only `true` mutes it.
+	private get isMuted(): boolean {
+		return this._store.get(MUTED_ATOM) === true;
+	}
+
+	/**
+	 * Starts the game's sound, loading it the first time. Only called on a
+	 * press or a key, as browsers only let sound start then. Muted, it isn't
+	 * loaded at all.
+	 */
+	private wakeSound(): void {
+		if (this.isMuted) {
+			return;
+		}
+		if (this._sound) {
+			this._sound.wake();
+			return;
+		}
+		this._soundLoad ??= (async () => {
+			try {
+				const { createSound } = await import('../game/sound');
+				const sound = createSound();
+				// It may have been muted while it loaded.
+				sound.setMuted(this.isMuted);
+				this._sound = sound;
+				this._game?.attachSound(sound);
+			} catch {
+				// No sound in this browser: the game plays on silently.
+			}
+		})();
 	}
 
 	/**
@@ -126,6 +166,9 @@ export class HeroController {
 				direction: readingDirection(),
 			},
 		);
+		if (this._sound) {
+			next.attachSound(this._sound);
+		}
 		this.show({ kind: 'game', scene: next });
 		this._game = next;
 		this._setOffAt = isHeld ? undefined : performance.now();
@@ -304,6 +347,7 @@ export class HeroController {
 		}
 		this._store.set(PHASE_ATOM, 'loading');
 		this.resetHud();
+		this.wakeSound();
 		try {
 			await this.launch(false);
 		} catch (error) {
@@ -342,6 +386,7 @@ export class HeroController {
 			return;
 		}
 		this._game.release();
+		this.wakeSound();
 		this._setOffAt = performance.now();
 		this._store.set(WAITING_ATOM, false);
 	}
@@ -362,9 +407,20 @@ export class HeroController {
 	 * Starts a fresh run, straight into the roll.
 	 */
 	public rollAgain(): void {
-		if (this._scene) {
-			void this.launch(true);
+		if (!this._scene) {
+			return;
 		}
+		this.wakeSound();
+		void this.launch(true);
+	}
+
+	/**
+	 * Mutes the game's sound, or unmutes it, for next time too.
+	 */
+	public toggleMuted(): void {
+		this._store.set(MUTED_ATOM, !this.isMuted);
+		// Unmuting is a press, so the sound can start (or load) now.
+		this.wakeSound();
 	}
 
 	/**

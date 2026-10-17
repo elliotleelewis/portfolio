@@ -12,6 +12,8 @@ export const SYSTEM_ORDER = {
 	camera: 60,
 	// Pieces of the world that follow me or the camera.
 	follow: 70,
+	// What I hear, once everything's moved.
+	sound: 80,
 } as const;
 
 interface Entry {

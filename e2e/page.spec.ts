@@ -249,15 +249,15 @@ test('describes the site for AI agents in llms.txt', async ({ request }) => {
 	}
 });
 
-test('credits the open-source code and fonts it sends in licenses.txt', async ({
+test('credits the open-source code, fonts and sounds it sends in licenses.txt', async ({
 	request,
 }) => {
 	const response = await request.get('/licenses.txt');
 	expect(response.status()).toBe(200);
 	expect(response.headers()['content-type']).toMatch(/^text\/plain/);
 	const text = await response.text();
-	// The game's packages, Astro's and Paraglide's own scripts, and the fonts,
-	// each with its licence.
+	// The game's packages, Astro's and Paraglide's own scripts, the fonts and
+	// the sounds, each with its licence.
 	for (const name of [
 		'react (MIT)',
 		'three (MIT)',
@@ -265,6 +265,7 @@ test('credits the open-source code and fonts it sends in licenses.txt', async ({
 		'astro (MIT)',
 		'@inlang/paraglide-js (MIT)',
 		'Fonts (OFL-1.1)',
+		'Sounds (CC0-1.0)',
 	]) {
 		expect(text).toContain(`\n${name}\n`);
 	}

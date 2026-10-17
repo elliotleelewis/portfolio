@@ -4,6 +4,7 @@ import { type FC, useEffect, useState, useSyncExternalStore } from 'react';
 import { m } from '../paraglide/messages';
 
 import { MODE_ATOM, PHASE_ATOM, THEME_ATOM, WAITING_ATOM } from './atoms';
+import { Icon } from './icon';
 import {
 	type Device,
 	THEMES,
@@ -12,27 +13,6 @@ import {
 	deviceFor,
 	readTheme,
 } from './theme';
-
-/**
- * An icon, drawn in the text's colour.
- * @param props - Component props.
- * @param props.children - Its lines.
- * @returns The icon.
- */
-const Icon: FC<{ children: React.ReactNode }> = ({ children }) => (
-	<svg
-		viewBox="0 0 24 24"
-		className="size-4.5"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth={2}
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		aria-hidden="true"
-	>
-		{children}
-	</svg>
-);
 
 const sun = (
 	<Icon>

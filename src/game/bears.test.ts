@@ -54,14 +54,10 @@ const rollingPlayer = (): { player: Player; time: number } => {
 const setup = (isInTheWay: (x: number, z: number) => boolean = () => false) => {
 	const { player, time } = rollingPlayer();
 	const catches: BearActor[] = [];
-	const spots: BearActor[] = [];
 	const bears = new Bears(player, {
 		isCaught: () => catches.length > 0,
 		onCatch: (bear) => {
 			catches.push(bear);
-		},
-		onSpot: (bear) => {
-			spots.push(bear);
 		},
 		isInTheWay,
 	});
@@ -70,7 +66,7 @@ const setup = (isInTheWay: (x: number, z: number) => boolean = () => false) => {
 			bears.update(dt, time);
 		}
 	};
-	return { player, bears, catches, spots, run };
+	return { player, bears, catches, run };
 };
 
 /**
@@ -129,22 +125,11 @@ describe('Bears', () => {
 	});
 
 	it('stays up its tree until I come near', () => {
-		const { player, bears, spots, run } = setup();
+		const { player, bears, run } = setup();
 		const bear = climbOrFail(bears, treeAt(0, player.position.z - 200));
 		run(1);
 		expect(bear.state).toBe('clinging');
 		expect(bears.isTreeBound(bear)).toBe(true);
-		expect(spots).toEqual([]);
-	});
-
-	it('says once when a bear spots me', () => {
-		const { player, bears, spots, run } = setup();
-		const bear = climbOrFail(
-			bears,
-			treeAt(player.position.x + 2, player.position.z - 6),
-		);
-		run(1);
-		expect(spots).toEqual([bear]);
 	});
 
 	it('climbs down, charges and catches me when I come close', () => {

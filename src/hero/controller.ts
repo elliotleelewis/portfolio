@@ -105,8 +105,8 @@ export class HeroController {
 		}
 		this._soundLoad ??= (async () => {
 			try {
-				const { loadSound } = await import('../game/sound');
-				const sound = await loadSound();
+				const { createSound } = await import('../game/sound');
+				const sound = createSound();
 				// It may have been muted while it loaded.
 				sound.setMuted(this.isMuted);
 				this._sound = sound;

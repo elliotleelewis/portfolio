@@ -34,6 +34,16 @@ class FakeNode {
 	}
 }
 
+/**
+ * What a node plays through, in order, as far as it goes.
+ * @param node - The node.
+ * @returns The nodes after it.
+ */
+const chainFrom = (node: FakeNode): FakeNode[] => {
+	const next = node.connections.values().next();
+	return next.done ? [] : [next.value, ...chainFrom(next.value)];
+};
+
 class FakeGain extends FakeNode {
 	public readonly gain = new FakeParam(1);
 }
@@ -43,6 +53,18 @@ class FakeFilter extends FakeNode {
 	public readonly frequency = new FakeParam(350);
 	// eslint-disable-next-line @typescript-eslint/naming-convention -- Web Audio's name for it.
 	public readonly Q = new FakeParam(1);
+}
+
+class FakePanner extends FakeNode {
+	public panningModel = 'equalpower';
+	public refDistance = 1;
+	public setPosition(): void {
+		// Where it is doesn't matter here.
+	}
+
+	public setOrientation(): void {
+		// Nor which way it faces.
+	}
 }
 
 class FakeBuffer {
@@ -78,14 +100,22 @@ export class FakeSource extends FakeNode {
 
 	// The filter it plays through, if any.
 	public get filter(): FakeFilter | undefined {
-		const [filter] = this.connections;
-		return filter instanceof FakeFilter ? filter : undefined;
+		return chainFrom(this).find((node) => node instanceof FakeFilter);
+	}
+
+	// The panner that places it, if it's somewhere in particular.
+	public get panner(): FakePanner | undefined {
+		return chainFrom(this).find((node) => node instanceof FakePanner);
 	}
 
 	// The gain that sets its volume.
 	public get gain(): FakeGain | undefined {
-		const [next] = this.filter?.connections ?? this.connections;
-		return next instanceof FakeGain ? next : undefined;
+		return chainFrom(this).find((node) => node instanceof FakeGain);
+	}
+
+	// Ends, as it would once it had played.
+	public end(): void {
+		this.onended?.();
 	}
 }
 
@@ -112,8 +142,22 @@ export class FakeAudioContext {
 		return new FakeFilter();
 	}
 
+	public createPanner(): FakePanner {
+		return new FakePanner();
+	}
+
 	public createBuffer(_channels: number, length: number): FakeBuffer {
 		return new FakeBuffer(length);
+	}
+
+	// Any bytes decode to a short, silent recording.
+	public decodeAudioData(
+		_data: ArrayBuffer,
+		onDecoded: (buffer: FakeBuffer) => void,
+	): Promise<FakeBuffer> {
+		const buffer = new FakeBuffer(10);
+		onDecoded(buffer);
+		return Promise.resolve(buffer);
 	}
 
 	public createBufferSource(): FakeSource {

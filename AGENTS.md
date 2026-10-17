@@ -75,7 +75,8 @@ The site and the game share one look: a trail map on a misty mountain. Keep new 
   - Components free what they create; game parts free theirs in `dispose()`.
   - Put anything new on the slope at least `APPEAR_AHEAD` ahead of the player (`world.ts`), so it arrives inside the haze.
   - My rig (`character.ts`) and the bears' (`bear.ts`) merge each joint's pieces into one mesh per material. Animate joints; keep a piece out of the merge to move it alone, as my eyes are.
-  - Sound: three.js's audio (`Audio`, `PositionalAudio`, `AudioLoader`) through the page's listener (`Sound`, `sound.ts`), played by `GameAudio` (`game-audio.ts`), never by `Game` itself. The listener makes the audio context, so it's only made after a press (`wakeSound` in the controller). Check a new sound on a phone's speaker, which drops the lows.
+  - Sound: three.js's audio (`Audio`, `PositionalAudio`, `AudioLoader`) through the page's listener (`Sound`, `sound.ts`), played by `GameAudio` (`game-audio.ts`), never by `Game` itself. The listener makes the audio context, so it's only made after a press (`wakeSound` in the controller).
+  - Recordings are CC0 only, in `src/game/sounds/` as short mono MP3s, listed in `clips.ts` and credited in `licenses/sounds.txt`. Check a new one on a phone's speaker, which drops the lows.
   - Right-to-left: the page's `Mirror` (`direction.ts`) flips the camera's side, the sun and the gallery row. Steering stays physical: ← turns screen-left.
 - **Easter eggs** (`src/game/easter-eggs/`, listed in `index.ts`) merge parts that share a parent and material (`mergeStill` in `merge.ts`). Keep your own references to parts you animate, never walk `children`, and animate glowing, see-through or textured materials rather than a plain one's colour.
 - **Leaderboard** (`functions/`): a Hono app, `createApp` in `functions/_lib/app.ts`. Chain new routes there so their types reach the page's client (`src/hero/leaderboard.ts`).

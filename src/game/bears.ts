@@ -1,11 +1,14 @@
 import {
+	type Camera,
 	Group,
 	type Material,
 	MathUtils,
 	Mesh,
 	type PerspectiveCamera,
+	type Scene,
 	Sprite,
 	Vector3,
+	type WebGLRenderer,
 } from 'three';
 
 import {
@@ -449,6 +452,30 @@ export class Bears {
 			child.visible = isShown;
 			child.castShadow = false;
 		});
+	}
+
+	/**
+	 * Compiles the see-through bear shaders up front, so the first bear to
+	 * fade out of the camera's way doesn't stutter.
+	 * @param renderer - The renderer that will draw the bears.
+	 * @param scene - The scene they're in, for its lights and haze.
+	 * @param camera - The camera looking at them.
+	 */
+	public prepare(
+		renderer: WebGLRenderer,
+		scene: Scene,
+		camera: Camera,
+	): void {
+		const [{ rig, materials }] = this._actors;
+		for (const material of materials) {
+			material.transparent = true;
+			material.needsUpdate = true;
+		}
+		renderer.compile(rig.root, camera, scene);
+		for (const material of materials) {
+			material.transparent = false;
+			material.needsUpdate = true;
+		}
 	}
 
 	/**

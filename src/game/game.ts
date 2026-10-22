@@ -456,6 +456,10 @@ export class Game implements StageScene {
 		} else {
 			renderer.compile(this._scene, this.camera);
 		}
+		// A bear fading out, and the easter eggs, which aren't built until
+		// they're far down the slope ahead.
+		this._bears.prepare(renderer, this._scene, this.camera);
+		this._trail.prepare(renderer, this._scene, this.camera);
 	}
 
 	/**

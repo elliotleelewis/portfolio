@@ -1,4 +1,16 @@
-import { Group, MathUtils, Matrix4, Vector3 } from 'three';
+import {
+	BufferGeometry,
+	type Camera,
+	Group,
+	MathUtils,
+	Matrix4,
+	Mesh,
+	MeshStandardMaterial,
+	type Object3D,
+	type Scene,
+	Vector3,
+	type WebGLRenderer,
+} from 'three';
 
 import {
 	EASTER_EGGS,
@@ -39,6 +51,27 @@ export interface EasterEggTrailHooks {
 }
 
 /**
+ * Frees an object's geometry and textures, keeping its materials (and so
+ * their shaders).
+ * @param object - The object.
+ */
+const freeAllButMaterials = (object: Object3D): void => {
+	object.traverse((child) => {
+		if (!(child instanceof Mesh)) {
+			return;
+		}
+		const geometry: unknown = child.geometry;
+		const material: unknown = child.material;
+		if (geometry instanceof BufferGeometry) {
+			geometry.dispose();
+		}
+		if (material instanceof MeshStandardMaterial) {
+			material.map?.dispose();
+		}
+	});
+};
+
+/**
  * The easter eggs down the mountain: where each goes (in its own clearing),
  * bringing them to life as I near them, and noticing when I roll into one.
  */
@@ -49,6 +82,8 @@ export class EasterEggTrail {
 	private readonly _local = new Vector3();
 	private readonly _inverse = new Matrix4();
 	private _count = 0;
+	// A copy of each easter egg, merged, drawn up front to keep its shaders.
+	private readonly _merged: MergedEasterEgg[] = [];
 
 	// The easter eggs, in the slope's space.
 	public readonly group = new Group();
@@ -191,11 +226,72 @@ export class EasterEggTrail {
 		}
 	}
 
+	/**
+	 * Gets every easter egg's shaders ready up front, so none stutters the
+	 * run when it's built, far down the slope: as built (as it is once
+	 * smashed), merged, and in the sun's shadows. The merged copies'
+	 * materials are kept until the run's over, as three.js deletes a shader
+	 * once nothing uses it, but nothing else of them.
+	 * @param renderer - The renderer that will draw them.
+	 * @param scene - The scene they'll be in, for its lights and haze.
+	 * @param camera - The camera looking at them.
+	 */
+	public prepare(
+		renderer: WebGLRenderer,
+		scene: Scene,
+		camera: Camera,
+	): void {
+		// A copy of each merged, and for a moment one as it's built (as it is
+		// once smashed).
+		const smashed: Object3D[] = [];
+		for (const egg of EASTER_EGGS) {
+			const instance = egg.create();
+			renderer.compile(instance.object, camera, scene);
+			this._merged.push(mergeParts(instance, egg.clearingRadius));
+			smashed.push(egg.create().object);
+		}
+		// Shadows have shaders of their own, which only drawing builds. So draw
+		// the copies once, wherever they are; the first frame is drawn over
+		// it before it's seen.
+		const copies = [
+			...this._merged.map(({ object }) => object),
+			...smashed,
+		];
+		const unculled: Object3D[] = [];
+		for (const object of copies) {
+			this.group.add(object);
+			object.traverse((child) => {
+				if (!child.frustumCulled) {
+					return;
+				}
+
+				child.frustumCulled = false;
+				unculled.push(child);
+			});
+		}
+		renderer.render(scene, camera);
+		for (const child of unculled) {
+			child.frustumCulled = true;
+		}
+		for (const object of copies) {
+			object.removeFromParent();
+		}
+		for (const { object } of this._merged) {
+			freeAllButMaterials(object);
+		}
+		for (const object of smashed) {
+			disposeObject(object);
+		}
+	}
+
 	public dispose(): void {
-		for (const { instance } of this._eggs) {
-			if (!instance) {
-				continue;
-			}
+		const instances = [
+			...this._eggs.flatMap(({ instance }) =>
+				instance ? [instance] : [],
+			),
+			...this._merged,
+		];
+		for (const instance of instances) {
 			instance.unmerge();
 			disposeObject(instance.object);
 		}

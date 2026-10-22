@@ -21,6 +21,7 @@ import {
 	setStars,
 } from '../atmosphere';
 import type { Mirror } from '../direction';
+import { withBudget } from '../draw-budget';
 import { disposeObject } from '../easter-eggs';
 import { SYSTEM_ORDER } from '../systems';
 import { createMountains, createStars } from '../world';
@@ -209,10 +210,12 @@ const Horizon: FC<HorizonProps> = ({ atmosphere }) => {
 	const stage = useStage();
 	// The peaks fade into the haze, so they're rebuilt when it changes.
 	const mountains = useMemo(
-		() => createMountains(atmosphere.fog),
+		() => withBudget(createMountains(atmosphere.fog), 'horizon'),
 		[atmosphere.fog],
 	);
-	const [stars] = useState(() => createStars(atmosphere.sun));
+	const [stars] = useState(() =>
+		withBudget(createStars(atmosphere.sun), 'horizon'),
+	);
 
 	useEffect(
 		() => () => {

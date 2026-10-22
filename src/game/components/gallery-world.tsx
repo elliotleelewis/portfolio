@@ -3,6 +3,7 @@ import { type FC, useEffect, useMemo } from 'react';
 import type { Object3D, Vector3 } from 'three';
 
 import type { Mirror } from '../direction';
+import { withBudget } from '../draw-budget';
 import { disposeObject } from '../easter-eggs';
 import type { Gallery } from '../gallery';
 import { createGalleryGround, createGalleryTrees } from '../gallery-scenery';
@@ -29,7 +30,7 @@ interface SceneryProps {
  */
 const Scenery: FC<SceneryProps> = ({ count, create, mirror }) => {
 	const scenery = useMemo(() => {
-		const object = create(count);
+		const object = withBudget(create(count), 'gallery scenery');
 		// three.js turns mirrored faces back round itself.
 		object.scale.x = mirror;
 		return object;

@@ -2,6 +2,7 @@ import { createPortal } from '@react-three/fiber';
 import { type FC, useEffect, useMemo } from 'react';
 import { type Mesh, MeshLambertMaterial, type Vector3 } from 'three';
 
+import { withBudget } from '../draw-budget';
 import { disposeObject } from '../easter-eggs';
 import type { Game } from '../game';
 import { SYSTEM_ORDER } from '../systems';
@@ -39,9 +40,9 @@ const Ground: FC = () => {
 			vertexColors: true,
 			flatShading: true,
 		});
-		const ledge = createLedge(material, 60);
+		const ledge = withBudget(createLedge(material, 60), 'ground');
 		const chunks = Array.from({ length: GROUND_CHUNKS }, (_value, i) => {
-			const chunk = createGroundChunk(material);
+			const chunk = withBudget(createGroundChunk(material), 'ground');
 			shapeGroundChunk(chunk, -CHUNK_LENGTH / 2 - i * CHUNK_LENGTH);
 			return chunk;
 		});

@@ -6,12 +6,24 @@ interface Drawn {
 	triangles: number;
 }
 
+// What the end-to-end tests read of the stage's scene.
+interface Drawable {
+	name: string;
+	type: string;
+	geometry?: { type: string };
+	material?: { type: string };
+	visible: boolean;
+	userData: { drawBudget?: unknown };
+	children: Drawable[];
+}
+
 // What the site exposes on `globalThis.hero`: the game in play, and what
 // drawing it costs.
 interface HeroHandle {
 	hero: {
 		previousGame?: unknown;
 		drawn?: Drawn;
+		scene?: Drawable;
 		game: {
 			input: Record<string, boolean | number>;
 			advance: (seconds: number) => void;
@@ -72,6 +84,50 @@ export const readDrawn = async (page: Page): Promise<Drawn | undefined> =>
 			});
 		}
 		return (globalThis as unknown as HeroHandle).hero.drawn;
+	});
+
+/**
+ * Waits for the stage to draw a frame, then finds anything it drew that
+ * isn't part of something with a drawing budget.
+ * @param page - The page with a scene in the stage.
+ * @returns Where each such thing is, as the types of everything above it.
+ */
+export const findUnbudgeted = async (page: Page): Promise<string[]> =>
+	page.evaluate(async () => {
+		await new Promise((resolve) => {
+			requestAnimationFrame(resolve);
+		});
+		const drawn = new Set([
+			'Mesh',
+			'SkinnedMesh',
+			'InstancedMesh',
+			'Points',
+			'Sprite',
+			'Line',
+			'LineSegments',
+		]);
+		const found: string[] = [];
+		const visit = (object: Drawable, path: string[]): void => {
+			if (!object.visible || object.userData.drawBudget !== undefined) {
+				return;
+			}
+			const here = [...path, object.name || object.type];
+			if (drawn.has(object.type)) {
+				// What it is, so it's easy to find.
+				const { geometry, material } = object;
+				const what = [geometry?.type, material?.type].filter(Boolean);
+				found.push(`${here.join(' > ')} (${what.join(', ')})`);
+			}
+			for (const child of object.children) {
+				visit(child, here);
+			}
+		};
+		const { scene } = (globalThis as unknown as HeroHandle).hero;
+		if (!scene) {
+			throw new Error('Nothing in the stage to check');
+		}
+		visit(scene, []);
+		return found;
 	});
 
 /**

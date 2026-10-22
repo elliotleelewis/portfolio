@@ -2,9 +2,13 @@ import {
 	BufferAttribute,
 	Color,
 	Group,
+	InstancedMesh,
+	Matrix4,
 	Mesh,
 	MeshLambertMaterial,
 	PlaneGeometry,
+	Quaternion,
+	Vector3,
 } from 'three';
 
 import { GALLERY_SPACING } from './gallery';
@@ -80,6 +84,8 @@ export const createGalleryTrees = (count: number): Group => {
 		seed = (seed * 16_807) % 2_147_483_647;
 		return (seed - 1) / 2_147_483_646;
 	};
+	const up = new Vector3(0, 1, 0);
+	const placed: Matrix4[][] = geometries.map(() => []);
 	for (let i = 0; i < treeCount; i++) {
 		const x = -40 + random() * (end + 80);
 		const z = -70 + random() * 110;
@@ -96,15 +102,28 @@ export const createGalleryTrees = (count: number): Group => {
 				continue;
 			}
 		}
-		const tree = new Mesh(
-			geometries[i % geometries.length],
-			materials[i % materials.length],
+		const scale = 0.8 + random() * 0.5;
+		const yaw = random() * Math.PI * 2;
+		placed[i % geometries.length].push(
+			new Matrix4().compose(
+				new Vector3(x, -0.1, z),
+				new Quaternion().setFromAxisAngle(up, yaw),
+				new Vector3().setScalar(scale),
+			),
 		);
-		tree.position.set(x, -0.1, z);
-		tree.scale.setScalar(0.8 + random() * 0.5);
-		tree.rotation.y = random() * Math.PI * 2;
-		tree.castShadow = true;
-		group.add(tree);
+	}
+	// Every tree of each kind, drawn in one go.
+	for (const [kind, matrices] of placed.entries()) {
+		const trees = new InstancedMesh(
+			geometries[kind],
+			materials[kind],
+			matrices.length,
+		);
+		for (const [i, matrix] of matrices.entries()) {
+			trees.setMatrixAt(i, matrix);
+		}
+		trees.castShadow = true;
+		group.add(trees);
 	}
 	return group;
 };

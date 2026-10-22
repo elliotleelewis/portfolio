@@ -17,6 +17,7 @@ import {
 	Vector3,
 } from 'three';
 
+import { withBudget } from './draw-budget';
 import { mergeParts } from './easter-eggs';
 
 /**
@@ -382,7 +383,7 @@ export const createCharacter = (): Character => {
 	roller.add(facing);
 	const lean = new Group();
 	lean.add(roller);
-	const root = new Group();
+	const root = withBudget(new Group(), 'me');
 	root.add(lean);
 
 	// My hands and feet are merged away with the rest of my arms and legs,

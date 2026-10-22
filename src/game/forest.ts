@@ -14,6 +14,7 @@ import {
 	type WebGLRenderer,
 } from 'three';
 
+import { withBudget } from './draw-budget';
 import {
 	APPEAR_AHEAD,
 	LANE_HALF_WIDTH,
@@ -96,6 +97,10 @@ export class Forest<Occupant> {
 	private readonly _materials: MeshLambertMaterial[];
 	// Every tree of each kind, drawn in one go.
 	private readonly _batches: InstancedMesh[];
+	// The trees framing the opening shot, likewise.
+	private readonly _framing: InstancedMesh[];
+	// For placing them.
+	private readonly _body = new Object3D();
 	// See-through stand-ins for the trees fading out of the camera's way,
 	// which can't fade within a batch, and spare ones to reuse.
 	private readonly _ghosts = new Map<Tree<Occupant>, Ghost>();
@@ -106,9 +111,9 @@ export class Forest<Occupant> {
 	private readonly _q2 = new Quaternion();
 
 	// The trees down the slope, in the slope's space.
-	public readonly group = new Group();
+	public readonly group = withBudget(new Group(), 'trees');
 	// A few trees framing the opening shot, on the flat ledge.
-	public readonly framing = new Group();
+	public readonly framing = withBudget(new Group(), 'trees');
 	public readonly trees: readonly Tree<Occupant>[];
 
 	public constructor(hooks: ForestHooks<Occupant>) {
@@ -173,17 +178,28 @@ export class Forest<Occupant> {
 			[-2, 12, 1.1],
 			[4, 16, 1],
 		];
-		for (const [index, [x, z, scale]] of framing.entries()) {
-			const mesh = new Mesh(
-				this._geometries[index % this._geometries.length],
-				this._materials[index % this._materials.length],
+		// Each kind drawn in one go, like the rest.
+		this._framing = this._geometries.map((geometry, kind) => {
+			const trees = framing.filter(
+				(_tree, index) => index % kinds === kind,
 			);
-			mesh.position.set(x, terrainHeight(x, z) - 0.1, z);
-			mesh.scale.setScalar(scale);
-			mesh.rotation.y = index;
-			mesh.castShadow = true;
-			this.framing.add(mesh);
-		}
+			const batch = new InstancedMesh(
+				geometry,
+				this._materials[kind],
+				trees.length,
+			);
+			for (const [i, [x, z, scale]] of trees.entries()) {
+				const index = i * kinds + kind;
+				this._body.position.set(x, terrainHeight(x, z) - 0.1, z);
+				this._body.rotation.set(0, index, 0);
+				this._body.scale.setScalar(scale);
+				this._body.updateMatrix();
+				batch.setMatrixAt(i, this._body.matrix);
+			}
+			batch.castShadow = true;
+			this.framing.add(batch);
+			return batch;
+		});
 	}
 
 	/**
@@ -401,7 +417,7 @@ export class Forest<Occupant> {
 		for (const material of this._materials) {
 			material.dispose();
 		}
-		for (const batch of this._batches) {
+		for (const batch of [...this._batches, ...this._framing]) {
 			batch.dispose();
 		}
 		for (const ghost of [...this._ghosts.values(), ...this._spareGhosts]) {

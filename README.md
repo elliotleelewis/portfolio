@@ -77,7 +77,7 @@ The game in play is also on `hero.game` in the browser's console, on the live si
 
 #### The drawing budget
 
-On a phone, draw calls run out long before triangles do: a run takes about 85 to 120 calls a frame (up to about 150 while a smashed easter egg's pieces fly), but about 105,000 to 140,000 triangles. So the tests hold the game to a budget, and adding detail can't quietly slow it down:
+On a phone, draw calls run out long before triangles do: a run takes about 50 to 85 calls a frame (up to about 90 while a smashed easter egg's pieces fly), but about 105,000 to 140,000 triangles. So the tests hold the game to a budget, and adding detail can't quietly slow it down:
 
 - Each part has its own budget in `src/game/draw-budget.test.ts`: me, all the bears together (however many are out), and each easter egg, merged and all through its moment as I roll past. A new easter egg has to fit inside the same one.
 - A whole frame of a run has one in `e2e/game.spec.ts`, measured by the renderer itself, as I roll past the first easter egg and as one's smashed.

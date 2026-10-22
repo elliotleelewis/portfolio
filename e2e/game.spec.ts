@@ -24,10 +24,10 @@ test('fades from the photo into a run down the mountain', async ({ page }) => {
 });
 
 // What a frame can cost to draw, shadows included. The run is random, so
-// this leaves room for an unlucky one: a run now peaks at about 150 calls
+// this leaves room for an unlucky one: a run now peaks at about 90 calls
 // (as a smashed easter egg's pieces fly) and 140k triangles. Each part's own
 // budget is in src/game/draw-budget.test.ts.
-const budget = { calls: 200, triangles: 175_000 };
+const budget = { calls: 120, triangles: 175_000 };
 
 test('draws a run within its budget, past the first easter egg', async ({
 	page,

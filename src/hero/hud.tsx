@@ -35,7 +35,9 @@ export const Hud: FC = () => {
 			className={
 				isWaiting
 					? 'pointer-events-none invisible absolute inset-0 opacity-0'
-					: 'pointer-events-none absolute inset-0 opacity-0 transition-opacity delay-700 duration-700 group-data-[state=playing]:opacity-100'
+					: // Rises in after the scene, but leaves with the game-over
+						// card, so it's not left showing as the card fades.
+						'pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-data-[state=playing]:opacity-100 group-data-[state=playing]:delay-700 group-data-[state=playing]:duration-700'
 			}
 			aria-live="polite"
 			// It only fades out, so out of reach of Tab and screen readers

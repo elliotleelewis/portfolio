@@ -95,8 +95,8 @@ export const Stage: FC = () => {
 				<Suspense>
 					<SceneCanvas
 						shown={stageScene}
-						onFirstFrame={(drawn) => {
-							controller.sceneReady(drawn);
+						onFirstFrame={(drawn, renderer) => {
+							controller.sceneReady(drawn, renderer);
 						}}
 					/>
 				</Suspense>

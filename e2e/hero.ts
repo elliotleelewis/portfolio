@@ -1,9 +1,17 @@
 import { type Page, expect } from '@playwright/test';
 
-// What the site exposes on `globalThis.hero`: the game in play.
+// What the stage drew in its last frame, shadows included.
+interface Drawn {
+	calls: number;
+	triangles: number;
+}
+
+// What the site exposes on `globalThis.hero`: the game in play, and what
+// drawing it costs.
 interface HeroHandle {
 	hero: {
 		previousGame?: unknown;
+		drawn?: Drawn;
 		game: {
 			input: Record<string, boolean | number>;
 			advance: (seconds: number) => void;
@@ -47,6 +55,23 @@ export const advance = async (page: Page, seconds: number): Promise<void> => {
 		(globalThis as unknown as HeroHandle).hero.game.advance(s);
 	}, seconds);
 };
+
+/**
+ * Waits for the stage to draw a frame, then reads what drawing it cost.
+ * @param page - The page with a scene in the stage.
+ * @returns The frame's draw calls and triangles.
+ */
+export const readDrawn = async (page: Page): Promise<Drawn | undefined> =>
+	page.evaluate(async () => {
+		// Two frames: the first may already have been drawn before the
+		// game last moved on.
+		for (let i = 0; i < 2; i++) {
+			await new Promise((resolve) => {
+				requestAnimationFrame(resolve);
+			});
+		}
+		return (globalThis as unknown as HeroHandle).hero.drawn;
+	});
 
 /**
  * Ends the run as though a bear got me, and waits for the game-over card.

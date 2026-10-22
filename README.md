@@ -73,7 +73,16 @@ The game is split so most of it can be tested without a browser:
 - **The game page** (`src/pages/game.astro`, at `/game`) is the same island on its own, filling the window. There's no photo: the game loads straight away and waits on a start screen of its own, and leaving a run goes back there.
 - **The worlds** (`src/game/components/`) are React Three Fiber components that add the sky, light, mountains, ground and trees to a scene and hook into its systems with `useSystem`. The light and air come from the site's theme, so the mountain is day in light mode and night in dark mode, with a lantern to see by.
 
-The game in play is also on `hero.game` in the browser's console, on the live site too. Try `hero.game.advance(30)` to skip ahead, or `hero.game.catchPlayer()` to end the run. The end-to-end tests use it the same way.
+The game in play is also on `hero.game` in the browser's console, on the live site too. Try `hero.game.advance(30)` to skip ahead, or `hero.game.catchPlayer()` to end the run. `hero.drawn` is what the last frame cost to draw: its draw calls and triangles, shadows included. The end-to-end tests use them the same way.
+
+#### The drawing budget
+
+On a phone, draw calls run out long before triangles do: a run takes about 150 to 320 calls a frame, but only about 110,000 to 130,000 triangles. So the tests hold the game to a budget, and adding detail can't quietly slow it down:
+
+- Each part has its own budget in `src/game/draw-budget.test.ts`: me, a bear, and each easter egg once merged. A new easter egg has to fit inside the same one.
+- A whole frame of a run has one in `e2e/game.spec.ts`, measured by the renderer itself.
+
+If something new goes over, merge more of it first (parts that share a parent and material), or draw its repeated pieces as one `InstancedMesh`. Raise a budget only when the detail is worth the cost, and check the game still runs smoothly on a phone.
 
 ### The leaderboard
 
@@ -89,7 +98,7 @@ Anyone can still send a made-up score, as with any game in a browser. The Functi
 
 ### Adding an easter egg
 
-Write a module in `src/game/easter-eggs/` that exports an `EasterEgg` (see `types.ts`), then add it to `ALL_EASTER_EGGS` in `index.ts`. That list sets the order in the gallery. The game places easter eggs down the mountain in a shuffled order.
+Write a module in `src/game/easter-eggs/` that exports an `EasterEgg` (see `types.ts`), then add it to `ALL_EASTER_EGGS` in `index.ts`. That list sets the order in the gallery. It has to fit inside an easter egg's [drawing budget](#the-drawing-budget). The game places easter eggs down the mountain in a shuffled order.
 
 ## Deployment
 

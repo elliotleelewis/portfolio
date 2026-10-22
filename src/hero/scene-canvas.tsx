@@ -1,5 +1,6 @@
 import { Canvas, useFrame } from '@react-three/fiber';
 import { type FC, useRef } from 'react';
+import type { WebGLRenderer } from 'three';
 
 import { GalleryWorld } from '../game/components/gallery-world';
 import { GameWorld } from '../game/components/world';
@@ -13,7 +14,7 @@ const maxStep = 1 / 20;
 
 interface FrameProps {
 	scene: StageScene;
-	onFirstFrame: (scene: StageScene) => void;
+	onFirstFrame: (scene: StageScene, renderer: WebGLRenderer) => void;
 }
 
 const Frame: FC<FrameProps> = ({ scene, onFirstFrame }) => {
@@ -43,7 +44,7 @@ const Frame: FC<FrameProps> = ({ scene, onFirstFrame }) => {
 			return;
 		}
 		drawn.current = scene;
-		onFirstFrame(scene);
+		onFirstFrame(scene, gl);
 	}, RENDER_PRIORITY);
 
 	return null;
@@ -51,8 +52,8 @@ const Frame: FC<FrameProps> = ({ scene, onFirstFrame }) => {
 
 interface Props {
 	shown: ShownScene;
-	// A scene has been drawn for the first time.
-	onFirstFrame: (scene: StageScene) => void;
+	// A scene has been drawn for the first time, by this renderer.
+	onFirstFrame: (scene: StageScene, renderer: WebGLRenderer) => void;
 }
 
 /**

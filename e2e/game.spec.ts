@@ -2,6 +2,7 @@ import { expect, test } from './fixtures';
 import {
 	advance,
 	crash,
+	readDrawn,
 	readHud,
 	readInput,
 	startNewRun,
@@ -19,6 +20,24 @@ test('fades from the photo into a run down the mountain', async ({ page }) => {
 	await advance(page, 3);
 	const { metres } = await readHud(page);
 	expect(metres).toBeGreaterThan(0);
+});
+
+test('draws a run within its budget, past the first easter egg', async ({
+	page,
+}) => {
+	// Per frame, shadows included. The run is random, so this leaves room
+	// for an unlucky one: a run now peaks at about 320 calls and 130k
+	// triangles. Each part's own budget is in src/game/draw-budget.test.ts.
+	const budget = { calls: 400, triangles: 175_000 };
+	await startRun(page);
+	// Every two seconds down the slope, past the first easter egg (about
+	// 150m down) and before a bear's likely to have caught me.
+	for (let i = 0; i < 7; i++) {
+		await advance(page, 2);
+		const drawn = await readDrawn(page);
+		expect(drawn?.calls).toBeLessThanOrEqual(budget.calls);
+		expect(drawn?.triangles).toBeLessThanOrEqual(budget.triangles);
+	}
 });
 
 test('ends the run when a bear catches me', async ({ page }) => {

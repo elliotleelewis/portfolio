@@ -74,6 +74,7 @@ The site and the game share one look: a trail map on a misty mountain. Keep new 
   - World components (`src/game/components/`) join the step with `useSystem`. `Surroundings` recolours its lights in place when the theme changes; it doesn't rebuild them.
   - Components free what they create; game parts free theirs in `dispose()`.
   - Put anything new on the slope at least `APPEAR_AHEAD` ahead of the player (`world.ts`), so it arrives inside the haze.
+  - Stay inside the drawing budget (see the README): draw calls, more than triangles. Merge or instance new detail rather than raise a budget.
   - My rig (`character.ts`) and the bears' (`bear.ts`) merge each joint's pieces into one mesh per material. Animate joints; keep a piece out of the merge to move it alone, as my eyes are.
   - Right-to-left: the page's `Mirror` (`direction.ts`) flips the camera's side, the sun and the gallery row. Steering stays physical: ← turns screen-left.
 - **Easter eggs** (`src/game/easter-eggs/`, listed in `index.ts`) merge parts that share a parent and material (`mergeStill` in `merge.ts`). Keep your own references to parts you animate, never walk `children`, and animate glowing, see-through or textured materials rather than a plain one's colour.

@@ -86,13 +86,9 @@
 		@apply bg-paper font-sans text-ink antialiased;
 	}
 
-	/*
-	 * Faint contour lines, like a trail map, behind everything. They reach a
-	 * screen past each end, since phones drag fixed layers along when the page
-	 * is pulled past its ends (to refresh, say).
-	 */
+	/* Faint contour lines, like a trail map, behind everything. */
 	body::before {
-		@apply pointer-events-none fixed inset-x-0 -inset-y-[100lvh] -z-10 bg-line opacity-60;
+		@apply pointer-events-none fixed inset-0 -z-10 bg-line opacity-60;
 
 		content: '';
 		mask-image: url('/topo.svg');

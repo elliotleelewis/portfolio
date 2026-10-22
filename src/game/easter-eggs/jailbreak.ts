@@ -367,6 +367,23 @@ const run = (runner: Runner, phase: number, lean: number): void => {
 	runner.body.position.y = Math.abs(Math.cos(phase)) * 0.06;
 };
 
+/**
+ * Every joint in a runner, which all move as they run.
+ * @param runner - The runner.
+ * @returns Their joints.
+ */
+const jointsOf = (runner: Runner): Object3D[] => [
+	runner.root,
+	runner.body,
+	runner.head,
+	...runner.arms.flatMap(({ shoulder, elbow, wrist }) => [
+		shoulder,
+		elbow,
+		wrist,
+	]),
+	...runner.legs.flatMap(({ hip, knee }) => [hip, knee]),
+];
+
 export const JAILBREAK: EasterEgg = {
 	id: 'jailbreak',
 	clearingRadius: 12,
@@ -579,6 +596,11 @@ export const JAILBREAK: EasterEgg = {
 			officer.body.rotation.z = 0.12;
 			officer.head.rotation.set(-0.1, 0, 0);
 		};
-		return { object: root, update };
+		const moving = [
+			...jointsOf(prisoner),
+			...jointsOf(officer),
+			...links.map(({ mesh }) => mesh),
+		];
+		return { object: root, update, moving };
 	},
 };

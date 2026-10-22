@@ -555,6 +555,16 @@ export const MONEY_RAIN: EasterEgg = {
 				mesh.position.copy(position);
 			}
 		};
-		return { object: root, update };
+		const { arms, legs } = dancer;
+		const moving = [
+			dancer.root,
+			dancer.body,
+			dancer.head,
+			...arms.flatMap(({ shoulder, elbow }) => [shoulder, elbow]),
+			...legs.flatMap(({ hip, knee }) => [hip, knee]),
+			cloud,
+			...money.map(({ mesh }) => mesh),
+		];
+		return { object: root, update, moving };
 	},
 };

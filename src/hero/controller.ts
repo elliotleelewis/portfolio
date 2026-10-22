@@ -1,4 +1,5 @@
 import type { createStore } from 'jotai';
+import type { WebGLRenderer } from 'three';
 
 import type { Gallery } from '../game/gallery';
 import type { Game, GameInput } from '../game/game';
@@ -33,6 +34,12 @@ import type { Run } from './leaderboard';
 type LeaderboardModule = typeof import('./leaderboard');
 
 type Store = ReturnType<typeof createStore>;
+
+// What the stage drew in its last frame, shadows included.
+interface Drawn {
+	calls: number;
+	triangles: number;
+}
 
 // Inputs held down by a key or a tap, rather than the analog stick.
 export type HeldInput = Exclude<keyof GameInput, 'steer' | 'throttle'>;
@@ -71,6 +78,8 @@ export class HeroController {
 	// The leaderboard's code, loaded with the board.
 	private _leaderboard: LeaderboardModule | undefined;
 	private _boardLoad: Promise<void> | undefined;
+	// The renderer drawing the stage, once it has drawn something.
+	private _renderer: WebGLRenderer | undefined;
 
 	public constructor(store: Store, options: HeroOptions = {}) {
 		this._store = store;
@@ -162,16 +171,27 @@ export class HeroController {
 	/**
 	 * Puts the game in play on `globalThis.hero`, for anyone who wants to
 	 * play with it from the console, and for the end-to-end tests, which
-	 * fast-forward it. It's read when it's asked for, so it never keeps a
-	 * finished game from being freed.
+	 * fast-forward it and check what each frame costs to draw. It's read
+	 * when it's asked for, so it never keeps a finished game from being
+	 * freed.
 	 */
 	private expose(): void {
 		const current = (): Game | undefined => this._game;
+		const drawn = (): Drawn | undefined => {
+			if (!this._renderer) {
+				return undefined;
+			}
+			const { calls, triangles } = this._renderer.info.render;
+			return { calls, triangles };
+		};
 		Object.defineProperty(globalThis, 'hero', {
 			configurable: true,
 			value: {
 				get game() {
 					return current();
+				},
+				get drawn() {
+					return drawn();
 				},
 			},
 		});
@@ -286,8 +306,10 @@ export class HeroController {
 	 * The stage has drawn a scene for the first time: show it, and tear down
 	 * the scenes it replaced.
 	 * @param scene - The scene that was drawn.
+	 * @param renderer - The renderer that drew it.
 	 */
-	public sceneReady(scene: StageScene): void {
+	public sceneReady(scene: StageScene, renderer: WebGLRenderer): void {
+		this._renderer = renderer;
 		if (scene !== this._scene) {
 			return;
 		}
@@ -429,6 +451,7 @@ export class HeroController {
 				return;
 			}
 			this._store.set(STAGE_SCENE_ATOM, undefined);
+			this._renderer = undefined;
 			this.disposeRetired();
 		}, sceneFadeOut);
 	}

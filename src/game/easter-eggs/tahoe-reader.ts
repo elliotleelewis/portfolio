@@ -388,6 +388,12 @@ export const TAHOE_READER: EasterEgg = {
 				knee.rotation.x = Math.sin(time * 2 + i * Math.PI) * 0.18;
 			}
 		};
-		return { object: root, update };
+		const moving = [
+			reader.head,
+			reader.upper,
+			reader.page,
+			...reader.knees,
+		];
+		return { object: root, update, moving };
 	},
 };

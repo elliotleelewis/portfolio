@@ -6,10 +6,13 @@ import {
 	ConeGeometry,
 	CylinderGeometry,
 	Group,
+	InstancedMesh,
 	MathUtils,
+	Matrix4,
 	type Mesh,
 	type MeshStandardMaterial,
 	type Object3D,
+	Quaternion,
 	SphereGeometry,
 	TorusGeometry,
 	Vector3,
@@ -284,6 +287,33 @@ const buildStoker = (parent: Object3D): Stoker => {
 	return { root, body, upper, head, arms, legs, smile, shout, stick };
 };
 
+// One tongue of flame, drawn in its colour's batch.
+interface Flame {
+	batch: InstancedMesh;
+	slot: number;
+	at: Vector3;
+}
+
+const unturned = new Quaternion();
+const placing = new Matrix4();
+const sized = new Vector3();
+
+/**
+ * Places one of a batch's instances, upright.
+ * @param batch - The batch.
+ * @param slot - Which instance.
+ * @param at - Where, in the batch's space.
+ * @param size - Its scale on each axis.
+ */
+const placeInstance = (
+	batch: InstancedMesh,
+	slot: number,
+	at: Vector3,
+	size: Vector3,
+): void => {
+	batch.setMatrixAt(slot, placing.compose(at, unturned, size));
+};
+
 // A black cast-iron cabin wood stove on a slate hearth, with a stovepipe
 // chimney. Its door faces +z, hinged on the right.
 const buildStove = (
@@ -292,11 +322,15 @@ const buildStove = (
 	sticks: Mesh[];
 	door: Group;
 	flameGroup: Group;
-	flames: Mesh[];
+	flames: Flame[];
+	// The flames of each colour, drawn in one go.
+	flameBatches: InstancedMesh[];
 	glass: MeshStandardMaterial;
 	glow: MeshStandardMaterial;
 	spark: Mesh;
-	embers: { mesh: Mesh; age: number; drift: Vector3 }[];
+	embers: { age: number; drift: Vector3 }[];
+	// Every ember, drawn in one go.
+	emberBatch: InstancedMesh;
 	smoke: { mesh: Mesh; material: MeshStandardMaterial; age: number }[];
 	chimneyTop: number;
 } => {
@@ -393,13 +427,14 @@ const buildStove = (
 	// Flames in the firebox, hidden until it catches.
 	const flameGroup = joint(parent, [0, bottom + 0.1, 0]);
 	flameGroup.scale.setScalar(0.001);
-	const flames = (
+	const flames: Flame[] = [];
+	const flameBatches = (
 		[
 			['#ff4d00', 0.07, 0.3, 0.85, 0.12, 5],
 			['#ff9a1a', 0.05, 0.24, 0.9, 0.08, 4],
 			['#ffe066', 0.035, 0.16, 0.95, 0.03, 3],
 		] as const
-	).flatMap(([color, radius, flameHeight, opacity, spread, count]) => {
+	).map(([color, radius, flameHeight, opacity, spread, count]) => {
 		const material = standard(color, {
 			emissive: color,
 			emissiveIntensity: 1.8,
@@ -414,15 +449,22 @@ const buildStove = (
 			1,
 			true,
 		).translate(0, flameHeight / 2, 0);
-		return Array.from({ length: count }, (_, i) => {
-			const tongue = part(flameGroup, geometry, material, [
-				-spread + ((i + 0.5) / count) * spread * 2,
+		const batch = new InstancedMesh(geometry, material, count);
+		// The tongues stretch and shrink, so the batch is never culled as a
+		// whole: it's small, and always in view when the stove is.
+		batch.frustumCulled = false;
+		batch.receiveShadow = true;
+		flameGroup.add(batch);
+		for (let slot = 0; slot < count; slot++) {
+			const at = new Vector3(
+				-spread + ((slot + 0.5) / count) * spread * 2,
 				0,
-				(i % 2) * 0.05 - 0.02,
-			]);
-			tongue.castShadow = false;
-			return tongue;
-		});
+				(slot % 2) * 0.05 - 0.02,
+			);
+			placeInstance(batch, slot, at, sized.set(1, 1, 1));
+			flames.push({ batch, slot, at });
+		}
+		return batch;
 	});
 
 	// The door: a glass window and a steel handle. Swings open to the right.
@@ -540,20 +582,25 @@ const buildStove = (
 		emissive: '#ff7a00',
 		emissiveIntensity: 2,
 	});
-	const embers = Array.from({ length: emberCount }, (_, i) => {
-		const mesh = part(parent, emberGeometry, emberMaterial, [0, 0, 0]);
-		mesh.castShadow = false;
-		mesh.visible = false;
-		return {
-			mesh,
-			age: (i / emberCount) * 1.6,
-			drift: new Vector3(
-				MathUtils.randFloatSpread(0.5),
-				MathUtils.randFloat(0.6, 1.1),
-				MathUtils.randFloatSpread(0.5),
-			),
-		};
-	});
+	const emberBatch = new InstancedMesh(
+		emberGeometry,
+		emberMaterial,
+		emberCount,
+	);
+	// The embers fly off on their own, so the batch is never culled as a
+	// whole.
+	emberBatch.frustumCulled = false;
+	emberBatch.receiveShadow = true;
+	emberBatch.visible = false;
+	parent.add(emberBatch);
+	const embers = Array.from({ length: emberCount }, (_, i) => ({
+		age: (i / emberCount) * 1.6,
+		drift: new Vector3(
+			MathUtils.randFloatSpread(0.5),
+			MathUtils.randFloat(0.6, 1.1),
+			MathUtils.randFloatSpread(0.5),
+		),
+	}));
 	const puff = new SphereGeometry(0.09, 8, 6);
 	const smoke = Array.from({ length: smokeCount }, (_, i) => {
 		const material = standard('#9ea3a8', {
@@ -587,10 +634,12 @@ const buildStove = (
 		door,
 		flameGroup,
 		flames,
+		flameBatches,
 		glass,
 		glow: glowMaterial,
 		spark,
 		embers,
+		emberBatch,
 		smoke,
 		chimneyTop: pipeTop + 0.15,
 	};
@@ -623,6 +672,7 @@ export const WOOD_STOVE: EasterEgg = {
 		stoker.root.rotation.y = stokerFacing;
 		const [leftArm, rightArm] = stoker.arms;
 
+		const emberAt = new Vector3();
 		let triggeredAt: number | undefined;
 		// Sticks placed so far, and how far through placing the next one.
 		let placed = 2;
@@ -721,25 +771,35 @@ export const WOOD_STOVE: EasterEgg = {
 			const flicker =
 				0.85 + Math.sin(time * 17) * 0.1 + Math.sin(time * 41) * 0.05;
 			fire.flameGroup.scale.setScalar(Math.max(0.001, burn));
-			for (const [i, flame] of fire.flames.entries()) {
-				flame.scale.y =
+			for (const [i, { batch, slot, at }] of fire.flames.entries()) {
+				const stretch =
 					1 +
 					Math.sin(time * (11 + (i % 5) * 3) + i) * 0.22 +
 					Math.sin(time * (27 + (i % 3) * 7) + i * 2) * 0.12;
+				placeInstance(batch, slot, at, sized.set(1, stretch, 1));
+			}
+			for (const batch of fire.flameBatches) {
+				batch.instanceMatrix.needsUpdate = true;
 			}
 			fire.glass.emissiveIntensity = burn * 0.45 * flicker;
 			fire.glow.opacity = burn * 0.14 * flicker;
-			for (const ember of fire.embers) {
-				ember.mesh.visible = burn > 0.3;
+			fire.emberBatch.visible = burn > 0.3;
+			for (const [i, ember] of fire.embers.entries()) {
 				ember.age = (ember.age + dt) % 1.6;
 				const k = ember.age / 1.6;
-				ember.mesh.position.set(
+				emberAt.set(
 					ember.drift.x * k + Math.sin(time * 4 + k * 9) * 0.05,
 					fire.chimneyTop + ember.drift.y * k,
 					-0.1 + ember.drift.z * k,
 				);
-				ember.mesh.scale.setScalar(1 - k);
+				placeInstance(
+					fire.emberBatch,
+					i,
+					emberAt,
+					sized.setScalar(1 - k),
+				);
 			}
+			fire.emberBatch.instanceMatrix.needsUpdate = true;
 			for (const puff of fire.smoke) {
 				puff.age = (puff.age + dt) % 3;
 				const k = puff.age / 3;
@@ -752,6 +812,23 @@ export const WOOD_STOVE: EasterEgg = {
 				puff.material.opacity = burn * 0.4 * (1 - k);
 			}
 		};
-		return { object: root, update };
+		const moving = [
+			stoker.root,
+			stoker.body,
+			stoker.upper,
+			stoker.head,
+			...stoker.arms.flatMap(({ shoulder, elbow }) => [shoulder, elbow]),
+			...stoker.legs.flatMap(({ hip, knee }) => [hip, knee]),
+			stoker.stick,
+			stoker.smile,
+			stoker.shout,
+			fire.spark,
+			fire.door,
+			fire.flameGroup,
+			fire.emberBatch,
+			...fire.sticks,
+			...fire.smoke.map(({ mesh }) => mesh),
+		];
+		return { object: root, update, moving };
 	},
 };

@@ -88,6 +88,7 @@ export const createMystery = (): EasterEggInstance => {
 
 	return {
 		object: root,
+		moving: [mark, cloud, ...puffMeshes],
 		update: ({ time }) => {
 			// Bob and sway, mostly facing whoever's looking.
 			mark.position.y = Math.sin(time * 1.6) * 0.08;

@@ -2,6 +2,7 @@ import {
 	type BufferGeometry,
 	CanvasTexture,
 	Group,
+	InstancedMesh,
 	type Material,
 	Mesh,
 	MeshStandardMaterial,
@@ -70,6 +71,9 @@ export const disposeObject = (object: Object3D): void => {
 			return;
 		}
 		(child.geometry as BufferGeometry).dispose();
+		if (child instanceof InstancedMesh) {
+			child.dispose();
+		}
 		const material = child.material as Material | Material[];
 		const materials = Array.isArray(material) ? material : [material];
 		for (const m of materials) {

@@ -8,7 +8,7 @@ import {
 	type EasterEggShowcase,
 	type MergedEasterEgg,
 	disposeObject,
-	mergeStill,
+	mergeParts,
 } from './easter-eggs';
 import { fadeIntoHaze } from './haze';
 import { MYSTERY_SHOWCASE, createMystery } from './mystery';
@@ -214,7 +214,10 @@ export class Gallery implements StageScene {
 		isLocked: boolean,
 		position: Vector3,
 	): MergedEasterEgg {
-		const instance = mergeStill(isLocked ? createMystery() : egg.create());
+		const instance = mergeParts(
+			isLocked ? createMystery() : egg.create(),
+			egg.clearingRadius,
+		);
 		instance.object.position.copy(position);
 		this.easterEggs.add(instance.object);
 		return instance;

@@ -12,6 +12,10 @@ export interface EasterEggInstance {
 	// Placed on the slope, facing +z (uphill).
 	object: Object3D;
 	update?: (frame: EasterEggFrame) => void;
+	// Everything `update` moves, turns, resizes, or shows and hides, so its
+	// parts can be merged to take fewer draw calls: a part moving with any of
+	// these rides on a bone that follows it.
+	moving?: readonly Object3D[];
 }
 
 /**

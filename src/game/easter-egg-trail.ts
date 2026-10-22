@@ -12,6 +12,7 @@ import {
 	type WebGLRenderer,
 } from 'three';
 
+import { withBudget } from './draw-budget';
 import {
 	EASTER_EGGS,
 	type EasterEgg,
@@ -213,6 +214,7 @@ export class EasterEggTrail {
 					placed.egg.clearingRadius,
 				);
 				const { object } = placed.instance;
+				withBudget(object, 'easter egg');
 				object.position.set(
 					placed.x,
 					terrainHeight(placed.x, placed.z) - 0.05,

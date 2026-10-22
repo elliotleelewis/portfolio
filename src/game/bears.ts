@@ -22,6 +22,7 @@ import {
 	disposeBearParts,
 } from './bear';
 import { BearBatch } from './bear-batch';
+import { withBudget } from './draw-budget';
 import { damp } from './easing';
 import { disposeObject } from './easter-eggs';
 import type { Tree } from './forest';
@@ -111,9 +112,9 @@ export class Bears {
 	private readonly _eye = new Vector3();
 
 	// The bears, in the slope's space.
-	public readonly group = new Group();
+	public readonly group = withBudget(new Group(), 'bears');
 	// Their "!"s pinned to the edge of the view, in world space.
-	public readonly pins = new Group();
+	public readonly pins = withBudget(new Group(), 'bear alerts');
 
 	public constructor(player: Player, hooks: BearsHooks) {
 		this._player = player;
@@ -138,6 +139,7 @@ export class Bears {
 		};
 		const rig = createBear({ ...this._parts, ...own });
 		rig.root.visible = false;
+		withBudget(rig.alert, 'bear alerts');
 		this.showOwnMeshes(rig, false);
 		this.group.add(rig.root);
 		const pin = new Sprite(this._parts.alert);

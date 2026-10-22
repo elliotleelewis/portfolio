@@ -14,6 +14,7 @@ import {
 	Vector3,
 } from 'three';
 
+import { withBudget } from './draw-budget';
 import { type Shattered, disposeObject } from './easter-eggs';
 import { terrainHeight } from './world';
 
@@ -88,7 +89,7 @@ export class Effects {
 	private _debrisCursor = 0;
 
 	// Everything flying about, in the slope's space.
-	public readonly group = new Group();
+	public readonly group = withBudget(new Group(), 'effects');
 
 	public constructor() {
 		this._debrisMesh = new InstancedMesh(

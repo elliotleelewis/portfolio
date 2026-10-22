@@ -1,5 +1,5 @@
 import type { createStore } from 'jotai';
-import type { WebGLRenderer } from 'three';
+import type { Scene, WebGLRenderer } from 'three';
 
 import type { Gallery } from '../game/gallery';
 import type { Game, GameInput } from '../game/game';
@@ -171,7 +171,8 @@ export class HeroController {
 	/**
 	 * Puts the game in play on `globalThis.hero`, for anyone who wants to
 	 * play with it from the console, and for the end-to-end tests, which
-	 * fast-forward it and check what each frame costs to draw. It's read
+	 * fast-forward it and check what each frame costs to draw, and that
+	 * everything drawn has a budget. It's read
 	 * when it's asked for, so it never keeps a finished game from being
 	 * freed.
 	 */
@@ -184,6 +185,7 @@ export class HeroController {
 			const { calls, triangles } = this._renderer.info.render;
 			return { calls, triangles };
 		};
+		const shown = (): Scene | undefined => this._scene?.scene;
 		Object.defineProperty(globalThis, 'hero', {
 			configurable: true,
 			value: {
@@ -192,6 +194,10 @@ export class HeroController {
 				},
 				get drawn() {
 					return drawn();
+				},
+				// What's in the stage, for checking everything drawn has a budget.
+				get scene() {
+					return shown();
 				},
 			},
 		});

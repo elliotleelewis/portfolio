@@ -79,8 +79,9 @@ The game in play is also on `hero.game` in the browser's console, on the live si
 
 On a phone, draw calls run out long before triangles do: a run takes about 50 to 85 calls a frame (up to about 90 while a smashed easter egg's pieces fly), but about 105,000 to 140,000 triangles. So the tests hold the game to a budget, and adding detail can't quietly slow it down:
 
-- Each part has its own budget in `src/game/draw-budget.test.ts`: me, all the bears together (however many are out), and each easter egg, merged and all through its moment as I roll past. A new easter egg has to fit inside the same one.
-- A whole frame of a run has one in `e2e/game.spec.ts`, measured by the renderer itself, as I roll past the first easter egg and as one's smashed.
+- Everything drawn is part of something with a budget, marked with `withBudget` (`src/game/draw-budget.ts`): me, the bears, their "!"s, each easter egg, the trees, the ground, the horizon, the effects and the gallery's scenery. The end-to-end tests fail on anything drawn that isn't, in a run, a smash and the gallery.
+- Each has its budget, and a test of it at its worst, in `src/game/draw-budget.test.ts`. A new part needs both, or the tests fail. A new easter egg has to fit inside the same budget as the others, all through its moment and once smashed.
+- A whole frame has one too, in `e2e/game.spec.ts`, measured by the renderer itself: as I roll past the first easter egg, as one's smashed, and at each easter egg in the gallery.
 
 If something new goes over, merge more of it first (parts that share a parent and material), or draw its repeated pieces as one `InstancedMesh`. Raise a budget only when the detail is worth the cost, and check the game still runs smoothly on a phone.
 

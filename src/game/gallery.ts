@@ -1,6 +1,7 @@
 import { Group, MathUtils, PerspectiveCamera, Scene, Vector3 } from 'three';
 
 import { type Mirror, type ReadingDirection, mirrorFor } from './direction';
+import { withBudget } from './draw-budget';
 import { damp } from './easing';
 import {
 	ALL_EASTER_EGGS,
@@ -218,6 +219,7 @@ export class Gallery implements StageScene {
 			isLocked ? createMystery() : egg.create(),
 			egg.clearingRadius,
 		);
+		withBudget(instance.object, 'easter egg');
 		instance.object.position.copy(position);
 		this.easterEggs.add(instance.object);
 		return instance;

@@ -19,6 +19,8 @@ import {
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
+import { withBudget } from '../draw-budget';
+
 import { disposeObject } from './parts';
 import type { EasterEggFrame, EasterEggInstance } from './types';
 
@@ -638,7 +640,7 @@ export const mergeParts = (
 		},
 		shatter: () => {
 			object.updateWorldMatrix(true, true);
-			const shards = new Group();
+			const shards = withBudget(new Group(), 'easter egg');
 			(object.parent ?? object).add(shards);
 			shards.updateMatrixWorld(true);
 			const toShards = new Matrix4().copy(shards.matrixWorld).invert();

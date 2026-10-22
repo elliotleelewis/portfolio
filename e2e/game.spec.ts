@@ -2,6 +2,7 @@ import { expect, test } from './fixtures';
 import {
 	advance,
 	crash,
+	findUnbudgeted,
 	readDrawn,
 	readHud,
 	readInput,
@@ -28,6 +29,9 @@ test('fades from the photo into a run down the mountain', async ({ page }) => {
 // (as a smashed easter egg's pieces fly) and 140k triangles. Each part's own
 // budget is in src/game/draw-budget.test.ts.
 const budget = { calls: 120, triangles: 175_000 };
+
+// What a frame of the gallery can cost, from any easter egg along it.
+const galleryBudget = { calls: 60, triangles: 150_000 };
 
 test('draws a run within its budget, past the first easter egg', async ({
 	page,
@@ -60,6 +64,18 @@ test("draws a smashed easter egg's pieces within its budget", async ({
 		expect(drawn?.triangles).toBeLessThanOrEqual(budget.triangles);
 		await advance(page, 0.25);
 	}
+});
+
+test('draws nothing without a budget, in a run or a smash', async ({
+	page,
+}) => {
+	await startRun(page);
+	expect(await findUnbudgeted(page)).toEqual([]);
+	// Past the first easter egg, with bears about.
+	await advance(page, 10);
+	expect(await findUnbudgeted(page)).toEqual([]);
+	await smashEasterEgg(page);
+	expect(await findUnbudgeted(page)).toEqual([]);
 });
 
 test('ends the run when a bear catches me', async ({ page }) => {
@@ -123,6 +139,25 @@ test.describe('gallery', () => {
 			'data-mode',
 			'gallery',
 		);
+	});
+
+	test('draws nothing without a budget', async ({ page }) => {
+		expect(await findUnbudgeted(page)).toEqual([]);
+	});
+
+	test('draws each easter egg within its budget', async ({ page }) => {
+		const dots = page.locator('#hero-gallery-dots > *');
+		await expect(dots).toHaveCount(7);
+		for (let i = 0; i < 7; i++) {
+			await dots.nth(i).click();
+			// Once the camera has glided over.
+			await page.waitForTimeout(300);
+			const drawn = await readDrawn(page);
+			expect(drawn?.calls).toBeLessThanOrEqual(galleryBudget.calls);
+			expect(drawn?.triangles).toBeLessThanOrEqual(
+				galleryBudget.triangles,
+			);
+		}
 	});
 
 	test('steps through every easter egg', async ({ page }) => {

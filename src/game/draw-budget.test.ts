@@ -6,16 +6,18 @@ import {
 	BufferGeometry,
 	InstancedMesh,
 	Mesh,
-	type Object3D,
+	Object3D,
 	Points,
 	Sprite,
 	Vector3,
 } from 'three';
 import { describe, expect, it } from 'vitest';
 
-import { createBear, createBearParts } from './bear';
+import { type BearActor, Bears, MAX_BEARS } from './bears';
 import { createCharacter } from './character';
 import { ALL_EASTER_EGGS, mergeParts } from './easter-eggs';
+import type { Tree } from './forest';
+import { Player } from './player';
 
 interface Cost {
 	// Draw calls, counting a shadow caster twice: once for the picture and
@@ -30,7 +32,8 @@ interface Cost {
 // before triangles do. Raising a budget is fine, but do it on purpose: see
 // "The drawing budget" in the README.
 const characterBudget: Cost = { draws: 40, triangles: 10_000 };
-const bearBudget: Cost = { draws: 20, triangles: 6000 };
+// All the bears, however many: draw calls for the lot, triangles for each.
+const bearBudget: Cost = { draws: 12, triangles: 6000 };
 const easterEggBudget: Cost = { draws: 60, triangles: 20_000 };
 
 /**
@@ -75,10 +78,52 @@ describe('drawing budget', () => {
 		expect(cost.triangles).toBeLessThanOrEqual(characterBudget.triangles);
 	});
 
-	it('keeps each bear within theirs', () => {
-		const cost = costOf(createBear(createBearParts()).root);
+	it('keeps the bears within theirs, however many are out', () => {
+		const bears = new Bears(
+			new Player({
+				onRolling: () => {
+					// Not needed here.
+				},
+				onMove: () => {
+					// Not needed here.
+				},
+			}),
+			{
+				isCaught: () => false,
+				onCatch: () => {
+					// Not needed here.
+				},
+				isInTheWay: () => false,
+			},
+		);
+		// Every bear there can be, each up its own tree.
+		for (let i = 0; i < MAX_BEARS; i++) {
+			const body = new Object3D();
+			body.position.set(0, 0, -100 - i * 10);
+			const tree: Tree<BearActor> = {
+				body,
+				kind: 0,
+				slot: 0,
+				isFading: false,
+				opacity: 1,
+				occupant: undefined,
+				state: 'standing',
+				yaw: 0,
+				axis: new Vector3(),
+				angle: 0,
+				angularVelocity: 0,
+				velocity: new Vector3(),
+				hitRadius: 1,
+			};
+			bears.climb(tree);
+		}
+		bears.draw();
+		const cost = costOf(bears.group);
 		expect(cost.draws).toBeLessThanOrEqual(bearBudget.draws);
-		expect(cost.triangles).toBeLessThanOrEqual(bearBudget.triangles);
+		expect(cost.triangles).toBeLessThanOrEqual(
+			bearBudget.triangles * MAX_BEARS,
+		);
+		bears.dispose();
 	});
 
 	it.each(ALL_EASTER_EGGS)(

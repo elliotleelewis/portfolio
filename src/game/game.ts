@@ -192,6 +192,8 @@ export class Game implements StageScene {
 			);
 		});
 		this.systems.add(SYSTEM_ORDER.follow, () => {
+			// Once everything that moves the bears has.
+			this._bears.draw();
 			this._bears.pinAlerts(this.camera);
 		});
 	}

@@ -1,6 +1,14 @@
 // The bears' alert badge is drawn on a canvas, so these need a DOM.
 // @vitest-environment happy-dom
-import { Box3, Mesh, Object3D, PerspectiveCamera, Vector3 } from 'three';
+import {
+	Box3,
+	InstancedMesh,
+	Matrix4,
+	Mesh,
+	Object3D,
+	PerspectiveCamera,
+	Vector3,
+} from 'three';
 import { describe, expect, it } from 'vitest';
 
 import { type BearActor, Bears, MAX_BEARS } from './bears';
@@ -83,8 +91,31 @@ const climbOrFail = (bears: Bears, tree: Tree<BearActor>): BearActor => {
 	return bear;
 };
 
+/**
+ * What's showing under an object: its instanced meshes (the batch) and its
+ * plain meshes (a bear's own).
+ * @param object - The object.
+ * @returns The two kinds, apart.
+ */
+const showing = (
+	object: Object3D,
+): { batched: Object3D[]; counts: number[]; own: Object3D[] } => {
+	const batched: Object3D[] = [];
+	const counts: number[] = [];
+	const own: Object3D[] = [];
+	object.traverseVisible((child) => {
+		if (child instanceof InstancedMesh) {
+			batched.push(child);
+			counts.push(child.count);
+		} else if (child instanceof Mesh) {
+			own.push(child);
+		}
+	});
+	return { batched, counts, own };
+};
+
 describe('Bears', () => {
-	it('draws each bear with one mesh per material in each part that moves', () => {
+	it('builds each bear with one mesh per material in each part that moves', () => {
 		const { bears } = setup();
 		const [bear] = bears.actors;
 		const meshes: Object3D[] = [];
@@ -108,6 +139,63 @@ describe('Bears', () => {
 		expect(box.min.y).toBeCloseTo(-0.75, 3);
 		expect(box.max.y).toBeCloseTo(0.5, 3);
 		expect(box.max.x).toBeCloseTo(0.42, 3);
+		bears.dispose();
+	});
+
+	it('draws every bear in one go, with a draw call per part however many there are', () => {
+		const { player, bears } = setup();
+		const climbed = [0, 1, 2].map((i) =>
+			climbOrFail(bears, treeAt(i * 5, player.position.z - 100)),
+		);
+		bears.draw();
+		const { batched, counts, own } = showing(bears.group);
+		expect(own).toEqual([]);
+		// Body, head, snout, nose, eyes and legs.
+		expect(counts).toEqual([3, 3, 3, 3, 3, 12]);
+		expect(batched.every(({ castShadow }) => castShadow)).toBe(true);
+
+		// Each where its bear's joints are.
+		const [, second] = climbed;
+		second.rig.head.rotation.set(0.5, 0.2, 0);
+		bears.draw();
+		bears.group.updateMatrixWorld(true);
+		const placed = new Matrix4();
+		const [, heads] = batched;
+		if (!(heads instanceof InstancedMesh)) {
+			throw new TypeError('Expected the heads');
+		}
+		heads.getMatrixAt(1, placed);
+		for (const [
+			i,
+			value,
+		] of second.rig.head.matrixWorld.elements.entries()) {
+			expect(placed.elements[i]).toBeCloseTo(value, 6);
+		}
+		bears.dispose();
+	});
+
+	it('draws a bear fading out on its own, without shadows', () => {
+		let isInTheWay = false;
+		const { player, bears, run } = setup(() => isInTheWay);
+		const bear = climbOrFail(bears, treeAt(0, player.position.z - 100));
+		bear.state = 'leaving';
+		bear.rig.root.position.set(0, 0, player.position.z + 4);
+		isInTheWay = true;
+		run(0.1);
+		bears.draw();
+		const fading = showing(bear.rig.root).own;
+		expect(fading).toHaveLength(9);
+		expect(
+			fading.some((mesh) => mesh instanceof Mesh && mesh.castShadow),
+		).toBe(false);
+		expect(showing(bears.group).batched).toEqual([]);
+
+		// Back in the batch for its next outing.
+		run(0.3);
+		climbOrFail(bears, treeAt(0, player.position.z - 100));
+		bears.draw();
+		expect(showing(bear.rig.root).own).toEqual([]);
+		expect(showing(bears.group).batched).toHaveLength(6);
 		bears.dispose();
 	});
 

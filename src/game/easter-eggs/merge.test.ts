@@ -46,14 +46,16 @@ const seedRandom = (): void => {
  * Plays an easter egg as I roll up to it and past, long enough for its
  * moment to play out.
  * @param instance - The easter egg.
+ * @param onStep - Called after each step.
  */
-const approach = (instance: EasterEggInstance): void => {
+const approach = (instance: EasterEggInstance, onStep?: () => void): void => {
 	const dt = 1 / 30;
 	for (let i = 0; i < 300; i++) {
 		const time = i * dt;
 		// From 60m out, rolling through and on past.
 		const player = new Vector3(0.5, 0, 60 - time * 12);
 		instance.update?.({ time, dt, player });
+		onStep?.();
 	}
 };
 
@@ -167,6 +169,72 @@ describe('mergeStill', () => {
 		expect(meshes(root)).toHaveLength(4);
 	});
 
+	it('merges parts in still groups, up to the nearest group that moves', () => {
+		const root = new Group();
+		const wood = new MeshStandardMaterial();
+		const box = new BoxGeometry();
+		const shelf = new Group();
+		shelf.position.set(1, 2, 0);
+		const door = new Group();
+		root.add(shelf, door);
+		for (const parent of [root, shelf, shelf, door, door]) {
+			parent.add(new Mesh(box, wood));
+		}
+		const merged = mergeStill({ object: root, moving: [door] });
+		// The shelf's planks with the root's, and the door's on their own.
+		expect(meshes(root)).toHaveLength(2);
+		expect(meshes(shelf)).toHaveLength(0);
+		expect(meshes(door)).toHaveLength(1);
+		// Still where they were.
+		const whole = meshes(root).find((mesh) => mesh.parent === root);
+		if (
+			!(whole instanceof Mesh) ||
+			!(whole.geometry instanceof BufferGeometry)
+		) {
+			throw new TypeError('Expected a merged mesh');
+		}
+		whole.geometry.computeBoundingBox();
+		expect(whole.geometry.boundingBox?.max.toArray()).toEqual([
+			1.5, 2.5, 0.5,
+		]);
+		merged.unmerge();
+		expect(meshes(shelf)).toHaveLength(2);
+	});
+
+	it('leaves out parts that move on their own', () => {
+		const root = new Group();
+		const wood = new MeshStandardMaterial();
+		const box = new BoxGeometry();
+		const parts = [0, 1, 2].map(() => {
+			const part = new Mesh(box, wood);
+			root.add(part);
+			return part;
+		});
+		mergeStill({ object: root, moving: [parts[2]] });
+		expect(meshes(root)).toHaveLength(2);
+		expect(parts[2].parent).toBe(root);
+	});
+
+	it('puts parts back when a still group they were merged past moves', () => {
+		const root = new Group();
+		const wood = new MeshStandardMaterial();
+		const box = new BoxGeometry();
+		const lid = new Group();
+		root.add(lid);
+		root.add(new Mesh(box, wood));
+		lid.add(new Mesh(box, wood));
+		const merged = mergeStill({
+			object: root,
+			update: ({ time }) => {
+				lid.rotation.x = time;
+			},
+		});
+		expect(meshes(root)).toHaveLength(1);
+		merged.update?.({ time: 1, dt: 1, player: new Vector3() });
+		expect(meshes(root)).toHaveLength(2);
+		expect(meshes(lid)).toHaveLength(1);
+	});
+
 	it('puts a part back as soon as it moves on its own', () => {
 		const root = new Group();
 		const wood = new MeshStandardMaterial();
@@ -192,6 +260,38 @@ describe('mergeStill', () => {
 		merged.update?.({ ...frame, time: 2 });
 		expect(meshes(root)).toEqual(expect.arrayContaining(planks));
 		expect(planks[1].parent).toBe(root);
+	});
+
+	it.each([
+		...ALL_EASTER_EGGS.map((egg) => [egg.id, egg.create] as const),
+		['mystery', createMystery] as const,
+	])('knows everything %s moves, so its merges hold', (_name, create) => {
+		const instance = create();
+		const parts: Object3D[] = [];
+		instance.object.traverse((child) => {
+			if (child !== instance.object) {
+				parts.push(child);
+			}
+		});
+		const placed = parts.map((part) => {
+			part.updateMatrix();
+			return part.matrix.clone();
+		});
+		const shown = parts.map((part) => part.visible);
+		const moved = new Set<Object3D>();
+		approach(instance, () => {
+			for (const [i, part] of parts.entries()) {
+				part.updateMatrix();
+				if (
+					!part.matrix.equals(placed[i]) ||
+					part.visible !== shown[i]
+				) {
+					moved.add(part);
+				}
+			}
+		});
+		const moving = new Set(instance.moving);
+		expect([...moved].filter((part) => !moving.has(part))).toEqual([]);
 	});
 
 	it.each([

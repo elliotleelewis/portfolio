@@ -406,6 +406,14 @@ export const KEEPY_UPPIES: EasterEgg = {
 				puff.material.opacity = 0.5 * (1 - k);
 			}
 		};
-		return { object: root, update };
+		const moving = [
+			ball,
+			juggler.body,
+			juggler.head,
+			...juggler.arms,
+			...juggler.legs.flatMap(({ hip, knee }) => [hip, knee]),
+			...puffs.map(({ mesh }) => mesh),
+		];
+		return { object: root, update, moving };
 	},
 };

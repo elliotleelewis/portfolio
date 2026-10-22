@@ -9,6 +9,7 @@ import {
 	type Object3D,
 	Points,
 	Sprite,
+	Vector3,
 } from 'three';
 import { describe, expect, it } from 'vitest';
 
@@ -81,11 +82,22 @@ describe('drawing budget', () => {
 	});
 
 	it.each(ALL_EASTER_EGGS)(
-		"keeps the $id within an easter egg's, once merged",
+		"keeps the $id within an easter egg's, all through its moment",
 		(egg) => {
-			const cost = costOf(mergeStill(egg.create()).object);
-			expect(cost.draws).toBeLessThanOrEqual(easterEggBudget.draws);
-			expect(cost.triangles).toBeLessThanOrEqual(
+			const instance = mergeStill(egg.create());
+			const worst = costOf(instance.object);
+			// Rolling up to it from 60m out, and on past.
+			const dt = 1 / 30;
+			for (let i = 0; i < 300; i++) {
+				const time = i * dt;
+				const player = new Vector3(0.5, 0, 60 - time * 12);
+				instance.update?.({ time, dt, player });
+				const cost = costOf(instance.object);
+				worst.draws = Math.max(worst.draws, cost.draws);
+				worst.triangles = Math.max(worst.triangles, cost.triangles);
+			}
+			expect(worst.draws).toBeLessThanOrEqual(easterEggBudget.draws);
+			expect(worst.triangles).toBeLessThanOrEqual(
 				easterEggBudget.triangles,
 			);
 		},

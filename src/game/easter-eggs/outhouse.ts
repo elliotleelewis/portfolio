@@ -484,6 +484,19 @@ export const OUTHOUSE: EasterEgg = {
 				inspect * Math.sin(t * 1.3) * 0.12,
 			);
 		};
-		return { object: root, update };
+		const { arms, legs } = occupant;
+		const moving = [
+			hinge,
+			occupant.root,
+			occupant.body,
+			occupant.head,
+			...legs,
+			...arms.flatMap(({ shoulder, elbow, wrist }) => [
+				shoulder,
+				elbow,
+				wrist,
+			]),
+		];
+		return { object: root, update, moving };
 	},
 };

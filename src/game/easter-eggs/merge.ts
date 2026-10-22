@@ -3,6 +3,7 @@ import {
 	Color,
 	Float32BufferAttribute,
 	Material,
+	Matrix4,
 	Mesh,
 	MeshStandardMaterial,
 	type Object3D,
@@ -23,26 +24,44 @@ export interface MergedEasterEgg extends EasterEggInstance {
 	unmerge: () => void;
 }
 
-// A part taken out of the scene and drawn as part of a merged mesh, and how
-// it was placed (and, if its colour went into the merge, what colour it was)
-// when it was merged.
-interface Original {
-	mesh: Mesh<BufferGeometry, Material>;
+// How something was placed when it was merged.
+interface Placement {
+	object: Object3D;
 	position: Vector3;
 	quaternion: Quaternion;
 	scale: Vector3;
 	isVisible: boolean;
+}
+
+// A part taken out of the scene and drawn as part of a merged mesh: where it
+// goes back, how it was placed, and (if its colour went into the merge) what
+// colour it was.
+interface Original extends Placement {
+	mesh: Mesh<BufferGeometry, Material>;
+	parent: Object3D;
 	color: Color | undefined;
 }
 
-// Parts merged into one mesh, alongside them under their parent. Parts
-// merged by colour draw with a material of the merge's own, which goes when
-// it does.
+// Parts merged into one mesh, under the nearest group they all move with.
+// Parts merged by colour draw with a material of the merge's own, which goes
+// when it does.
 interface Merge {
-	parent: Object3D;
+	frame: Object3D;
 	merged: Mesh;
 	originals: Original[];
+	// The still groups between the parts and the frame, as they were.
+	between: Placement[];
 	ownMaterial: Material | undefined;
+}
+
+// A part that can be merged, and where its merge goes.
+interface Candidate {
+	mesh: Mesh<BufferGeometry, Material>;
+	// The nearest group it moves with: something the easter egg moves, or
+	// the easter egg itself.
+	frame: Object3D;
+	// The still groups in between.
+	between: Object3D[];
 }
 
 /**
@@ -90,7 +109,7 @@ const lookOf = (material: MeshStandardMaterial): string =>
 
 /**
  * Whether a mesh can be merged with others like it: a plain mesh with one
- * material and nothing attached to it, showing, and not mirrored.
+ * material and nothing attached to it, and showing.
  * @param object - The object.
  * @returns True if it can be merged.
  */
@@ -103,8 +122,63 @@ const isMergeable = (
 	object.material instanceof Material &&
 	object.children.length === 0 &&
 	object.visible &&
-	Object.keys(object.geometry.morphAttributes).length === 0 &&
-	object.matrix.determinant() > 0;
+	Object.keys(object.geometry.morphAttributes).length === 0;
+
+/**
+ * Where a part's merge goes: up past every still group above it, to the
+ * nearest one that moves (or the easter egg itself), so parts all over a
+ * still easter egg merge as one.
+ * @param mesh - The part.
+ * @param root - The easter egg.
+ * @param moving - What the easter egg moves.
+ * @returns Where it goes, or undefined if a still group above it is hidden,
+ * so it's never drawn.
+ */
+const placeMerge = (
+	mesh: Mesh<BufferGeometry, Material>,
+	root: Object3D,
+	moving: ReadonlySet<Object3D>,
+): Candidate | undefined => {
+	const between: Object3D[] = [];
+	let frame = mesh.parent;
+	while (frame && frame !== root && !moving.has(frame)) {
+		if (!frame.visible) {
+			return undefined;
+		}
+		between.push(frame);
+		frame = frame.parent;
+	}
+	return frame ? { mesh, frame, between } : undefined;
+};
+
+/**
+ * Where and how something is placed now.
+ * @param object - The thing.
+ * @returns Its placement.
+ */
+const placementOf = (object: Object3D): Placement => ({
+	object,
+	position: object.position.clone(),
+	quaternion: object.quaternion.clone(),
+	scale: object.scale.clone(),
+	isVisible: object.visible,
+});
+
+/**
+ * Whether something has been moved, turned, resized or hidden since it was
+ * placed.
+ * @param placement - The thing, and how it was placed.
+ * @returns True if it has.
+ */
+const hasMoved = (placement: Placement): boolean => {
+	const { object, position, quaternion, scale, isVisible } = placement;
+	return (
+		!object.position.equals(position) ||
+		!object.quaternion.equals(quaternion) ||
+		!object.scale.equals(scale) ||
+		object.visible !== isVisible
+	);
+};
 
 /**
  * What meshes have to share to be merged into one: the same material,
@@ -130,34 +204,43 @@ const mergeKey = (mesh: Mesh<BufferGeometry, Material>): string =>
 
 /**
  * Whether a merged-away part has been moved, turned, resized or hidden
- * since it was merged.
+ * since it was merged, or has changed colour.
  * @param original - The part, and how it was placed.
  * @returns True if it has changed.
  */
 const hasChanged = (original: Original): boolean => {
-	const { mesh, position, quaternion, scale, isVisible, color } = original;
+	const { mesh, color } = original;
 	return (
-		!mesh.position.equals(position) ||
-		!mesh.quaternion.equals(quaternion) ||
-		!mesh.scale.equals(scale) ||
-		mesh.visible !== isVisible ||
+		hasMoved(original) ||
 		(color !== undefined &&
 			(!isTintable(mesh.material) || !mesh.material.color.equals(color)))
 	);
 };
 
 /**
- * A copy of a part's geometry, moved into place in its parent, and coloured
- * like its material if the merge takes its colour.
+ * Whether a merge no longer shows its parts as they are: one of them, or a
+ * still group above them, has changed.
+ * @param merge - The merge.
+ * @returns True if it has to be put back.
+ */
+const isStale = (merge: Merge): boolean =>
+	merge.originals.some((original) => hasChanged(original)) ||
+	merge.between.some((placement) => hasMoved(placement));
+
+/**
+ * A copy of a part's geometry, moved into place in its merge's frame, and
+ * coloured like its material if the merge takes its colour.
  * @param mesh - The part.
+ * @param matrix - Where it is in the frame.
  * @param isTinted - Whether to colour it.
  * @returns The copy.
  */
 const placedGeometry = (
 	mesh: Mesh<BufferGeometry, Material>,
+	matrix: Matrix4,
 	isTinted: boolean,
 ): BufferGeometry => {
-	const geometry = mesh.geometry.clone().applyMatrix4(mesh.matrix);
+	const geometry = mesh.geometry.clone().applyMatrix4(matrix);
 	if (isTinted && isTintable(mesh.material)) {
 		const { r, g, b } = mesh.material.color;
 		const { count } = geometry.getAttribute('position');
@@ -173,56 +256,73 @@ const placedGeometry = (
 };
 
 /**
- * Merges an easter egg's parts that share a parent and a material into one
- * mesh each, so the easter egg takes far fewer draw calls. A merged mesh
- * stays under the same parent, so it still moves with it. Plain parts whose
- * materials differ only in colour merge too, with their colours in the
- * geometry.
+ * Merges an easter egg's parts that move together and share a material into
+ * one mesh each, so the easter egg takes far fewer draw calls. Parts merge
+ * up past every still group, into the nearest group the easter egg moves
+ * (or the easter egg itself), so they still move with it. What the easter
+ * egg moves on its own is left out. Plain parts whose materials differ only
+ * in colour merge too, with their colours in the geometry.
  *
- * Some easter eggs move single parts about (a chain link flying off, a
- * spark). After every update, any merged-away part that has changed (or
- * whose colour has) is put back, along with the rest of its merge, before
- * anything is drawn.
+ * If anything it hasn't said it moves does move (or a part merged by colour
+ * changes colour), the merge it's in is put back, after the update and
+ * before anything is drawn, so it still looks right.
  * @param instance - The easter egg, just created.
  * @returns The easter egg, merged.
  */
 export const mergeStill = (instance: EasterEggInstance): MergedEasterEgg => {
 	const { object } = instance;
+	const moving = new Set(instance.moving);
 	object.updateMatrixWorld(true);
 
-	// Group the parts by parent, then by what they'd need to share.
-	const byParent = new Map<
-		Object3D,
-		Map<string, Mesh<BufferGeometry, Material>[]>
-	>();
+	// Group the parts by where their merge goes, then by what they'd need to
+	// share.
+	const byFrame = new Map<Object3D, Map<string, Candidate[]>>();
 	object.traverse((child) => {
-		if (!child.parent || !isMergeable(child)) {
+		if (!child.parent || !isMergeable(child) || moving.has(child)) {
 			return;
 		}
-		child.updateMatrix();
+		const candidate = placeMerge(child, object, moving);
+		if (!candidate) {
+			return;
+		}
 		const groups =
-			byParent.get(child.parent) ??
-			new Map<string, Mesh<BufferGeometry, Material>[]>();
-		byParent.set(child.parent, groups);
+			byFrame.get(candidate.frame) ?? new Map<string, Candidate[]>();
+		byFrame.set(candidate.frame, groups);
 		const key = mergeKey(child);
-		groups.set(key, [...(groups.get(key) ?? []), child]);
+		groups.set(key, [...(groups.get(key) ?? []), candidate]);
 	});
 
 	const merges: Merge[] = [];
-	for (const [parent, groups] of byParent) {
-		for (const meshes of groups.values()) {
-			if (meshes.length < 2) {
+	const inverse = new Matrix4();
+	for (const [frame, groups] of byFrame) {
+		inverse.copy(frame.matrixWorld).invert();
+		for (const candidates of groups.values()) {
+			// Where each part is in the frame. A mirrored one can't merge: its
+			// faces would turn inside out.
+			const placed = candidates
+				.map((candidate) => ({
+					...candidate,
+					matrix: new Matrix4().multiplyMatrices(
+						inverse,
+						candidate.mesh.matrixWorld,
+					),
+				}))
+				.filter(({ matrix }) => matrix.determinant() > 0);
+			if (placed.length < 2) {
 				continue;
 			}
+			const meshes = placed.map(({ mesh }) => mesh);
 			const [first] = meshes;
 			// Parts that share a material keep it. Parts that only look alike
 			// get their colours in the geometry, and a white copy of it.
 			const isTinted = meshes.some(
 				(mesh) => mesh.material !== first.material,
 			);
-			const placed = meshes.map((mesh) => placedGeometry(mesh, isTinted));
-			const geometry = mergeGeometries(placed);
-			for (const clone of placed) {
+			const geometries = placed.map(({ mesh, matrix: at }) =>
+				placedGeometry(mesh, at, isTinted),
+			);
+			const geometry = mergeGeometries(geometries);
+			for (const clone of geometries) {
 				clone.dispose();
 			}
 			let ownMaterial: Material | undefined;
@@ -236,31 +336,39 @@ export const mergeStill = (instance: EasterEggInstance): MergedEasterEgg => {
 			const merged = new Mesh(geometry, ownMaterial ?? first.material);
 			merged.castShadow = first.castShadow;
 			merged.receiveShadow = first.receiveShadow;
-			parent.add(merged);
-			const originals = meshes.map((mesh) => {
+			frame.add(merged);
+			const originals = placed.map(({ mesh }): Original => {
+				const parent = mesh.parent ?? frame;
 				parent.remove(mesh);
 				return {
+					...placementOf(mesh),
 					mesh,
-					position: mesh.position.clone(),
-					quaternion: mesh.quaternion.clone(),
-					scale: mesh.scale.clone(),
-					isVisible: mesh.visible,
+					parent,
 					color:
 						isTinted && isTintable(mesh.material)
 							? mesh.material.color.clone()
 							: undefined,
 				};
 			});
-			merges.push({ parent, merged, originals, ownMaterial });
+			const between = new Set(
+				placed.flatMap((candidate) => candidate.between),
+			);
+			merges.push({
+				frame,
+				merged,
+				originals,
+				between: [...between].map((group) => placementOf(group)),
+				ownMaterial,
+			});
 		}
 	}
 
 	const split = (merge: Merge): void => {
-		const { parent, merged, originals, ownMaterial } = merge;
-		parent.remove(merged);
+		const { frame, merged, originals, ownMaterial } = merge;
+		frame.remove(merged);
 		merged.geometry.dispose();
 		ownMaterial?.dispose();
-		for (const { mesh } of originals) {
+		for (const { mesh, parent } of originals) {
 			parent.add(mesh);
 		}
 		merges.splice(merges.indexOf(merge), 1);
@@ -268,13 +376,12 @@ export const mergeStill = (instance: EasterEggInstance): MergedEasterEgg => {
 
 	return {
 		object,
+		moving: instance.moving,
 		update: (frame: EasterEggFrame) => {
 			instance.update?.(frame);
-			// Put back any part that's started moving on its own.
+			// Put back any merge whose parts have started moving.
 			for (let i = merges.length - 1; i >= 0; i--) {
-				if (
-					merges[i].originals.some((original) => hasChanged(original))
-				) {
+				if (isStale(merges[i])) {
 					split(merges[i]);
 				}
 			}

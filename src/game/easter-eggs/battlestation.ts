@@ -766,6 +766,14 @@ export const BATTLESTATION: EasterEgg = {
 			station.generator.rotation.z = Math.sin(time * 47) * 0.008;
 			station.dish.rotation.x = 0.25 + Math.sin(time * 0.3) * 0.02;
 		};
-		return { object: root, update };
+		const moving = [
+			...worker.wrists,
+			...worker.shoulders,
+			worker.upper,
+			worker.head,
+			station.generator,
+			station.dish,
+		];
+		return { object: root, update, moving };
 	},
 };

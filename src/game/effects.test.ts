@@ -1,6 +1,16 @@
-import { Group, InstancedMesh, Matrix4, Mesh, Vector3 } from 'three';
+import {
+	BoxGeometry,
+	Group,
+	InstancedMesh,
+	Matrix4,
+	Mesh,
+	MeshStandardMaterial,
+	SkinnedMesh,
+	Vector3,
+} from 'three';
 import { describe, expect, it } from 'vitest';
 
+import { mergeParts } from './easter-eggs';
 import { Effects } from './effects';
 
 const run = (effects: Effects, seconds: number): void => {
@@ -49,26 +59,34 @@ describe('Effects', () => {
 		expect(effects.isExploding).toBe(false);
 	});
 
-	it('flings the pieces of something apart, then clears them away', () => {
+	it('flings the pieces of something smashed apart, then clears them away', () => {
 		const effects = new Effects();
+		const slope = new Group();
 		const thing = new Group();
-		const pieces = [new Mesh(), new Mesh(), new Mesh()];
-		for (const [i, piece] of pieces.entries()) {
-			piece.position.set(i - 1, 20, -50);
+		slope.add(thing);
+		const box = new BoxGeometry();
+		const wood = new MeshStandardMaterial();
+		for (const x of [-1, 0, 1]) {
+			const piece = new Mesh(box, wood);
+			piece.position.set(x, 20, -50);
 			thing.add(piece);
 		}
-		effects.shatter(thing, new Vector3(0, 19, -50), 20);
+		const shattered = mergeParts({ object: thing }).shatter();
+		effects.shatter(shattered, new Vector3(0, 19, -50), 20);
 		expect(effects.shardCount).toBe(3);
-		expect(thing.children).toHaveLength(0);
+		// Still drawn together.
+		const drawn = shattered.object.children.filter(
+			(child) => child instanceof Mesh,
+		);
+		expect(drawn).toHaveLength(1);
+		expect(drawn[0]).toBeInstanceOf(SkinnedMesh);
+		expect(shattered.object.parent).toBe(effects.group);
 		run(effects, 0.2);
-		for (const piece of pieces) {
-			expect(piece.parent).toBe(effects.group);
+		for (const piece of shattered.pieces) {
 			expect(piece.position.y).toBeGreaterThan(20);
 		}
 		run(effects, 3);
 		expect(effects.shardCount).toBe(0);
-		for (const piece of pieces) {
-			expect(piece.parent).toBeNull();
-		}
+		expect(shattered.object.parent).toBeNull();
 	});
 });

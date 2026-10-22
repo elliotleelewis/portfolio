@@ -11,6 +11,7 @@ import {
 	Mesh,
 	MeshStandardMaterial,
 	type Object3D,
+	Quaternion,
 	SkinnedMesh,
 	Vector3,
 } from 'three';
@@ -121,6 +122,20 @@ const drawnTriangles = (object: Object3D): number[] => {
 		}
 	});
 	return [count, ...sum.divideScalar(count), spread / count];
+};
+
+/**
+ * Checks two objects draw the same triangles in the same places.
+ * @param actual - One.
+ * @param expected - The other.
+ */
+const expectDrawnAlike = (actual: Object3D, expected: Object3D): void => {
+	const [count, ...rest] = drawnTriangles(expected);
+	const [drawnCount, ...drawnRest] = drawnTriangles(actual);
+	expect(drawnCount).toBe(count);
+	for (const [i, value] of rest.entries()) {
+		expect(drawnRest[i]).toBeCloseTo(value, 4);
+	}
 };
 
 afterEach(() => {
@@ -335,6 +350,24 @@ describe('mergeParts', () => {
 		expect(mirrored.parent).toBe(root);
 	});
 
+	it('keeps what was hidden hidden once shattered', () => {
+		const slope = new Group();
+		const root = new Group();
+		slope.add(root);
+		const wood = new MeshStandardMaterial();
+		const box = new BoxGeometry();
+		// A lid that's shown and hidden, with its own planks merged on it.
+		const lid = new Group();
+		lid.add(new Mesh(box, wood), new Mesh(box, wood));
+		root.add(lid);
+		const merged = mergeParts({ object: root, moving: [lid] });
+		lid.visible = false;
+		const shattered = merged.shatter();
+		const [count] = drawnTriangles(shattered.object);
+		expect(count).toBe(0);
+		shattered.dispose();
+	});
+
 	it('puts parts back when a still group they were merged past moves', () => {
 		const root = new Group();
 		const wood = new MeshStandardMaterial();
@@ -488,6 +521,85 @@ describe('mergeParts', () => {
 					expect(drawnRest[j]).toBeCloseTo(value, 4);
 				}
 			}
+		},
+	);
+
+	it.each([
+		...ALL_EASTER_EGGS.map((egg) => [egg.id, egg.create] as const),
+		['mystery', createMystery] as const,
+	])(
+		'shatters %s into pieces drawn just where its parts are, as they fly',
+		(_name, create) => {
+			/**
+			 * Plays an easter egg partway through its moment, on a slope.
+			 * @param instance - The easter egg.
+			 * @returns The slope.
+			 */
+			const playOnSlope = (instance: EasterEggInstance): Group => {
+				const slope = new Group();
+				slope.add(instance.object);
+				seedRandom();
+				for (let i = 0; i < 150; i++) {
+					const time = i / 30;
+					const player = new Vector3(0.5, 0, 60 - time * 12);
+					instance.update?.({ time, dt: 1 / 30, player });
+				}
+				vi.restoreAllMocks();
+				return slope;
+			};
+			seedRandom();
+			const plain = create();
+			vi.restoreAllMocks();
+			seedRandom();
+			const merged = mergeParts(create());
+			vi.restoreAllMocks();
+			const plainSlope = playOnSlope(plain);
+			const mergedSlope = playOnSlope(merged);
+
+			// The plain copy broken up as it was: every mesh on its own, on the
+			// slope, and those that weren't showing still hidden.
+			const parts: Object3D[] = [];
+			plain.object.traverse((child) => {
+				if (child instanceof Mesh) {
+					parts.push(child);
+				}
+			});
+			plain.object.updateMatrixWorld(true);
+			const shown = new Set<Object3D>();
+			plain.object.traverseVisible((child) => shown.add(child));
+			for (const part of parts) {
+				plainSlope.attach(part);
+				part.visible = shown.has(part);
+			}
+			plain.object.removeFromParent();
+			const shattered = merged.shatter();
+			merged.object.removeFromParent();
+			expect(shattered.pieces).toHaveLength(parts.length);
+			expectDrawnAlike(mergedSlope, plainSlope);
+
+			// Then each piece flung somewhere new, the same in both.
+			const turn = new Quaternion();
+			for (const [i, part] of parts.entries()) {
+				if (!part.visible) {
+					continue;
+				}
+				part.position.add(
+					new Vector3(i * 0.3, (i % 5) * 0.4, -i * 0.2),
+				);
+				part.quaternion.premultiply(
+					turn.setFromAxisAngle(
+						new Vector3(1, 1, 0).normalize(),
+						i * 0.7,
+					),
+				);
+				part.scale.multiplyScalar(0.6 + (i % 3) * 0.2);
+				const piece = shattered.pieces[i];
+				piece.position.copy(part.position);
+				piece.quaternion.copy(part.quaternion);
+				piece.scale.copy(part.scale);
+			}
+			expectDrawnAlike(mergedSlope, plainSlope);
+			shattered.dispose();
 		},
 	);
 

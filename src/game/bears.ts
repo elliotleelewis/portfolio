@@ -1,11 +1,14 @@
 import {
+	type Camera,
 	Group,
 	type Material,
 	MathUtils,
 	Mesh,
 	type PerspectiveCamera,
+	type Scene,
 	Sprite,
 	Vector3,
+	type WebGLRenderer,
 } from 'three';
 
 import {
@@ -18,6 +21,7 @@ import {
 	createBearParts,
 	disposeBearParts,
 } from './bear';
+import { BearBatch } from './bear-batch';
 import { damp } from './easing';
 import { disposeObject } from './easter-eggs';
 import type { Tree } from './forest';
@@ -72,7 +76,8 @@ export interface BearActor {
 	// How it flies (and tumbles) once blasted.
 	velocity: Vector3;
 	spin: Vector3;
-	// Its own copies of the bear materials, so it can fade out on its own.
+	// Its own meshes and copies of the bear materials, drawn instead of the
+	// batch's only while it fades out on its own.
 	materials: Material[];
 	// Fading out of the camera's way, and how opaque it still is.
 	isFading: boolean;
@@ -98,7 +103,10 @@ export class Bears {
 	private readonly _player: Player;
 	private readonly _hooks: BearsHooks;
 	private readonly _parts: BearParts = createBearParts();
+	private readonly _batch = new BearBatch(this._parts, MAX_BEARS);
 	private readonly _actors: BearActor[] = [];
+	// The bears the batch draws this step: out and about, and solid.
+	private readonly _solid: Bear[] = [];
 	private readonly _point = new Vector3();
 	private readonly _eye = new Vector3();
 
@@ -110,6 +118,7 @@ export class Bears {
 	public constructor(player: Player, hooks: BearsHooks) {
 		this._player = player;
 		this._hooks = hooks;
+		this.group.add(this._batch.group);
 		for (let i = 0; i < initialBearCount; i++) {
 			this.add();
 		}
@@ -129,6 +138,7 @@ export class Bears {
 		};
 		const rig = createBear({ ...this._parts, ...own });
 		rig.root.visible = false;
+		this.showOwnMeshes(rig, false);
 		this.group.add(rig.root);
 		const pin = new Sprite(this._parts.alert);
 		pin.visible = false;
@@ -394,7 +404,7 @@ export class Bears {
 				return;
 			}
 			bear.isFading = true;
-			this.setShadows(bear, false);
+			this.showOwnMeshes(bear.rig, true);
 			for (const material of bear.materials) {
 				material.transparent = true;
 				material.needsUpdate = true;
@@ -419,7 +429,7 @@ export class Bears {
 		}
 		bear.isFading = false;
 		bear.opacity = 1;
-		this.setShadows(bear, true);
+		this.showOwnMeshes(bear.rig, false);
 		for (const material of bear.materials) {
 			material.opacity = 1;
 			material.transparent = false;
@@ -427,12 +437,59 @@ export class Bears {
 		}
 	}
 
-	private setShadows(bear: BearActor, isCasting: boolean): void {
-		bear.rig.root.traverse((child) => {
-			if (child instanceof Mesh) {
-				child.castShadow = isCasting;
+	/**
+	 * Shows or hides a bear's own meshes, which draw it (without shadows)
+	 * while it fades out, instead of the batch.
+	 * @param rig - The bear.
+	 * @param isShown - Whether to show them.
+	 */
+	private showOwnMeshes(rig: Bear, isShown: boolean): void {
+		rig.root.traverse((child) => {
+			if (!(child instanceof Mesh)) {
+				return;
 			}
+
+			child.visible = isShown;
+			child.castShadow = false;
 		});
+	}
+
+	/**
+	 * Compiles the see-through bear shaders up front, so the first bear to
+	 * fade out of the camera's way doesn't stutter.
+	 * @param renderer - The renderer that will draw the bears.
+	 * @param scene - The scene they're in, for its lights and haze.
+	 * @param camera - The camera looking at them.
+	 */
+	public prepare(
+		renderer: WebGLRenderer,
+		scene: Scene,
+		camera: Camera,
+	): void {
+		const [{ rig, materials }] = this._actors;
+		for (const material of materials) {
+			material.transparent = true;
+			material.needsUpdate = true;
+		}
+		renderer.compile(rig.root, camera, scene);
+		for (const material of materials) {
+			material.transparent = false;
+			material.needsUpdate = true;
+		}
+	}
+
+	/**
+	 * Draws the bears where they are now, all in one go but for any fading
+	 * out, which draw themselves.
+	 */
+	public draw(): void {
+		this._solid.length = 0;
+		for (const { rig, isFading } of this._actors) {
+			if (!isFading && rig.root.visible) {
+				this._solid.push(rig);
+			}
+		}
+		this._batch.draw(this._solid);
 	}
 
 	/**
@@ -641,6 +698,7 @@ export class Bears {
 
 	public dispose(): void {
 		disposeObject(this.group);
+		this._batch.dispose();
 		disposeBearParts(this._parts);
 	}
 }

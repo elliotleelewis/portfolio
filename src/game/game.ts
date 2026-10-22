@@ -192,6 +192,8 @@ export class Game implements StageScene {
 			);
 		});
 		this.systems.add(SYSTEM_ORDER.follow, () => {
+			// Once everything that moves the bears has.
+			this._bears.draw();
 			this._bears.pinAlerts(this.camera);
 		});
 	}
@@ -454,6 +456,10 @@ export class Game implements StageScene {
 		} else {
 			renderer.compile(this._scene, this.camera);
 		}
+		// A bear fading out, and the easter eggs, which aren't built until
+		// they're far down the slope ahead.
+		this._bears.prepare(renderer, this._scene, this.camera);
+		this._trail.prepare(renderer, this._scene, this.camera);
 	}
 
 	/**

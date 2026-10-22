@@ -224,9 +224,11 @@ export class Player {
 		}
 		c.roller.position.y =
 			contactOffset + Math.abs(c.lean.rotation.z) * 0.08 - lowest;
+		c.keepUp();
 	}
 
 	public dispose(): void {
+		this._character.unmerge();
 		disposeObject(this._character.root);
 	}
 }

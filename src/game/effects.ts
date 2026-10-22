@@ -14,7 +14,7 @@ import {
 	Vector3,
 } from 'three';
 
-import { disposeObject } from './easter-eggs';
+import { type Shattered, disposeObject } from './easter-eggs';
 import { terrainHeight } from './world';
 
 // Bits of needle, bark and dirt, reused round-robin.
@@ -30,9 +30,16 @@ interface Debris {
 	life: number;
 }
 
+// Something smashed, and how many of its pieces are still flying.
+interface Smash {
+	shattered: Shattered;
+	flying: number;
+}
+
 // A piece of something smashed, flying off.
 interface Shard {
-	mesh: Mesh;
+	piece: Object3D;
+	smash: Smash;
 	velocity: Vector3;
 	spin: Vector3;
 	scale: Vector3;
@@ -164,27 +171,33 @@ export class Effects {
 	private updateShards(dt: number): void {
 		for (let i = this._shards.length - 1; i >= 0; i--) {
 			const shard = this._shards[i];
-			const { mesh, velocity } = shard;
+			const { piece, velocity, smash } = shard;
 			shard.life -= dt;
 			if (shard.life <= 0) {
-				mesh.removeFromParent();
-				disposeObject(mesh);
+				piece.scale.setScalar(0);
+				piece.visible = false;
 				this._shards.splice(i, 1);
+				// Once the last piece has gone, clear the lot away.
+				smash.flying--;
+				if (smash.flying === 0) {
+					smash.shattered.object.removeFromParent();
+					smash.shattered.dispose();
+				}
 				continue;
 			}
 			velocity.y -= 22 * dt;
-			mesh.position.addScaledVector(velocity, dt);
-			const ground = terrainHeight(mesh.position.x, mesh.position.z);
-			if (mesh.position.y < ground) {
-				mesh.position.y = ground;
+			piece.position.addScaledVector(velocity, dt);
+			const ground = terrainHeight(piece.position.x, piece.position.z);
+			if (piece.position.y < ground) {
+				piece.position.y = ground;
 				velocity.multiplyScalar(0.5);
 				velocity.y = Math.abs(velocity.y) * 0.6;
 			}
-			mesh.rotation.x += shard.spin.x * dt;
-			mesh.rotation.y += shard.spin.y * dt;
-			mesh.rotation.z += shard.spin.z * dt;
+			piece.rotation.x += shard.spin.x * dt;
+			piece.rotation.y += shard.spin.y * dt;
+			piece.rotation.z += shard.spin.z * dt;
 			// Shrink away at the end.
-			mesh.scale
+			piece.scale
 				.copy(shard.scale)
 				.multiplyScalar(Math.min(1, shard.life * 2.5));
 		}
@@ -245,28 +258,30 @@ export class Effects {
 	}
 
 	/**
-	 * Breaks something into its pieces and flings them outwards, keeping
-	 * where each was.
-	 * @param object - What to break apart.
+	 * Flings something smashed outwards, piece by piece, keeping where each
+	 * was. Its pieces are freed once they've all gone.
+	 * @param shattered - What was smashed, in its pieces.
 	 * @param centre - Where it breaks from, in the slope's space.
 	 * @param speed - How fast I hit it, which carries the pieces on.
 	 */
-	public shatter(object: Object3D, centre: Vector3, speed: number): void {
-		const meshes: Mesh[] = [];
-		object.traverse((child) => {
-			if (child instanceof Mesh) {
-				meshes.push(child as Mesh);
-			}
-		});
-		for (const mesh of meshes) {
-			this.group.attach(mesh);
+	public shatter(shattered: Shattered, centre: Vector3, speed: number): void {
+		const { object, pieces } = shattered;
+		if (pieces.length === 0) {
+			object.removeFromParent();
+			shattered.dispose();
+			return;
+		}
+		this.group.attach(object);
+		const smash: Smash = { shattered, flying: pieces.length };
+		for (const piece of pieces) {
 			const outwards = this._v
-				.subVectors(mesh.position, centre)
+				.subVectors(piece.position, centre)
 				.setY(0)
 				.normalize()
 				.multiplyScalar(MathUtils.randFloat(4, 11));
 			this._shards.push({
-				mesh,
+				piece,
+				smash,
 				velocity: new Vector3(
 					outwards.x + MathUtils.randFloatSpread(3),
 					MathUtils.randFloat(5, 12),
@@ -277,7 +292,7 @@ export class Effects {
 					MathUtils.randFloatSpread(10),
 					MathUtils.randFloatSpread(10),
 				),
-				scale: mesh.scale.clone(),
+				scale: piece.scale.clone(),
 				life: MathUtils.randFloat(1.4, 2.4),
 			});
 		}
@@ -305,6 +320,12 @@ export class Effects {
 	}
 
 	public dispose(): void {
+		const smashes = new Set(this._shards.map(({ smash }) => smash));
+		for (const { shattered } of smashes) {
+			shattered.object.removeFromParent();
+			shattered.dispose();
+		}
+		this._shards.length = 0;
 		disposeObject(this.group);
 		this._debrisMesh.dispose();
 	}

@@ -31,7 +31,7 @@ interface Cost {
 // one or two easter eggs at once, and on a phone draw calls run out long
 // before triangles do. Raising a budget is fine, but do it on purpose: see
 // "The drawing budget" in the README.
-const characterBudget: Cost = { draws: 40, triangles: 10_000 };
+const characterBudget: Cost = { draws: 8, triangles: 10_000 };
 // All the bears, however many: draw calls for the lot, triangles for each.
 const bearBudget: Cost = { draws: 12, triangles: 6000 };
 const easterEggBudget: Cost = { draws: 60, triangles: 20_000 };

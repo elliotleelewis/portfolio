@@ -13,7 +13,7 @@ import { ChaseCamera } from './chase-camera';
 import { bearChance } from './difficulty';
 import { type Mirror, type ReadingDirection, mirrorFor } from './direction';
 import { EasterEggTrail, type PlacedEasterEgg } from './easter-egg-trail';
-import type { EasterEggInstance } from './easter-eggs';
+import type { Shattered } from './easter-eggs';
 import { Effects } from './effects';
 import type { Forest, ForestHooks, Tree } from './forest';
 import { fadeIntoHaze } from './haze';
@@ -154,8 +154,8 @@ export class Game implements StageScene {
 		this._trail = new EasterEggTrail(this._player, {
 			canSmash: () =>
 				this._player.isRolling && this._caughtAt === undefined,
-			onSmash: (placed, instance) => {
-				this.smash(placed, instance);
+			onSmash: (placed, shattered) => {
+				this.smash(placed, shattered);
 			},
 		});
 		this._bears = new Bears(this._player, {
@@ -304,15 +304,15 @@ export class Game implements StageScene {
 	/**
 	 * Blows an easter egg apart as I roll through it.
 	 * @param placed - The easter egg.
-	 * @param instance - Its scene objects.
+	 * @param shattered - It, in its pieces.
 	 */
-	private smash(placed: PlacedEasterEgg, instance: EasterEggInstance): void {
+	private smash(placed: PlacedEasterEgg, shattered: Shattered): void {
 		const centre = this._v2.set(
 			placed.x,
 			terrainHeight(placed.x, placed.z) + 1,
 			placed.z,
 		);
-		this._effects.shatter(instance.object, centre, this._player.speed);
+		this._effects.shatter(shattered, centre, this._player.speed);
 		this._effects.explode(centre);
 		this.blastBears(placed);
 		// Plus a spray of dirt and needles.
@@ -434,6 +434,18 @@ export class Game implements StageScene {
 	 */
 	public catchPlayer(): void {
 		this.caught(this._bears.spawnBesideMe());
+	}
+
+	/**
+	 * Puts me in the middle of the next easter egg, so the next step smashes
+	 * it (for tests that need one smashed).
+	 */
+	public rollIntoEasterEgg(): void {
+		const egg = this._trail.eggs.find(({ isSmashed }) => !isSmashed);
+		if (!egg) {
+			return;
+		}
+		this._player.position.set(egg.x, terrainHeight(egg.x, egg.z), egg.z);
 	}
 
 	/**

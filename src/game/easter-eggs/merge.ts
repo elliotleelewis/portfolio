@@ -1,8 +1,10 @@
 import {
 	Bone,
+	BufferAttribute,
 	BufferGeometry,
 	Color,
 	Float32BufferAttribute,
+	Group,
 	Material,
 	Matrix4,
 	Mesh,
@@ -17,15 +19,32 @@ import {
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
+import { disposeObject } from './parts';
 import type { EasterEggFrame, EasterEggInstance } from './types';
 
 /**
  * An easter egg with its parts merged, so it takes far fewer draw calls.
  */
 export interface MergedEasterEgg extends EasterEggInstance {
-	// Puts every part back as it was built, separate, so that (for example)
-	// each can fly off on its own when the easter egg is smashed.
+	// Puts every part back as it was built, separate.
 	unmerge: () => void;
+	// Breaks it into its parts, still drawn together, for flinging about once
+	// it's smashed. After this, it's empty.
+	shatter: () => Shattered;
+}
+
+/**
+ * A smashed easter egg's parts, each a piece that can be moved (and spun,
+ * and shrunk) on its own, though most are drawn together.
+ */
+export interface Shattered {
+	// Holds the pieces, beside where the easter egg was.
+	object: Object3D;
+	// One for each mesh the easter egg was built with, in the order they
+	// were, where it is now.
+	pieces: Object3D[];
+	// Frees everything, once the pieces are done with.
+	dispose: () => void;
 }
 
 // How something was placed when it was merged.
@@ -54,6 +73,9 @@ interface Merge {
 	home: Object3D;
 	merged: Mesh;
 	originals: Original[];
+	// How many of the merged geometry's vertices are each original's, in
+	// order.
+	counts: number[];
 	// The still groups between the parts and what they move with, as they
 	// were.
 	between: Placement[];
@@ -306,6 +328,67 @@ const within = (home: Object3D, object: Object3D): Matrix4 =>
 	new Matrix4().copy(home.matrixWorld).invert().multiply(object.matrixWorld);
 
 /**
+ * How a merged mesh places the vertices of one part now: in the world,
+ * from the merged geometry's own space.
+ * @param merged - The merged mesh, up to date.
+ * @param vertex - One of the part's vertices.
+ * @returns How its vertices are placed.
+ */
+const placingOf = (merged: Mesh, vertex: number): Matrix4 => {
+	const skinIndex: unknown = merged.geometry.getAttribute('skinIndex');
+	if (
+		!(merged instanceof SkinnedMesh) ||
+		!(skinIndex instanceof BufferAttribute)
+	) {
+		return merged.matrixWorld.clone();
+	}
+	const bone = skinIndex.getX(vertex);
+	const { bones, boneInverses } = merged.skeleton;
+	return new Matrix4()
+		.multiplyMatrices(bones[bone].matrixWorld, boneInverses[bone])
+		.multiply(merged.bindMatrix);
+};
+
+/**
+ * Puts each part of a geometry wholly on a bone of its own.
+ * @param geometry - The geometry.
+ * @param counts - How many vertices each part has, in order.
+ * @param first - The first part's bone's place in the skeleton.
+ */
+const onBones = (
+	geometry: BufferGeometry,
+	counts: readonly number[],
+	first: number,
+): void => {
+	const { count } = geometry.getAttribute('position');
+	const indices = new Uint16Array(count * 4);
+	const weights = new Float32Array(count * 4);
+	let vertex = 0;
+	for (const [part, partCount] of counts.entries()) {
+		for (let i = 0; i < partCount; i++, vertex++) {
+			indices[vertex * 4] = first + part;
+			weights[vertex * 4] = 1;
+		}
+	}
+	const skinIndex: unknown = geometry.getAttribute('skinIndex');
+	const skinWeight: unknown = geometry.getAttribute('skinWeight');
+	// Written over in place, if it has them, so nothing's left behind on the
+	// GPU.
+	if (
+		skinIndex instanceof Uint16BufferAttribute &&
+		skinWeight instanceof Float32BufferAttribute
+	) {
+		skinIndex.set(indices);
+		skinWeight.set(weights);
+		skinIndex.needsUpdate = true;
+		skinWeight.needsUpdate = true;
+		return;
+	}
+	geometry.setAttribute('skinIndex', new Uint16BufferAttribute(indices, 4));
+	geometry.setAttribute('skinWeight', new Float32BufferAttribute(weights, 4));
+};
+
+/**
  * Puts a geometry wholly on one bone.
  * @param geometry - The geometry.
  * @param bone - The bone's place in the skeleton.
@@ -351,6 +434,13 @@ export const mergeParts = (
 	const { object } = instance;
 	const moving = new Set(instance.moving);
 	object.updateMatrixWorld(true);
+	// Every mesh it's built with, in order, merged or not.
+	const built: Object3D[] = [];
+	object.traverse((child) => {
+		if (child instanceof Mesh) {
+			built.push(child);
+		}
+	});
 
 	// Group the parts by what they'd need to share.
 	const groups = new Map<string, Candidate[]>();
@@ -449,6 +539,9 @@ export const mergeParts = (
 				: geometry;
 		});
 		const geometry = mergeGeometries(geometries);
+		const counts = geometries.map(
+			(clone) => clone.getAttribute('position').count,
+		);
 		for (const clone of geometries) {
 			clone.dispose();
 		}
@@ -499,10 +592,19 @@ export const mergeParts = (
 			home,
 			merged,
 			originals,
+			counts,
 			between: [...between].map((group) => placementOf(group)),
 			ownMaterial,
 		});
 	}
+
+	const removeAnchors = (): void => {
+		for (const { bone } of anchors.values()) {
+			bone.removeFromParent();
+		}
+		anchors.clear();
+		skeleton?.dispose();
+	};
 
 	const split = (merge: Merge): void => {
 		const { home, merged, originals, ownMaterial } = merge;
@@ -532,11 +634,88 @@ export const mergeParts = (
 			while (merges.length > 0) {
 				split(merges[0]);
 			}
-			for (const { bone } of anchors.values()) {
-				bone.removeFromParent();
+			removeAnchors();
+		},
+		shatter: () => {
+			object.updateWorldMatrix(true, true);
+			const shards = new Group();
+			(object.parent ?? object).add(shards);
+			shards.updateMatrixWorld(true);
+			const toShards = new Matrix4().copy(shards.matrixWorld).invert();
+			const pieceOf = new Map<Object3D, Object3D>();
+			const bones: Bone[] = [];
+			// Where each bone's part's vertices are drawn now, from the merged
+			// geometry's space.
+			const placings: Matrix4[] = [];
+			const hidden: Bone[] = [];
+			const skins: SkinnedMesh[] = [];
+			const consumed: Mesh[] = [];
+			// Each merged part on a bone of its own, where the part is, so it
+			// spins about its own middle.
+			for (const { merged, originals, counts } of merges) {
+				let vertex = 0;
+				const first = bones.length;
+				for (const [i, { mesh, parent }] of originals.entries()) {
+					mesh.updateMatrix();
+					const bone = new Bone();
+					new Matrix4()
+						.multiplyMatrices(toShards, parent.matrixWorld)
+						.multiply(mesh.matrix)
+						.decompose(bone.position, bone.quaternion, bone.scale);
+					if (!mesh.visible || !isShown(parent, object)) {
+						hidden.push(bone);
+					}
+					shards.add(bone);
+					bones.push(bone);
+					placings.push(placingOf(merged, vertex));
+					pieceOf.set(mesh, bone);
+					consumed.push(mesh);
+					vertex += counts[i];
+				}
+				onBones(merged.geometry, counts, first);
+				merged.removeFromParent();
+				const skin = new SkinnedMesh(merged.geometry, merged.material);
+				skin.castShadow = merged.castShadow;
+				skin.receiveShadow = merged.receiveShadow;
+				// The pieces fly all over.
+				skin.frustumCulled = false;
+				shards.add(skin);
+				skins.push(skin);
 			}
-			anchors.clear();
-			skeleton?.dispose();
+			// So each part's vertices start where they're drawn now.
+			shards.updateMatrixWorld(true);
+			const inverses = bones.map((bone, i) =>
+				new Matrix4()
+					.copy(bone.matrixWorld)
+					.invert()
+					.multiply(placings[i]),
+			);
+			for (const bone of hidden) {
+				bone.scale.setScalar(0);
+			}
+			const shattered = new Skeleton(bones, inverses);
+			for (const skin of skins) {
+				skin.bind(shattered, new Matrix4());
+			}
+			merges.length = 0;
+			removeAnchors();
+			// Anything left unmerged flies off as it is.
+			for (const mesh of built) {
+				if (!pieceOf.has(mesh)) {
+					shards.attach(mesh);
+				}
+			}
+			return {
+				object: shards,
+				pieces: built.map((mesh) => pieceOf.get(mesh) ?? mesh),
+				dispose: () => {
+					disposeObject(shards);
+					for (const mesh of consumed) {
+						disposeObject(mesh);
+					}
+					shattered.dispose();
+				},
+			};
 		},
 	};
 };

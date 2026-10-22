@@ -73,14 +73,14 @@ The game is split so most of it can be tested without a browser:
 - **The game page** (`src/pages/game.astro`, at `/game`) is the same island on its own, filling the window. There's no photo: the game loads straight away and waits on a start screen of its own, and leaving a run goes back there.
 - **The worlds** (`src/game/components/`) are React Three Fiber components that add the sky, light, mountains, ground and trees to a scene and hook into its systems with `useSystem`. The light and air come from the site's theme, so the mountain is day in light mode and night in dark mode, with a lantern to see by.
 
-The game in play is also on `hero.game` in the browser's console, on the live site too. Try `hero.game.advance(30)` to skip ahead, or `hero.game.catchPlayer()` to end the run. `hero.drawn` is what the last frame cost to draw: its draw calls and triangles, shadows included. The end-to-end tests use them the same way.
+The game in play is also on `hero.game` in the browser's console, on the live site too. Try `hero.game.advance(30)` to skip ahead, `hero.game.rollIntoEasterEgg()` to smash the next easter egg, or `hero.game.catchPlayer()` to end the run. `hero.drawn` is what the last frame cost to draw: its draw calls and triangles, shadows included. The end-to-end tests use them the same way.
 
 #### The drawing budget
 
-On a phone, draw calls run out long before triangles do: a run takes about 90 to 180 calls a frame (nearer 300 while a smashed easter egg's pieces fly), but only about 105,000 to 140,000 triangles. So the tests hold the game to a budget, and adding detail can't quietly slow it down:
+On a phone, draw calls run out long before triangles do: a run takes about 50 to 85 calls a frame (up to about 90 while a smashed easter egg's pieces fly), but about 105,000 to 140,000 triangles. So the tests hold the game to a budget, and adding detail can't quietly slow it down:
 
 - Each part has its own budget in `src/game/draw-budget.test.ts`: me, all the bears together (however many are out), and each easter egg, merged and all through its moment as I roll past. A new easter egg has to fit inside the same one.
-- A whole frame of a run has one in `e2e/game.spec.ts`, measured by the renderer itself.
+- A whole frame of a run has one in `e2e/game.spec.ts`, measured by the renderer itself, as I roll past the first easter egg and as one's smashed.
 
 If something new goes over, merge more of it first (parts that share a parent and material), or draw its repeated pieces as one `InstancedMesh`. Raise a budget only when the detail is worth the cost, and check the game still runs smoothly on a phone.
 

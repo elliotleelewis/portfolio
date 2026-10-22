@@ -5,6 +5,7 @@ import {
 	readDrawn,
 	readHud,
 	readInput,
+	smashEasterEgg,
 	startNewRun,
 	startRun,
 } from './hero';
@@ -22,14 +23,15 @@ test('fades from the photo into a run down the mountain', async ({ page }) => {
 	expect(metres).toBeGreaterThan(0);
 });
 
+// What a frame can cost to draw, shadows included. The run is random, so
+// this leaves room for an unlucky one: a run now peaks at about 90 calls
+// (as a smashed easter egg's pieces fly) and 140k triangles. Each part's own
+// budget is in src/game/draw-budget.test.ts.
+const budget = { calls: 120, triangles: 175_000 };
+
 test('draws a run within its budget, past the first easter egg', async ({
 	page,
 }) => {
-	// Per frame, shadows included. The run is random, so this leaves room
-	// for an unlucky one: a run now peaks at about 280 calls (as a smashed
-	// easter egg's pieces fly) and 140k triangles. Each part's own budget
-	// is in src/game/draw-budget.test.ts.
-	const budget = { calls: 400, triangles: 175_000 };
 	await startRun(page);
 	// Every two seconds down the slope, past the first easter egg (about
 	// 150m down) and before a bear's likely to have caught me.
@@ -38,6 +40,25 @@ test('draws a run within its budget, past the first easter egg', async ({
 		const drawn = await readDrawn(page);
 		expect(drawn?.calls).toBeLessThanOrEqual(budget.calls);
 		expect(drawn?.triangles).toBeLessThanOrEqual(budget.triangles);
+	}
+});
+
+test("draws a smashed easter egg's pieces within its budget", async ({
+	page,
+}) => {
+	await startRun(page);
+	await smashEasterEgg(page);
+	await expect
+		.poll(async () =>
+			page.evaluate(() => localStorage.getItem('hero-easter-egg-hits')),
+		)
+		.not.toBeNull();
+	// While the pieces fly.
+	for (let i = 0; i < 4; i++) {
+		const drawn = await readDrawn(page);
+		expect(drawn?.calls).toBeLessThanOrEqual(budget.calls);
+		expect(drawn?.triangles).toBeLessThanOrEqual(budget.triangles);
+		await advance(page, 0.25);
 	}
 });
 

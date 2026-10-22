@@ -15,8 +15,8 @@ import {
 import {
 	EASTER_EGGS,
 	type EasterEgg,
-	type EasterEggInstance,
 	type MergedEasterEgg,
+	type Shattered,
 	disposeObject,
 	mergeParts,
 } from './easter-eggs';
@@ -47,7 +47,7 @@ export interface EasterEggTrailHooks {
 	// Whether rolling into something solid would smash it right now.
 	canSmash: () => boolean;
 	// I've rolled into an easter egg. Its pieces are still in place.
-	onSmash: (placed: PlacedEasterEgg, instance: EasterEggInstance) => void;
+	onSmash: (placed: PlacedEasterEgg, shattered: Shattered) => void;
 }
 
 /**
@@ -82,8 +82,10 @@ export class EasterEggTrail {
 	private readonly _local = new Vector3();
 	private readonly _inverse = new Matrix4();
 	private _count = 0;
-	// A copy of each easter egg, merged, drawn up front to keep its shaders.
+	// A copy of each easter egg, merged and shattered, drawn up front to keep
+	// its shaders.
 	private readonly _merged: MergedEasterEgg[] = [];
+	private readonly _shattered: Shattered[] = [];
 
 	// The easter eggs, in the slope's space.
 	public readonly group = new Group();
@@ -146,10 +148,10 @@ export class EasterEggTrail {
 			return;
 		}
 		placed.isSmashed = true;
-		// Every part separate again, so each flies off on its own.
-		instance.unmerge();
-		this._hooks.onSmash(placed, instance);
+		// In pieces, each free to fly off on its own.
+		const shattered = instance.shatter();
 		object.removeFromParent();
+		this._hooks.onSmash(placed, shattered);
 	}
 
 	// The easter eggs planned so far, nearest first.
@@ -228,10 +230,10 @@ export class EasterEggTrail {
 
 	/**
 	 * Gets every easter egg's shaders ready up front, so none stutters the
-	 * run when it's built, far down the slope: as built (as it is once
-	 * smashed), merged, and in the sun's shadows. The merged copies'
-	 * materials are kept until the run's over, as three.js deletes a shader
-	 * once nothing uses it, but nothing else of them.
+	 * run when it's built, far down the slope, or smashed: merged, shattered,
+	 * and in the sun's shadows. The copies' materials are kept until the
+	 * run's over, as three.js deletes a shader once nothing uses it, but
+	 * nothing else of them.
 	 * @param renderer - The renderer that will draw them.
 	 * @param scene - The scene they'll be in, for its lights and haze.
 	 * @param camera - The camera looking at them.
@@ -241,21 +243,22 @@ export class EasterEggTrail {
 		scene: Scene,
 		camera: Camera,
 	): void {
-		// A copy of each merged, and for a moment one as it's built (as it is
-		// once smashed).
-		const smashed: Object3D[] = [];
+		// A copy of each merged, and one smashed to pieces.
 		for (const egg of EASTER_EGGS) {
 			const instance = egg.create();
 			renderer.compile(instance.object, camera, scene);
 			this._merged.push(mergeParts(instance, egg.clearingRadius));
-			smashed.push(egg.create().object);
+			const smashed = mergeParts(egg.create());
+			this.group.add(smashed.object);
+			this._shattered.push(smashed.shatter());
+			smashed.object.removeFromParent();
 		}
 		// Shadows have shaders of their own, which only drawing builds. So draw
 		// the copies once, wherever they are; the first frame is drawn over
 		// it before it's seen.
 		const copies = [
 			...this._merged.map(({ object }) => object),
-			...smashed,
+			...this._shattered.map(({ object }) => object),
 		];
 		const unculled: Object3D[] = [];
 		for (const object of copies) {
@@ -275,12 +278,7 @@ export class EasterEggTrail {
 		}
 		for (const object of copies) {
 			object.removeFromParent();
-		}
-		for (const { object } of this._merged) {
 			freeAllButMaterials(object);
-		}
-		for (const object of smashed) {
-			disposeObject(object);
 		}
 	}
 
@@ -294,6 +292,9 @@ export class EasterEggTrail {
 		for (const instance of instances) {
 			instance.unmerge();
 			disposeObject(instance.object);
+		}
+		for (const shattered of this._shattered) {
+			shattered.dispose();
 		}
 	}
 }

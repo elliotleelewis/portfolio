@@ -16,6 +16,7 @@ interface HeroHandle {
 			input: Record<string, boolean | number>;
 			advance: (seconds: number) => void;
 			catchPlayer: () => void;
+			rollIntoEasterEgg: () => void;
 		};
 	};
 }
@@ -83,6 +84,17 @@ export const crash = async (page: Page): Promise<void> => {
 	});
 	await advance(page, 3);
 	await expect(page.locator('#hero-over')).toHaveAttribute('data-show', '');
+};
+
+/**
+ * Rolls me straight into the next easter egg, smashing it.
+ * @param page - The page with a run in progress.
+ */
+export const smashEasterEgg = async (page: Page): Promise<void> => {
+	await page.evaluate(() => {
+		(globalThis as unknown as HeroHandle).hero.game.rollIntoEasterEgg();
+	});
+	await advance(page, 1 / 30);
 };
 
 /**

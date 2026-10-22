@@ -9,7 +9,7 @@ import { TAHOE_READER } from './tahoe-reader';
 import type { EasterEgg } from './types';
 import { WOOD_STOVE } from './wood-stove';
 
-export { type MergedEasterEgg, mergeParts } from './merge';
+export { type MergedEasterEgg, type Shattered, mergeParts } from './merge';
 export { disposeObject } from './parts';
 export type { EasterEgg, EasterEggInstance, EasterEggShowcase } from './types';
 

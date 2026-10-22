@@ -1,21 +1,23 @@
 import {
 	BoxGeometry,
-	BufferGeometry,
+	type BufferGeometry,
 	CapsuleGeometry,
 	CircleGeometry,
 	ConeGeometry,
 	CylinderGeometry,
 	ExtrudeGeometry,
 	Group,
-	Material,
+	type Material,
 	Mesh,
 	MeshStandardMaterial,
 	Object3D,
 	Path,
 	Shape,
 	SphereGeometry,
+	Vector3,
 } from 'three';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+
+import { mergeParts } from './easter-eggs';
 
 /**
  * Height (from the feet) of the point the character spins around while
@@ -41,6 +43,10 @@ export interface Character {
 	rightLeg: Group;
 	// Hands and feet; used to keep the cartwheel on the ground.
 	extremities: Object3D[];
+	// Brings my merged meshes up to date, once I've been posed.
+	keepUp: () => void;
+	// Puts every part back as it was built, to be freed.
+	unmerge: () => void;
 }
 
 const colors = {
@@ -140,10 +146,12 @@ const buildHead = (
 		head.add(e);
 	}
 
-	// Eyes.
+	// Eyes. Like my mouth and glasses, they're on my face, so they cast no
+	// shadows of their own: they'd only fall inside my head's.
 	const eyeGeometry = new SphereGeometry(0.013, 10, 8);
 	const eyes = [-1, 1].map((side) => {
 		const e = mesh(eyeGeometry, mats.eye, side * 0.042, 0.145, 0.108);
+		e.castShadow = false;
 		head.add(e);
 		return e;
 	});
@@ -177,6 +185,7 @@ const buildHead = (
 	);
 	mouth.scale.y = 0.62;
 	mouth.rotation.x = -0.25;
+	mouth.castShadow = false;
 	head.add(mouth);
 	const teeth = mesh(
 		new CircleGeometry(0.04, 16, Math.PI, Math.PI),
@@ -187,6 +196,7 @@ const buildHead = (
 	);
 	teeth.scale.y = 0.32;
 	teeth.rotation.x = -0.25;
+	teeth.castShadow = false;
 	head.add(teeth);
 
 	// Clear-framed glasses.
@@ -202,11 +212,18 @@ const buildHead = (
 			0.155,
 			0.065,
 		);
+		arm.castShadow = false;
 		head.add(arm);
 	}
-	head.add(
-		mesh(new BoxGeometry(0.02, 0.006, 0.006), mats.frames, 0, 0.16, 0.124),
+	const bridge = mesh(
+		new BoxGeometry(0.02, 0.006, 0.006),
+		mats.frames,
+		0,
+		0.16,
+		0.124,
 	);
+	bridge.castShadow = false;
+	head.add(bridge);
 
 	return { head, eyes };
 };
@@ -222,83 +239,6 @@ const markerAt = (part: Object3D): Object3D => {
 	marker.position.copy(part.position);
 	part.parent?.add(marker);
 	return marker;
-};
-
-/**
- * Whether an object is a mesh with one material.
- * @param object - The object.
- * @returns True if it is.
- */
-const isPlainMesh = (
-	object: Object3D,
-): object is Mesh<BufferGeometry, Material> =>
-	object instanceof Mesh &&
-	object.geometry instanceof BufferGeometry &&
-	object.material instanceof Material;
-
-/**
- * Merges the meshes under each part of me that moves as one and share a
- * material (and shadows), so I take far fewer draw calls. Every merged mesh
- * stays under the same part, so it still moves with it.
- * @param root - The top of the rig.
- * @param keep - Meshes to leave alone, because they move on their own.
- */
-const mergeStillParts = (root: Object3D, keep: ReadonlySet<Object3D>): void => {
-	const parents = new Set<Object3D>();
-	const pieces = new Set<BufferGeometry>();
-	root.traverse((child) => {
-		if (!child.parent || !isPlainMesh(child) || keep.has(child)) {
-			return;
-		}
-		parents.add(child.parent);
-		pieces.add(child.geometry);
-	});
-	for (const parent of parents) {
-		const groups = new Map<string, Mesh<BufferGeometry, Material>[]>();
-		for (const child of parent.children) {
-			if (keep.has(child) || !isPlainMesh(child)) {
-				continue;
-			}
-			const { geometry, material: mat } = child;
-			const key = [
-				mat.uuid,
-				child.castShadow,
-				geometry.index ? 'indexed' : 'flat',
-			].join('|');
-			groups.set(key, [...(groups.get(key) ?? []), child]);
-		}
-		for (const meshes of groups.values()) {
-			if (meshes.length < 2) {
-				continue;
-			}
-			const placed = meshes.map((m) => {
-				m.updateMatrix();
-				return m.geometry.clone().applyMatrix4(m.matrix);
-			});
-			const [first] = meshes;
-			const merged = new Mesh(mergeGeometries(placed), first.material);
-			merged.castShadow = first.castShadow;
-			for (const geometry of placed) {
-				geometry.dispose();
-			}
-			for (const m of meshes) {
-				parent.remove(m);
-			}
-			parent.add(merged);
-		}
-	}
-	// Free the pieces that went into the merges, now nothing draws them.
-	const drawn = new Set<BufferGeometry>();
-	root.traverse((child) => {
-		if (isPlainMesh(child)) {
-			drawn.add(child.geometry);
-		}
-	});
-	for (const geometry of pieces) {
-		if (!drawn.has(geometry)) {
-			geometry.dispose();
-		}
-	}
 };
 
 const buildArm = (
@@ -453,8 +393,26 @@ export const createCharacter = (): Character => {
 		leftLeg.foot,
 		rightLeg.foot,
 	].map((part) => markerAt(part));
-	// My eyes blink on their own, so they stay as they are.
-	mergeStillParts(root, new Set(eyes));
+	// Every joint moves, and my eyes blink, so each material is one skinned
+	// mesh, its pieces on the bones of the joints they're on. I'm always in
+	// shot, so it's never culled.
+	const merged = mergeParts({
+		object: root,
+		moving: [
+			lean,
+			roller,
+			facing,
+			body,
+			head,
+			left.arm,
+			right.arm,
+			leftLeg.leg,
+			rightLeg.leg,
+			...eyes,
+		],
+	});
+	// Nothing about me needs the time or where anyone is.
+	const frame = { time: 0, dt: 0, player: new Vector3() };
 
 	return {
 		root,
@@ -469,5 +427,11 @@ export const createCharacter = (): Character => {
 		leftLeg: leftLeg.leg,
 		rightLeg: rightLeg.leg,
 		extremities,
+		keepUp: () => {
+			merged.update?.(frame);
+		},
+		unmerge: () => {
+			merged.unmerge();
+		},
 	};
 };

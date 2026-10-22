@@ -15,7 +15,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createBear, createBearParts } from './bear';
 import { createCharacter } from './character';
-import { ALL_EASTER_EGGS, mergeStill } from './easter-eggs';
+import { ALL_EASTER_EGGS, mergeParts } from './easter-eggs';
 
 interface Cost {
 	// Draw calls, counting a shadow caster twice: once for the picture and
@@ -31,7 +31,7 @@ interface Cost {
 // "The drawing budget" in the README.
 const characterBudget: Cost = { draws: 40, triangles: 10_000 };
 const bearBudget: Cost = { draws: 20, triangles: 6000 };
-const easterEggBudget: Cost = { draws: 90, triangles: 20_000 };
+const easterEggBudget: Cost = { draws: 60, triangles: 20_000 };
 
 /**
  * What an object costs to draw, as the renderer would count it with
@@ -84,7 +84,7 @@ describe('drawing budget', () => {
 	it.each(ALL_EASTER_EGGS)(
 		"keeps the $id within an easter egg's, all through its moment",
 		(egg) => {
-			const instance = mergeStill(egg.create());
+			const instance = mergeParts(egg.create(), egg.clearingRadius);
 			const worst = costOf(instance.object);
 			// Rolling up to it from 60m out, and on past.
 			const dt = 1 / 30;

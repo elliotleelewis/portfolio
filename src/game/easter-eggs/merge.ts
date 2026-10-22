@@ -1,4 +1,5 @@
 import {
+	Bone,
 	BufferGeometry,
 	Color,
 	Float32BufferAttribute,
@@ -8,6 +9,10 @@ import {
 	MeshStandardMaterial,
 	type Object3D,
 	Quaternion,
+	Skeleton,
+	SkinnedMesh,
+	Sphere,
+	Uint16BufferAttribute,
 	Vector3,
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -15,8 +20,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import type { EasterEggFrame, EasterEggInstance } from './types';
 
 /**
- * An easter egg with its still parts merged, so it takes far fewer draw
- * calls.
+ * An easter egg with its parts merged, so it takes far fewer draw calls.
  */
 export interface MergedEasterEgg extends EasterEggInstance {
 	// Puts every part back as it was built, separate, so that (for example)
@@ -34,34 +38,51 @@ interface Placement {
 }
 
 // A part taken out of the scene and drawn as part of a merged mesh: where it
-// goes back, how it was placed, and (if its colour went into the merge) what
-// colour it was.
+// goes back, how it was placed, whether it moves on its own, and (if its
+// colour went into the merge) what colour it was.
 interface Original extends Placement {
 	mesh: Mesh<BufferGeometry, Material>;
 	parent: Object3D;
+	isMoving: boolean;
 	color: Color | undefined;
 }
 
-// Parts merged into one mesh, under the nearest group they all move with.
-// Parts merged by colour draw with a material of the merge's own, which goes
-// when it does.
+// Parts merged into one mesh, under the easter egg or the one thing they all
+// move with. Parts merged by colour draw with a material of the merge's own,
+// which goes when it does.
 interface Merge {
-	frame: Object3D;
+	home: Object3D;
 	merged: Mesh;
 	originals: Original[];
-	// The still groups between the parts and the frame, as they were.
+	// The still groups between the parts and what they move with, as they
+	// were.
 	between: Placement[];
 	ownMaterial: Material | undefined;
 }
 
-// A part that can be merged, and where its merge goes.
+// A part that can be merged, and what it moves with.
 interface Candidate {
 	mesh: Mesh<BufferGeometry, Material>;
-	// The nearest group it moves with: something the easter egg moves, or
-	// the easter egg itself.
+	// The part itself if it moves on its own, or else the nearest group above
+	// it that does, or the easter egg itself.
 	frame: Object3D;
 	// The still groups in between.
 	between: Object3D[];
+	isMoving: boolean;
+}
+
+// A part, and where it is in what its merge goes in.
+interface Placed extends Candidate {
+	matrix: Matrix4;
+}
+
+// The bone that parts merged across moving things ride on, for one of those
+// things: on the group (or the easter egg), or in a moving part's place,
+// copying it.
+interface Anchor {
+	bone: Bone;
+	follows: Object3D;
+	isPart: boolean;
 }
 
 /**
@@ -125,30 +146,49 @@ const isMergeable = (
 	Object.keys(object.geometry.morphAttributes).length === 0;
 
 /**
- * Where a part's merge goes: up past every still group above it, to the
- * nearest one that moves (or the easter egg itself), so parts all over a
- * still easter egg merge as one.
+ * Whether something is showing: it and everything above it in the easter
+ * egg.
+ * @param object - The thing.
+ * @param root - The easter egg.
+ * @returns True if it's showing.
+ */
+const isShown = (object: Object3D | null, root: Object3D): boolean => {
+	for (let node = object; node && node !== root; node = node.parent) {
+		if (!node.visible) {
+			return false;
+		}
+	}
+	return true;
+};
+
+/**
+ * What a part moves with: itself, if the easter egg moves it, or else the
+ * nearest group above it that the easter egg moves (or the easter egg
+ * itself), and the still groups in between.
  * @param mesh - The part.
  * @param root - The easter egg.
  * @param moving - What the easter egg moves.
- * @returns Where it goes, or undefined if a still group above it is hidden,
- * so it's never drawn.
+ * @returns What it moves with, or undefined if it's hidden, so it's never
+ * drawn.
  */
 const placeMerge = (
 	mesh: Mesh<BufferGeometry, Material>,
 	root: Object3D,
 	moving: ReadonlySet<Object3D>,
 ): Candidate | undefined => {
+	if (!isShown(mesh.parent, root)) {
+		return undefined;
+	}
+	if (moving.has(mesh)) {
+		return { mesh, frame: mesh, between: [], isMoving: true };
+	}
 	const between: Object3D[] = [];
 	let frame = mesh.parent;
 	while (frame && frame !== root && !moving.has(frame)) {
-		if (!frame.visible) {
-			return undefined;
-		}
 		between.push(frame);
 		frame = frame.parent;
 	}
-	return frame ? { mesh, frame, between } : undefined;
+	return frame ? { mesh, frame, between, isMoving: false } : undefined;
 };
 
 /**
@@ -203,15 +243,16 @@ const mergeKey = (mesh: Mesh<BufferGeometry, Material>): string =>
 	].join('|');
 
 /**
- * Whether a merged-away part has been moved, turned, resized or hidden
- * since it was merged, or has changed colour.
+ * Whether a merged-away part has changed since it was merged: moved, turned,
+ * resized or hidden (unless it moves on its own, which its bone keeps up
+ * with), or changed colour.
  * @param original - The part, and how it was placed.
  * @returns True if it has changed.
  */
 const hasChanged = (original: Original): boolean => {
-	const { mesh, color } = original;
+	const { mesh, color, isMoving } = original;
 	return (
-		hasMoved(original) ||
+		(!isMoving && hasMoved(original)) ||
 		(color !== undefined &&
 			(!isTintable(mesh.material) || !mesh.material.color.equals(color)))
 	);
@@ -256,116 +297,216 @@ const placedGeometry = (
 };
 
 /**
- * Merges an easter egg's parts that move together and share a material into
- * one mesh each, so the easter egg takes far fewer draw calls. Parts merge
- * up past every still group, into the nearest group the easter egg moves
- * (or the easter egg itself), so they still move with it. What the easter
- * egg moves on its own is left out. Plain parts whose materials differ only
- * in colour merge too, with their colours in the geometry.
+ * Where something is in something else that holds it.
+ * @param home - What holds it.
+ * @param object - The thing.
+ * @returns Its placement in what holds it.
+ */
+const within = (home: Object3D, object: Object3D): Matrix4 =>
+	new Matrix4().copy(home.matrixWorld).invert().multiply(object.matrixWorld);
+
+/**
+ * Puts a geometry wholly on one bone.
+ * @param geometry - The geometry.
+ * @param bone - The bone's place in the skeleton.
+ * @returns The geometry.
+ */
+const onBone = (geometry: BufferGeometry, bone: number): BufferGeometry => {
+	const { count } = geometry.getAttribute('position');
+	const indices = new Uint16Array(count * 4);
+	const weights = new Float32Array(count * 4);
+	for (let i = 0; i < count; i++) {
+		indices[i * 4] = bone;
+		weights[i * 4] = 1;
+	}
+	geometry.setAttribute('skinIndex', new Uint16BufferAttribute(indices, 4));
+	geometry.setAttribute('skinWeight', new Float32BufferAttribute(weights, 4));
+	return geometry;
+};
+
+/**
+ * Merges an easter egg's parts that share a material into as few meshes as
+ * it can, so it takes far fewer draw calls. Plain parts whose materials
+ * differ only in colour merge too, with their colours in the geometry.
+ *
+ * Parts that all move with one thing (the same moving group, or nothing but
+ * the easter egg) merge into a plain mesh on it. Parts that move with
+ * different things (the joints of a rig, a shower of notes) merge into one
+ * skinned mesh, each part on a bone that follows what it moves with, and
+ * shrinks away to nothing while that's hidden.
  *
  * If anything it hasn't said it moves does move (or a part merged by colour
  * changes colour), the merge it's in is put back, after the update and
  * before anything is drawn, so it still looks right.
  * @param instance - The easter egg, just created.
+ * @param reach - How far from its middle any part of it ever goes, so a
+ * skinned mesh can still be left undrawn out of view. Without it, they're
+ * always drawn.
  * @returns The easter egg, merged.
  */
-export const mergeStill = (instance: EasterEggInstance): MergedEasterEgg => {
+export const mergeParts = (
+	instance: EasterEggInstance,
+	reach?: number,
+): MergedEasterEgg => {
 	const { object } = instance;
 	const moving = new Set(instance.moving);
 	object.updateMatrixWorld(true);
 
-	// Group the parts by where their merge goes, then by what they'd need to
-	// share.
-	const byFrame = new Map<Object3D, Map<string, Candidate[]>>();
+	// Group the parts by what they'd need to share.
+	const groups = new Map<string, Candidate[]>();
 	object.traverse((child) => {
-		if (!child.parent || !isMergeable(child) || moving.has(child)) {
+		if (!child.parent || !isMergeable(child)) {
 			return;
 		}
 		const candidate = placeMerge(child, object, moving);
 		if (!candidate) {
 			return;
 		}
-		const groups =
-			byFrame.get(candidate.frame) ?? new Map<string, Candidate[]>();
-		byFrame.set(candidate.frame, groups);
 		const key = mergeKey(child);
 		groups.set(key, [...(groups.get(key) ?? []), candidate]);
 	});
 
-	const merges: Merge[] = [];
-	const inverse = new Matrix4();
-	for (const [frame, groups] of byFrame) {
-		inverse.copy(frame.matrixWorld).invert();
-		for (const candidates of groups.values()) {
-			// Where each part is in the frame. A mirrored one can't merge: its
-			// faces would turn inside out.
-			const placed = candidates
-				.map((candidate) => ({
-					...candidate,
-					matrix: new Matrix4().multiplyMatrices(
-						inverse,
-						candidate.mesh.matrixWorld,
-					),
-				}))
-				.filter(({ matrix }) => matrix.determinant() > 0);
-			if (placed.length < 2) {
-				continue;
-			}
-			const meshes = placed.map(({ mesh }) => mesh);
-			const [first] = meshes;
-			// Parts that share a material keep it. Parts that only look alike
-			// get their colours in the geometry, and a white copy of it.
-			const isTinted = meshes.some(
-				(mesh) => mesh.material !== first.material,
-			);
-			const geometries = placed.map(({ mesh, matrix: at }) =>
-				placedGeometry(mesh, at, isTinted),
-			);
-			const geometry = mergeGeometries(geometries);
-			for (const clone of geometries) {
-				clone.dispose();
-			}
-			let ownMaterial: Material | undefined;
-			if (isTinted) {
-				ownMaterial = first.material.clone();
-				if (ownMaterial instanceof MeshStandardMaterial) {
-					ownMaterial.color.set(0xff_ff_ff);
-					ownMaterial.vertexColors = true;
-				}
-			}
-			const merged = new Mesh(geometry, ownMaterial ?? first.material);
-			merged.castShadow = first.castShadow;
-			merged.receiveShadow = first.receiveShadow;
-			frame.add(merged);
-			const originals = placed.map(({ mesh }): Original => {
-				const parent = mesh.parent ?? frame;
-				parent.remove(mesh);
-				return {
-					...placementOf(mesh),
-					mesh,
-					parent,
-					color:
-						isTinted && isTintable(mesh.material)
-							? mesh.material.color.clone()
-							: undefined,
-				};
-			});
-			const between = new Set(
-				placed.flatMap((candidate) => candidate.between),
-			);
-			merges.push({
-				frame,
-				merged,
-				originals,
-				between: [...between].map((group) => placementOf(group)),
-				ownMaterial,
-			});
+	// Where each part is in what its merge goes in: the one thing they all
+	// move with, or else the easter egg. A mirrored one can't merge: its
+	// faces would turn inside out.
+	const plans: { home: Object3D; placed: Placed[]; isSkinned: boolean }[] =
+		[];
+	for (const candidates of groups.values()) {
+		const kept = candidates.filter(
+			({ mesh }) => within(object, mesh).determinant() > 0,
+		);
+		const frames = new Set(kept.map(({ frame }) => frame));
+		const isSkinned = frames.size > 1;
+		const home = !isSkinned && kept.length > 0 ? kept[0].frame : object;
+		const placed = kept
+			.map((candidate) => ({
+				...candidate,
+				matrix: within(home, candidate.mesh),
+			}))
+			.filter(({ matrix }) => matrix.determinant() > 0);
+		if (placed.length > 1) {
+			plans.push({ home, placed, isSkinned });
 		}
 	}
 
+	// A bone for everything skinned parts move with.
+	const anchors = new Map<Object3D, Anchor>();
+	for (const { placed, isSkinned } of plans) {
+		for (const { frame, mesh, isMoving } of placed) {
+			if (!isSkinned || anchors.has(frame)) {
+				continue;
+			}
+			const bone = new Bone();
+			if (isMoving) {
+				mesh.parent?.add(bone);
+			} else {
+				frame.add(bone);
+			}
+			anchors.set(frame, { bone, follows: frame, isPart: isMoving });
+		}
+	}
+
+	/**
+	 * Moves each bone to follow what it's for, shrinking it to nothing while
+	 * that's hidden.
+	 */
+	const follow = (): void => {
+		for (const { bone, follows, isPart } of anchors.values()) {
+			if (isPart) {
+				bone.position.copy(follows.position);
+				bone.quaternion.copy(follows.quaternion);
+				bone.scale.copy(follows.scale);
+			} else {
+				bone.scale.setScalar(1);
+			}
+			if (!isShown(bone.parent, object) || (isPart && !follows.visible)) {
+				bone.scale.setScalar(0);
+			}
+		}
+	};
+	follow();
+	object.updateMatrixWorld(true);
+	const bones: Bone[] = [];
+	for (const { bone } of anchors.values()) {
+		bones.push(bone);
+	}
+	const skeleton = bones.length > 0 ? new Skeleton(bones) : undefined;
+
+	const merges: Merge[] = [];
+	for (const { home, placed, isSkinned } of plans) {
+		const meshes = placed.map(({ mesh }) => mesh);
+		const [first] = meshes;
+		// Parts that share a material keep it. Parts that only look alike get
+		// their colours in the geometry, and a white copy of it.
+		const isTinted = meshes.some(
+			(mesh) => mesh.material !== first.material,
+		);
+		const geometries = placed.map(({ mesh, matrix, frame }) => {
+			const geometry = placedGeometry(mesh, matrix, isTinted);
+			const anchor = anchors.get(frame);
+			return isSkinned && anchor
+				? onBone(geometry, bones.indexOf(anchor.bone))
+				: geometry;
+		});
+		const geometry = mergeGeometries(geometries);
+		for (const clone of geometries) {
+			clone.dispose();
+		}
+		let ownMaterial: Material | undefined;
+		if (isTinted) {
+			ownMaterial = first.material.clone();
+			if (ownMaterial instanceof MeshStandardMaterial) {
+				ownMaterial.color.set(0xff_ff_ff);
+				ownMaterial.vertexColors = true;
+			}
+		}
+		const material = ownMaterial ?? first.material;
+		const merged =
+			isSkinned && skeleton
+				? new SkinnedMesh(geometry, material)
+				: new Mesh(geometry, material);
+		merged.castShadow = first.castShadow;
+		merged.receiveShadow = first.receiveShadow;
+		home.add(merged);
+		if (skeleton && merged instanceof SkinnedMesh) {
+			merged.bind(skeleton);
+			// Its parts move about, so the bounds it was built with don't hold:
+			// it's bounded by how far they can go instead.
+			if (reach === undefined) {
+				merged.frustumCulled = false;
+			} else {
+				merged.boundingSphere = new Sphere(new Vector3(), reach);
+			}
+		}
+		const originals = placed.map(({ mesh, isMoving }): Original => {
+			const parent = mesh.parent ?? home;
+			parent.remove(mesh);
+			return {
+				...placementOf(mesh),
+				mesh,
+				parent,
+				isMoving,
+				color:
+					isTinted && isTintable(mesh.material)
+						? mesh.material.color.clone()
+						: undefined,
+			};
+		});
+		const between = new Set(
+			placed.flatMap((candidate) => candidate.between),
+		);
+		merges.push({
+			home,
+			merged,
+			originals,
+			between: [...between].map((group) => placementOf(group)),
+			ownMaterial,
+		});
+	}
+
 	const split = (merge: Merge): void => {
-		const { frame, merged, originals, ownMaterial } = merge;
-		frame.remove(merged);
+		const { home, merged, originals, ownMaterial } = merge;
+		home.remove(merged);
 		merged.geometry.dispose();
 		ownMaterial?.dispose();
 		for (const { mesh, parent } of originals) {
@@ -379,17 +520,23 @@ export const mergeStill = (instance: EasterEggInstance): MergedEasterEgg => {
 		moving: instance.moving,
 		update: (frame: EasterEggFrame) => {
 			instance.update?.(frame);
-			// Put back any merge whose parts have started moving.
+			// Put back any merge whose parts have changed unexpectedly.
 			for (let i = merges.length - 1; i >= 0; i--) {
 				if (isStale(merges[i])) {
 					split(merges[i]);
 				}
 			}
+			follow();
 		},
 		unmerge: () => {
 			while (merges.length > 0) {
 				split(merges[0]);
 			}
+			for (const { bone } of anchors.values()) {
+				bone.removeFromParent();
+			}
+			anchors.clear();
+			skeleton?.dispose();
 		},
 	};
 };

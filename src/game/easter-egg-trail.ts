@@ -6,7 +6,7 @@ import {
 	type EasterEggInstance,
 	type MergedEasterEgg,
 	disposeObject,
-	mergeStill,
+	mergeParts,
 } from './easter-eggs';
 import { TREE_WINDOW } from './forest';
 import type { Player } from './player';
@@ -24,7 +24,7 @@ export interface PlacedEasterEgg {
 	x: number;
 	z: number;
 	yaw: number;
-	// Created once it's close enough to matter, with its still parts merged
+	// Created once it's close enough to matter, with its parts merged
 	// to take fewer draw calls.
 	instance: MergedEasterEgg | undefined;
 	// Whether I've barrelled through it.
@@ -171,7 +171,10 @@ export class EasterEggTrail {
 
 		for (const placed of this._eggs) {
 			if (!placed.instance && placed.z > player.z - TREE_WINDOW) {
-				placed.instance = mergeStill(placed.egg.create());
+				placed.instance = mergeParts(
+					placed.egg.create(),
+					placed.egg.clearingRadius,
+				);
 				const { object } = placed.instance;
 				object.position.set(
 					placed.x,

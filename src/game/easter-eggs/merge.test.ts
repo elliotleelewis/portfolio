@@ -1,21 +1,24 @@
 // Some easter eggs paint their textures on a canvas, so these need a DOM.
 // @vitest-environment happy-dom
 import {
+	Bone,
 	BoxGeometry,
 	BufferAttribute,
 	BufferGeometry,
 	Group,
+	InstancedMesh,
 	Matrix4,
 	Mesh,
 	MeshStandardMaterial,
 	type Object3D,
+	SkinnedMesh,
 	Vector3,
 } from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createMystery } from '../mystery';
 
-import { mergeStill } from './merge';
+import { mergeParts } from './merge';
 import type { EasterEggInstance } from './types';
 
 import { ALL_EASTER_EGGS } from '.';
@@ -59,11 +62,72 @@ const approach = (instance: EasterEggInstance, onStep?: () => void): void => {
 	}
 };
 
+/**
+ * A point's x, y and z, to the nearest millimetre.
+ * @param point - The point.
+ * @returns Its coordinates, rounded.
+ */
+const rounded = (point: Vector3): number[] =>
+	[point.x, point.y, point.z].map((value) => Math.round(value * 1000) / 1000);
+
+/**
+ * A summary of every triangle an object draws, wherever it is in the world:
+ * how many there are, their average centre, and how spread out they are.
+ * Triangles shrunk away to nothing aren't drawn. Instanced meshes are left
+ * out: merging leaves them as they are.
+ * @param object - The object.
+ * @returns The summary.
+ */
+const drawnTriangles = (object: Object3D): number[] => {
+	object.updateMatrixWorld(true);
+	let count = 0;
+	const sum = new Vector3();
+	let spread = 0;
+	const corners = [new Vector3(), new Vector3(), new Vector3()];
+	const centre = new Vector3();
+	const ab = new Vector3();
+	const ac = new Vector3();
+	object.traverseVisible((child) => {
+		if (!(child instanceof Mesh) || child instanceof InstancedMesh) {
+			return;
+		}
+		const geometry: unknown = child.geometry;
+		if (!(geometry instanceof BufferGeometry)) {
+			return;
+		}
+		const { index } = geometry;
+		const position: unknown = geometry.getAttribute('position');
+		if (!(position instanceof BufferAttribute)) {
+			return;
+		}
+		const vertices = index?.count ?? position.count;
+		for (let i = 0; i < vertices; i += 3) {
+			for (const [j, corner] of corners.entries()) {
+				const vertex = index ? index.getX(i + j) : i + j;
+				child
+					.getVertexPosition(vertex, corner)
+					.applyMatrix4(child.matrixWorld);
+			}
+			const [a, b, c] = corners;
+			ab.subVectors(b, a);
+			ac.subVectors(c, a);
+			if (ab.cross(ac).length() < 1e-9) {
+				continue;
+			}
+			centre.copy(a).add(b).add(c).divideScalar(3);
+			count++;
+			sum.add(centre);
+			spread += centre.lengthSq();
+		}
+	});
+	return [count, ...sum.divideScalar(count), spread / count];
+};
+
 afterEach(() => {
 	vi.restoreAllMocks();
 });
 
-describe('mergeStill', () => {
+describe('mergeParts', () => {
 	it('merges parts that differ only in colour, with their colours in the geometry', () => {
 		const root = new Group();
 		const box = new BoxGeometry();
@@ -76,7 +140,7 @@ describe('mergeStill', () => {
 			part.position.x = x;
 			root.add(part);
 		}
-		const merged = mergeStill({ object: root });
+		const merged = mergeParts({ object: root });
 		const [mesh] = meshes(root);
 		expect(meshes(root)).toHaveLength(1);
 		if (!(mesh instanceof Mesh)) {
@@ -130,7 +194,7 @@ describe('mergeStill', () => {
 		for (const material of looks) {
 			root.add(new Mesh(box, material));
 		}
-		mergeStill({ object: root });
+		mergeParts({ object: root });
 		expect(meshes(root)).toHaveLength(4);
 	});
 
@@ -142,7 +206,7 @@ describe('mergeStill', () => {
 			new Mesh(box, red),
 			new Mesh(box, new MeshStandardMaterial({ color: '#0000ff' })),
 		);
-		const merged = mergeStill({ object: root });
+		const merged = mergeParts({ object: root });
 		expect(meshes(root)).toHaveLength(1);
 		merged.update?.({ time: 0, dt: 0, player: new Vector3() });
 		expect(meshes(root)).toHaveLength(1);
@@ -162,57 +226,113 @@ describe('mergeStill', () => {
 			root.add(plank);
 		}
 		root.add(new Mesh(box, steel));
-		const merged = mergeStill({ object: root });
+		const merged = mergeParts({ object: root });
 		// Three planks as one, and the steel on its own.
 		expect(meshes(root)).toHaveLength(2);
 		merged.unmerge();
 		expect(meshes(root)).toHaveLength(4);
 	});
 
-	it('merges parts in still groups, up to the nearest group that moves', () => {
+	it('merges parts in still groups into one plain mesh', () => {
 		const root = new Group();
 		const wood = new MeshStandardMaterial();
 		const box = new BoxGeometry();
 		const shelf = new Group();
 		shelf.position.set(1, 2, 0);
-		const door = new Group();
-		root.add(shelf, door);
-		for (const parent of [root, shelf, shelf, door, door]) {
+		root.add(shelf);
+		for (const parent of [root, shelf, shelf]) {
 			parent.add(new Mesh(box, wood));
 		}
-		const merged = mergeStill({ object: root, moving: [door] });
-		// The shelf's planks with the root's, and the door's on their own.
-		expect(meshes(root)).toHaveLength(2);
+		const merged = mergeParts({ object: root });
+		const [whole] = meshes(root);
+		expect(meshes(root)).toHaveLength(1);
+		expect(whole).not.toBeInstanceOf(SkinnedMesh);
 		expect(meshes(shelf)).toHaveLength(0);
-		expect(meshes(door)).toHaveLength(1);
 		// Still where they were.
-		const whole = meshes(root).find((mesh) => mesh.parent === root);
-		if (
-			!(whole instanceof Mesh) ||
-			!(whole.geometry instanceof BufferGeometry)
-		) {
+		const geometry: unknown = whole instanceof Mesh && whole.geometry;
+		if (!(geometry instanceof BufferGeometry)) {
 			throw new TypeError('Expected a merged mesh');
 		}
-		whole.geometry.computeBoundingBox();
-		expect(whole.geometry.boundingBox?.max.toArray()).toEqual([
-			1.5, 2.5, 0.5,
-		]);
+		geometry.computeBoundingBox();
+		expect(geometry.boundingBox?.max.toArray()).toEqual([1.5, 2.5, 0.5]);
 		merged.unmerge();
 		expect(meshes(shelf)).toHaveLength(2);
 	});
 
-	it('leaves out parts that move on their own', () => {
+	it('merges parts that move separately into one skinned mesh that follows them', () => {
 		const root = new Group();
 		const wood = new MeshStandardMaterial();
 		const box = new BoxGeometry();
-		const parts = [0, 1, 2].map(() => {
-			const part = new Mesh(box, wood);
-			root.add(part);
-			return part;
-		});
-		mergeStill({ object: root, moving: [parts[2]] });
-		expect(meshes(root)).toHaveLength(2);
-		expect(parts[2].parent).toBe(root);
+		// In the order they're merged: a panel on a door, a plank on the
+		// easter egg itself, and a note that moves on its own.
+		const door = new Group();
+		const panel = new Mesh(box, wood);
+		panel.position.x = 2;
+		door.add(panel);
+		const note = new Mesh(box, wood);
+		root.add(door, new Mesh(box, wood), note);
+		const merged = mergeParts({ object: root, moving: [door, note] });
+		const [whole] = meshes(root);
+		expect(meshes(root)).toHaveLength(1);
+		if (!(whole instanceof SkinnedMesh)) {
+			throw new TypeError('Expected a skinned mesh');
+		}
+		const corner = new Vector3().fromBufferAttribute(
+			box.getAttribute('position'),
+			0,
+		);
+		const perBox = box.getAttribute('position').count;
+		/**
+		 * Where a part's first corner is drawn now, in the easter egg.
+		 * @param part - Which part, in the order they're merged.
+		 * @returns Its x, y and z, rounded.
+		 */
+		const drawn = (part: number): number[] => {
+			root.updateMatrixWorld(true);
+			return rounded(
+				whole.getVertexPosition(part * perBox, new Vector3()),
+			);
+		};
+		const offset = (x: number, y: number, z: number): number[] =>
+			rounded(corner.clone().add(new Vector3(x, y, z)));
+		const frame = { time: 0, dt: 0, player: new Vector3() };
+
+		// The door swings out, carrying its panel, and the note falls.
+		door.position.z = 3;
+		note.position.y = 5;
+		merged.update?.(frame);
+		expect([drawn(0), drawn(1), drawn(2)]).toEqual([
+			offset(2, 0, 3),
+			offset(0, 0, 0),
+			offset(0, 5, 0),
+		]);
+
+		// Hidden, the note shrinks away to nothing.
+		note.visible = false;
+		merged.update?.(frame);
+		expect(drawn(2)).toEqual([0, 5, 0]);
+
+		merged.unmerge();
+		expect(meshes(root)).toHaveLength(3);
+		expect(note.parent).toBe(root);
+		expect(root.children.some((child) => child instanceof Bone)).toBe(
+			false,
+		);
+	});
+
+	it('leaves a mirrored part out before working out what the rest move with', () => {
+		const root = new Group();
+		const wood = new MeshStandardMaterial();
+		const box = new BoxGeometry();
+		const door = new Group();
+		door.add(new Mesh(box, wood), new Mesh(box, wood));
+		const mirrored = new Mesh(box, wood);
+		mirrored.scale.x = -1;
+		root.add(door, mirrored);
+		mergeParts({ object: root, moving: [door] });
+		// The door's panels as one, on the door, so they swing with it.
+		expect(meshes(door)).toHaveLength(1);
+		expect(mirrored.parent).toBe(root);
 	});
 
 	it('puts parts back when a still group they were merged past moves', () => {
@@ -223,7 +343,7 @@ describe('mergeStill', () => {
 		root.add(lid);
 		root.add(new Mesh(box, wood));
 		lid.add(new Mesh(box, wood));
-		const merged = mergeStill({
+		const merged = mergeParts({
 			object: root,
 			update: ({ time }) => {
 				lid.rotation.x = time;
@@ -245,7 +365,7 @@ describe('mergeStill', () => {
 			root.add(plank);
 			return plank;
 		});
-		const merged = mergeStill({
+		const merged = mergeParts({
 			object: root,
 			update: ({ time }) => {
 				if (time > 1) {
@@ -294,6 +414,83 @@ describe('mergeStill', () => {
 		expect([...moved].filter((part) => !moving.has(part))).toEqual([]);
 	});
 
+	it.each(ALL_EASTER_EGGS)(
+		'keeps every part of the $id inside its clearing, so it can be culled by it',
+		({ create, clearingRadius }) => {
+			const instance = create();
+			let reach = 0;
+			const vertex = new Vector3();
+			let step = 0;
+			approach(instance, () => {
+				if (step++ % 15 !== 0) {
+					return;
+				}
+				instance.object.updateMatrixWorld(true);
+				instance.object.traverseVisible((child) => {
+					if (!(child instanceof Mesh)) {
+						return;
+					}
+					const geometry: unknown = child.geometry;
+					if (!(geometry instanceof BufferGeometry)) {
+						return;
+					}
+					const position: unknown = geometry.getAttribute('position');
+					if (!(position instanceof BufferAttribute)) {
+						return;
+					}
+					for (let i = 0; i < position.count; i++) {
+						child
+							.getVertexPosition(i, vertex)
+							.applyMatrix4(child.matrixWorld);
+						reach = Math.max(reach, vertex.length());
+					}
+				});
+			});
+			expect(reach).toBeLessThan(clearingRadius);
+		},
+	);
+
+	it.each([
+		...ALL_EASTER_EGGS.map((egg) => [egg.id, egg.create] as const),
+		['mystery', createMystery] as const,
+	])(
+		'draws %s just where it would unmerged, all through its moment',
+		(_name, create) => {
+			/**
+			 * Plays an easter egg, noting what it draws every half a second.
+			 * @param instance - The easter egg.
+			 * @returns What it drew.
+			 */
+			const play = (instance: EasterEggInstance): number[][] => {
+				const drawn: number[][] = [];
+				let step = 0;
+				seedRandom();
+				approach(instance, () => {
+					if (step++ % 15 === 0) {
+						drawn.push(drawnTriangles(instance.object));
+					}
+				});
+				vi.restoreAllMocks();
+				return drawn;
+			};
+			seedRandom();
+			const plain = create();
+			vi.restoreAllMocks();
+			seedRandom();
+			const merged = mergeParts(create());
+			vi.restoreAllMocks();
+			const expected = play(plain);
+			const actual = play(merged);
+			for (const [i, [count, ...rest]] of expected.entries()) {
+				const [drawnCount, ...drawnRest] = actual[i] ?? [];
+				expect(drawnCount).toBe(count);
+				for (const [j, value] of rest.entries()) {
+					expect(drawnRest[j]).toBeCloseTo(value, 4);
+				}
+			}
+		},
+	);
+
 	it.each([
 		...ALL_EASTER_EGGS.map((egg) => [egg.id, egg.create] as const),
 		['mystery', createMystery] as const,
@@ -311,7 +508,7 @@ describe('mergeStill', () => {
 		seedRandom();
 		const built = create();
 		const builtMeshes = meshes(built.object);
-		const merged = mergeStill(built);
+		const merged = mergeParts(built);
 		const drawn = meshes(merged.object).length;
 		vi.restoreAllMocks();
 		seedRandom();

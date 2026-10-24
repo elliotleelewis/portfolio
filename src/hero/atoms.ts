@@ -127,6 +127,15 @@ export const INITIALS_ATOM = atomWithStorage<unknown>(
 	{ getOnInit: true },
 );
 
+// Whether I've muted the game's sound, kept for next time. Storage could
+// hold anything, so only `true` mutes it.
+export const MUTED_ATOM = atomWithStorage<unknown>(
+	'hero-muted',
+	false,
+	undefined,
+	{ getOnInit: true },
+);
+
 // The theme picked with the theme picker, for the whole site. Storage could
 // hold anything, so read it with `readTheme`.
 export const THEME_ATOM = atomWithStorage<unknown>(

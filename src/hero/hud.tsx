@@ -7,17 +7,36 @@ import {
 	CALLOUT_ATOM,
 	HINT_ATOM,
 	METRES_ATOM,
+	MUTED_ATOM,
 	PHASE_ATOM,
 	SCORE_ATOM,
 	WAITING_ATOM,
 } from './atoms';
 import { Button } from './button';
 import { useController } from './context';
+import { useIsHydrated } from './hooks';
+import { Icon } from './icon';
 import { Stick } from './stick';
 
+const speaker = <path d="M11 5 6 9H2v6h4l5 4V5Z" />;
+
+const soundOn = (
+	<Icon>
+		{speaker}
+		<path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14" />
+	</Icon>
+);
+
+const soundOff = (
+	<Icon>
+		{speaker}
+		<path d="m22 9-6 6M16 9l6 6" />
+	</Icon>
+);
+
 /**
- * The in-game overlay: score, distance, the way out, combo callouts, the
- * controls hint and (on touch screens) the stick.
+ * The in-game overlay: score, distance, mute, the way out, combo callouts,
+ * the controls hint and (on touch screens) the stick.
  * @returns The HUD.
  */
 export const Hud: FC = () => {
@@ -29,6 +48,10 @@ export const Hud: FC = () => {
 	// Out of the way of the start screen until the run begins.
 	const isWaiting = useAtomValue(WAITING_ATOM);
 	const phase = useAtomValue(PHASE_ATOM);
+	const muted = useAtomValue(MUTED_ATOM);
+	// Read from storage, which the server doesn't have.
+	const isHydrated = useIsHydrated();
+	const isMuted = isHydrated && muted === true;
 
 	return (
 		<div
@@ -52,19 +75,35 @@ export const Hud: FC = () => {
 					<span id="hero-distance">{metres}</span>m
 				</div>
 			</div>
-			<Button
-				id="hero-exit"
-				variant="glass"
-				className="pointer-events-auto absolute inset-e-4 top-4 rounded-lg px-3 py-1.5 text-sm group-data-[state=idle]:pointer-events-none sm:text-base"
-				onClick={() => {
-					controller.leave();
-				}}
-			>
-				{controller.hasStartScreen
-					? m.hero_back_to_start()
-					: m.hero_back_to_trail()}{' '}
-				✕
-			</Button>
+			<div className="absolute inset-e-4 top-4 flex gap-2">
+				<Button
+					id="hero-mute"
+					variant="glass"
+					aria-pressed={isMuted}
+					aria-keyshortcuts="M"
+					title={m.hero_mute_title()}
+					className="pointer-events-auto flex size-8 items-center justify-center rounded-lg group-data-[mode=gallery]:hidden group-data-[state=idle]:pointer-events-none sm:size-9"
+					onClick={() => {
+						controller.toggleMuted();
+					}}
+				>
+					{isMuted ? soundOff : soundOn}
+					<span className="sr-only">{m.hero_mute()}</span>
+				</Button>
+				<Button
+					id="hero-exit"
+					variant="glass"
+					className="pointer-events-auto rounded-lg px-3 py-1.5 text-sm group-data-[state=idle]:pointer-events-none sm:text-base"
+					onClick={() => {
+						controller.leave();
+					}}
+				>
+					{controller.hasStartScreen
+						? m.hero_back_to_start()
+						: m.hero_back_to_trail()}{' '}
+					✕
+				</Button>
+			</div>
 			<div
 				id="hero-combo"
 				data-show={callout.isShown ? '' : undefined}

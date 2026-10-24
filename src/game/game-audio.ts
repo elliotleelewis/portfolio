@@ -32,8 +32,9 @@ const defaultVariation = 0.05;
 const hearingDistance = 15;
 // A major pentatonic scale, in semitones: a combo climbs it, a note a tree.
 const scale = [0, 2, 4, 7, 9];
-// The highest note a combo reaches, in steps up the scale.
-const highestStep = 10;
+// The highest note a combo reaches, in steps up the scale: an octave up.
+// Any higher and the pizzicato, played that much faster, turns squeaky.
+const highestStep = scale.length;
 
 interface PlayOptions {
 	// 1 as recorded, 0.5 half as loud.
@@ -173,7 +174,6 @@ export class GameAudio {
 	 */
 	public fell(combo: number): void {
 		this.play('tree', { volume: 0.8 });
-		this.play('creak', { volume: 0.35, delay: 0.05 });
 		if (combo > 1) {
 			// It's a tune, so in tune.
 			this.play('pluck', {

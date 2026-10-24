@@ -1,5 +1,3 @@
-import creak0 from './sounds/creak-0.mp3';
-import creak1 from './sounds/creak-1.mp3';
 import explosion0 from './sounds/explosion-0.mp3';
 import explosion1 from './sounds/explosion-1.mp3';
 import found from './sounds/found.mp3';
@@ -18,10 +16,8 @@ import tree2 from './sounds/tree-2.mp3';
 // doesn't grate. They're CC0 (see licenses/sounds.txt): trimmed, levelled
 // and made mono MP3s, which every browser plays.
 export const CLIPS = {
-	// A tree knocked down: a crack of wood...
+	// A tree knocked down: a knock of wood.
 	tree: [tree0, tree1, tree2],
-	// ...and it creaking as it goes.
-	creak: [creak0, creak1],
 	// A pizzicato C, played up the scale as a combo grows.
 	pluck: [pluck],
 	// Finding an easter egg: a rising pizzicato jingle, in the same key.

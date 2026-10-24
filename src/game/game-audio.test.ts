@@ -59,9 +59,9 @@ describe('comboRate', () => {
 		expect(comboRate(7)).toBeCloseTo(2);
 	});
 
-	it('stops climbing at two octaves', () => {
-		expect(comboRate(12)).toBeCloseTo(4);
-		expect(comboRate(50)).toBeCloseTo(4);
+	it('stops climbing at an octave, before the note turns squeaky', () => {
+		expect(comboRate(8)).toBeCloseTo(2);
+		expect(comboRate(50)).toBeCloseTo(2);
 	});
 });
 
@@ -101,10 +101,10 @@ describe('GameAudio', () => {
 		expect(rumble.gain?.gain.value).toBe(flatOut);
 	});
 
-	it('cracks and creaks as a tree goes down, with a note only for a combo', () => {
+	it('knocks as a tree goes down, with a note only for a combo', () => {
 		const { audio, played } = setup();
 		audio.fell(1);
-		expect(played().map(({ name }) => name)).toEqual(['tree', 'creak']);
+		expect(played().map(({ name }) => name)).toEqual(['tree']);
 		audio.fell(4);
 		const plucked = played().at(-1);
 		expect(plucked?.name).toBe('pluck');

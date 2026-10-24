@@ -104,5 +104,5 @@ test('loads and decodes every recording once the sound starts', async ({
 				() => (globalThis as unknown as AudioHandle).decodedClips.count,
 			),
 		)
-		.toBe(14);
+		.toBe(12);
 });

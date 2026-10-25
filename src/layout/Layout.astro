@@ -86,6 +86,7 @@ const previewUrl = new URL(preview.src, url).href;
 		<meta property="og:image:alt" content={m.site_preview_alt()} />
 		<meta name="twitter:card" content="summary_large_image" />
 		<meta name="twitter:creator" content="@elliotleelewis" />
+		<slot name="head" />
 		<Font cssVariable="--font-inter" />
 		<Font cssVariable="--font-fraunces" />
 		<Font cssVariable="--font-jetbrains-mono" />

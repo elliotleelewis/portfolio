@@ -1,36 +1,46 @@
 ---
-import { Picture } from 'astro:assets';
+import { getImage } from 'astro:assets';
 
 import { Hero } from '../hero/hero';
 import hero from '../media/hero.webp';
 import { m } from '../paraglide/messages';
 
-// hero.webp is a lossless, full-resolution crop of the original, in Display
-// P3: Astro converts it to sRGB and encodes each size (see `image` in
-// astro.config.ts). The e2e test "loads a sharp enough photo" checks it.
-//
-// The photo covers the hero, so it's drawn at whichever is wider: the hero's
-// width, or its height (85svh, at least 30rem) times the photo's shape
-// (1717 × 1867). On a phone that's the height, so the photo is wider than
-// the screen. Without allowing for it, phones would get a photo too small,
-// stretched to fit. The width is the page's (at most 72rem, less its padding
-// of 1rem, or 2rem from 640px up). Update it if the hero's layout changes.
-const sizes = [
-	'(min-width: 640px) max(min(100vw, 1152px) - 64px, 78.2vh, 442px)',
-	'max(100vw - 32px, 78.2vh, 442px)',
-].join(', ');
+import { PHONE_MEDIA, WIDE_MEDIA, heroPhoto } from './hero-photo';
+
+const options = heroPhoto(hero);
+const [phone, wide, fallback] = await Promise.all([
+	getImage(options.phone),
+	getImage(options.wide),
+	getImage(options.fallback),
+]);
+const { phoneSizes, wideSizes } = options;
 ---
 
 <Hero client:load>
-	<Picture
-		src={hero}
-		formats={['avif']}
-		fallbackFormat="webp"
-		alt={m.hero_photo_alt()}
-		class="absolute inset-0 size-full object-cover object-[50%_45%] transition-opacity duration-1500 ease-in-out group-data-[state=playing]:opacity-0"
-		widths={[640, 960, 1280, 1717]}
-		sizes={sizes}
-		loading="eager"
-		fetchpriority="high"
-	/>
+	<picture>
+		<source
+			media={PHONE_MEDIA}
+			type="image/avif"
+			srcset={phone.srcSet.attribute}
+			sizes={phoneSizes}
+		/>
+		<source
+			media={WIDE_MEDIA}
+			type="image/avif"
+			srcset={wide.srcSet.attribute}
+			sizes={wideSizes}
+		/>
+		<img
+			src={fallback.src}
+			srcset={fallback.srcSet.attribute}
+			sizes={`${WIDE_MEDIA} ${wideSizes}, ${phoneSizes}`}
+			alt={m.hero_photo_alt()}
+			width={fallback.attributes.width}
+			height={fallback.attributes.height}
+			class="absolute inset-0 size-full object-cover object-[50%_45%] transition-opacity duration-1500 ease-in-out group-data-[state=playing]:opacity-0"
+			loading="eager"
+			fetchpriority="high"
+			decoding="async"
+		/>
+	</picture>
 </Hero>

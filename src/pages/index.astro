@@ -1,16 +1,48 @@
 ---
+import { getImage } from 'astro:assets';
+
 import BaseCamp from '../content/BaseCamp.astro';
 import Hero from '../content/Hero.astro';
 import Intro from '../content/Intro.astro';
 import PackList from '../content/PackList.astro';
 import SiteFooter from '../content/SiteFooter.astro';
+import { PHONE_MEDIA, WIDE_MEDIA, heroPhoto } from '../content/hero-photo';
 import Trail from '../content/Trail.astro';
 import Layout from '../layout/Layout.astro';
+import hero from '../media/hero.webp';
 
 import '../styles/global.css';
+
+// The photo, before the page's styles, so phones start on it at once.
+const options = heroPhoto(hero);
+const [phone, wide] = await Promise.all([
+	getImage(options.phone),
+	getImage(options.wide),
+]);
+const { phoneSizes, wideSizes } = options;
 ---
 
 <Layout title="Elliot Lewis">
+	<link
+		slot="head"
+		rel="preload"
+		as="image"
+		type="image/avif"
+		media={PHONE_MEDIA}
+		imagesrcset={phone.srcSet.attribute}
+		imagesizes={phoneSizes}
+		fetchpriority="high"
+	/>
+	<link
+		slot="head"
+		rel="preload"
+		as="image"
+		type="image/avif"
+		media={WIDE_MEDIA}
+		imagesrcset={wide.srcSet.attribute}
+		imagesizes={wideSizes}
+		fetchpriority="high"
+	/>
 	<div class="mx-auto max-w-6xl px-4 pt-4 sm:px-8 sm:pt-8">
 		<Hero />
 	</div>

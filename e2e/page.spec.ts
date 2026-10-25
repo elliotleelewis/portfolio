@@ -54,11 +54,12 @@ test('loads a sharp enough photo for how big it is drawn', async ({ page }) => {
 		if (!(element instanceof HTMLImageElement)) {
 			throw new TypeError('Expected the photo');
 		}
-		// Every candidate the page offers, and the one the browser chose.
-		const candidates = [
+		// Every candidate the page offers, by source (phones get a crop of
+		// their own), and the one the browser chose.
+		const sources = [
 			...(element.parentElement?.querySelectorAll('source') ?? []),
 			element,
-		].flatMap((node) =>
+		].map((node) =>
 			(node.getAttribute('srcset') ?? '').split(', ').map((entry) => {
 				const [url = '', width = '0w'] = entry.split(' ', 2);
 				return {
@@ -68,6 +69,10 @@ test('loads a sharp enough photo for how big it is drawn', async ({ page }) => {
 				};
 			}),
 		);
+		const candidates =
+			sources.find((source) =>
+				source.some(({ url }) => url === element.currentSrc),
+			) ?? [];
 		const chosen = candidates.find(({ url }) => url === element.currentSrc);
 		const box = element.getBoundingClientRect();
 		// The photo covers the hero, so it's drawn at least as wide as it is.

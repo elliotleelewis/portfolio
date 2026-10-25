@@ -4,43 +4,12 @@ import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import tailwindcss from '@tailwindcss/vite';
-import type { AstroUserConfig } from 'astro';
 import { defineConfig, fontProviders, sharpImageService } from 'astro/config';
 import robotsTxt from 'astro-robots-txt';
 import type { Dependency } from 'rollup-plugin-license';
 import license from 'rollup-plugin-license';
 
 const google = fontProviders.google();
-
-// A font family from Google Fonts, with its options. Astro doesn't export the
-// type on its own.
-type GoogleFontFamily = NonNullable<
-	AstroUserConfig<never, never, [typeof google]>['fonts']
->[0];
-
-/**
- * One style of Fraunces from Google Fonts: a single weight, with the
- * optical-size axis kept, so large headings get the display design. Asked
- * for one at a time, Google sends a file cut down to that weight. Asked for
- * several weights together, it sends the full variable font.
- * @param weight - The weight.
- * @param style - Upright or italic.
- * @returns The font family entry.
- */
-const fraunces = (
-	weight: number,
-	style: 'normal' | 'italic',
-): GoogleFontFamily => ({
-	provider: google,
-	name: 'Fraunces',
-	// Entries with the same variable, name and provider make one family.
-	cssVariable: '--font-fraunces',
-	weights: [weight],
-	styles: [style],
-	subsets: ['latin'],
-	fallbacks: ['Iowan Old Style', 'Georgia', 'serif'],
-	options: { experimental: { variableAxis: { opsz: [['9', '144']] } } },
-});
 
 /**
  * One package's notice, for /licenses.txt.
@@ -127,9 +96,22 @@ export default defineConfig({
 	// font" checks they're there. Each family also needs a <Font> in
 	// src/layout/Layout.astro.
 	fonts: [
-		// Headings are semibold, and one line italic.
-		fraunces(600, 'normal'),
-		fraunces(400, 'italic'),
+		// Headings, all semibold, and with the optical-size axis kept, so
+		// large ones get the display design. Asked for one weight, Google
+		// sends a file cut down to it. Asked for several, it sends the full
+		// variable font.
+		{
+			provider: google,
+			name: 'Fraunces',
+			cssVariable: '--font-fraunces',
+			weights: [600],
+			styles: ['normal'],
+			subsets: ['latin'],
+			fallbacks: ['Iowan Old Style', 'Georgia', 'serif'],
+			options: {
+				experimental: { variableAxis: { opsz: [['9', '144']] } },
+			},
+		},
 		// Body text, from regular to black: one variable font.
 		{
 			provider: google,

@@ -14,9 +14,13 @@ const [phone, wide, fallback] = await Promise.all([
 	getImage(options.fallback),
 ]);
 const { phoneSizes, wideSizes } = options;
+
+// The hero hydrates once the browser is idle, so React's download doesn't
+// slow the photo's on a phone. Until then the photo shows, Play is
+// disabled, and the theme picker isn't drawn.
 ---
 
-<Hero client:load>
+<Hero client:idle>
 	<picture>
 		<source
 			media={PHONE_MEDIA}

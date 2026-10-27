@@ -52,14 +52,12 @@ const intensities: Record<
 	night: { sunIntensity: 0.9, skyIntensity: 1.1, lanternIntensity: 22 },
 };
 
-// Only the colour spaces the scene needs, so the rest of culori stays out
-// of the game's code.
-/* eslint-disable unicorn/no-top-level-side-effects -- culori converts only between colour spaces registered first. */
+// culori converts only between colour spaces registered first. Only the
+// ones the scene needs, so the rest of culori stays out of the game's code.
 registerMode(modeOklch);
 registerMode(modeOklab);
 registerMode(modeRgb);
 registerMode(modeLrgb);
-/* eslint-enable unicorn/no-top-level-side-effects */
 
 // Into sRGB the way CSS does it: colours past it (the amber reaches into
 // Display P3) lose chroma until they fit, keeping their hue. Clamped after,

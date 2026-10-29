@@ -1,6 +1,7 @@
 import { expect, test } from './fixtures';
 import { advance, crash, startNewRun, startRun } from './hero';
 import {
+	LEASE,
 	expectInitials,
 	fullBoard,
 	mockLeaderboard,
@@ -30,8 +31,8 @@ test('puts a run on the leaderboard with three initials', async ({ page }) => {
 	await expect(mine).toContainText('ELL');
 	expect(saved).toHaveLength(1);
 	expect(saved[0]).toMatchObject({ initials: 'ELL', token: 'test-token' });
-	// Real time, rather than the game's.
-	expect(saved[0]?.seconds).toBeGreaterThan(0);
+	// The lease the run got as it set off, which the Function times it by.
+	expect(saved[0]?.lease).toBe(LEASE);
 	await expect(page.locator('#hero-again')).toBeFocused();
 });
 
@@ -263,6 +264,19 @@ test('says when a run went further than real time allows', async ({ page }) => {
 		'Fast-forwarded runs don’t go on the leaderboard.',
 	);
 	await expect(page.locator('#hero-initials')).toHaveCount(0);
+});
+
+test('turns down a run the leaderboard couldn’t time', async ({ page }) => {
+	const saved = await mockLeaderboard(page, { hasLease: false });
+	await page.goto('/');
+	await startRun(page);
+	await crash(page);
+	await waitForInitials(page);
+	await page.keyboard.press('Enter');
+	await expect(page.locator('#hero-board-message')).toHaveText(
+		'That score couldn’t be saved.',
+	);
+	expect(saved).toHaveLength(0);
 });
 
 test('plays on without a board when it cannot be reached', async ({ page }) => {

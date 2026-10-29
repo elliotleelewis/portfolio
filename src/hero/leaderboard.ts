@@ -15,9 +15,10 @@ export interface Board {
 	cutoff: Score | null;
 }
 
-// A finished run: trees, metres, and how long it took in real time.
+// A finished run: trees, metres, and its lease (see `startRun`), which the
+// Function times it by.
 export interface Run extends Score {
-	seconds: number;
+	lease: string;
 }
 
 // How saving a score went.
@@ -59,6 +60,26 @@ export const fetchBoard = async (): Promise<Board> => {
 		throw new Error(`The leaderboard answered ${String(response.status)}`);
 	}
 	return response.json();
+};
+
+/**
+ * Asks the leaderboard for a lease on a run setting off now. Its score comes
+ * back with it, so the Function can tell how long the run took by its own
+ * clock.
+ * @returns The lease, or undefined if the leaderboard couldn't be reached.
+ */
+export const startRun = async (): Promise<string | undefined> => {
+	try {
+		const response = await client.api.runs.$post();
+		if (response.status !== 200) {
+			return undefined;
+		}
+		const { lease } = await response.json();
+		return lease;
+	} catch {
+		// Offline, or an answer that isn't the API's.
+		return undefined;
+	}
 };
 
 /**

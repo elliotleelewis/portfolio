@@ -12,6 +12,7 @@ const app = createApp({
 	verify: async (env, token, visitor) =>
 		env.turnstileSecret !== undefined &&
 		isHuman(env.turnstileSecret, token, visitor),
+	leaseSecret: (env) => env.leaseSecret,
 	blocked: (env) => readBlocked(env.blockedInitials),
 });
 

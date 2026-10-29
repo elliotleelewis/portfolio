@@ -7,10 +7,12 @@ pages_build_output_dir = "./dist"
 compatibility_date = "2026-09-01"
 
 # Preview deployments, for pull requests: a board of their own, so they never
-# touch the live one, and Turnstile's test secret, which always passes (they
-# build with its test site key).
+# touch the live one, Turnstile's test secret, which always passes (they
+# build with its test site key), and a key for runs' leases that's no secret,
+# as nothing on a preview's board matters.
 [vars]
 turnstileSecret = "1x0000000000000000000000000000000AA"
+leaseSecret = "preview"
 
 [[d1_databases]]
 binding = "leaderboard"
@@ -18,9 +20,10 @@ database_name = "portfolio-leaderboard-preview"
 database_id = "<preview-database-id>"
 migrations_dir = "migrations"
 
-# The live site. Its Turnstile secret, and the optional extra initials to turn
-# away (`blockedInitials`), are secrets on the Pages project, set in
-# Cloudflare's dashboard, rather than here.
+# The live site. Its Turnstile secret, the key runs' leases are signed with
+# (`leaseSecret`), and the optional extra initials to turn away
+# (`blockedInitials`), are secrets on the Pages project, set in Cloudflare's
+# dashboard, rather than here.
 [[env.production.d1_databases]]
 binding = "leaderboard"
 database_name = "portfolio-leaderboard"

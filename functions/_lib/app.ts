@@ -125,10 +125,10 @@ export const createApp = (options: AppOptions) =>
 			c.header('Cache-Control', 'public, max-age=30');
 			return c.json({ entries: board, cutoff: cutoffFor(board) }, 200);
 		})
-		// Saves a score, if it makes the board. Everything that can be
-		// checked without the database is checked first, and the score is
-		// written in one row write, only if the row hasn't changed since it
-		// was read.
+		// Saves a score, if it makes the board. The check for a person comes
+		// first, then everything else that can be checked without the
+		// database, and the score is written in one row write, only if the
+		// row hasn't changed since it was read.
 		.post(
 			'/scores',
 			bodyLimit({
@@ -144,6 +144,16 @@ export const createApp = (options: AppOptions) =>
 				// A saved score is the visitor's own, never one to cache.
 				c.header('Cache-Control', 'no-store');
 				const run = c.req.valid('json');
+				// First, so the token is spent whatever the answer: a score
+				// turned down for its initials or its run can't be changed
+				// and sent again with the same token.
+				const isHuman = await options.verify(c.env, run.token, {
+					hostname: new URL(c.req.url).hostname,
+					ip: c.req.header('CF-Connecting-IP'),
+				});
+				if (!isHuman) {
+					return c.json({ error: 'unverified' } as const, 403);
+				}
 				if (isBlocked(run.initials, options.blocked(c.env))) {
 					return c.json({ error: 'blocked' } as const, 400);
 				}
@@ -162,7 +172,6 @@ export const createApp = (options: AppOptions) =>
 				const day = (options.now?.() ?? new Date())
 					.toISOString()
 					.slice(0, 10);
-				let isVerified = false;
 
 				for (let attempt = 0; attempt < maxAttempts; attempt++) {
 					const row = await readRow(db);
@@ -179,20 +188,6 @@ export const createApp = (options: AppOptions) =>
 					}
 					if (row.day === day && row.writes >= DAILY_WRITE_LIMIT) {
 						return c.json({ error: 'closed' } as const, 503);
-					}
-					// Only once it would make the board, and only once: tokens
-					// are single use.
-					if (!isVerified) {
-						isVerified = await options.verify(c.env, run.token, {
-							hostname: new URL(c.req.url).hostname,
-							ip: c.req.header('CF-Connecting-IP'),
-						});
-						if (!isVerified) {
-							return c.json(
-								{ error: 'unverified' } as const,
-								403,
-							);
-						}
 					}
 					const next = addEntry(board, entry);
 					// Only if the row is as it was read, so two scores at once

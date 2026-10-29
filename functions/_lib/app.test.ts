@@ -311,11 +311,13 @@ describe('postScores', () => {
 	});
 
 	it('turns down rude initials, however they’re spelled', async () => {
-		const { db, send } = setUp();
+		const { db, isHuman, send } = setUp();
 		const { status, body } = await send(submission('A55'));
 		expect(status).toBe(400);
 		expect(body).toEqual({ error: 'blocked' });
 		expect(db.statements).toBe(0);
+		// Spent, so the same token can't try other initials.
+		expect(isHuman).toHaveBeenCalledOnce();
 	});
 
 	it('turns down the extra initials it’s given', async () => {
@@ -329,23 +331,30 @@ describe('postScores', () => {
 	});
 
 	it('turns down a run real play could not reach', async () => {
-		const { send } = setUp();
+		const { isHuman, send } = setUp();
 		const body = { ...submission(), metres: 50_000 };
 		const { status, body: answer } = await send(body);
 		expect(status).toBe(400);
 		expect(answer).toEqual({ error: 'implausible' });
+		// Spent, so the same token can't try a longer run.
+		expect(isHuman).toHaveBeenCalledOnce();
 	});
 
-	it('turns down a score that fails the check for a person', async () => {
+	it('turns down a score that fails the check for a person, before anything else', async () => {
 		const { db, isHuman, send } = setUp();
 		isHuman.mockResolvedValue(false);
-		const { status } = await send(submission());
+		// Rude and implausible too, but the check for a person answers first.
+		const { status, body } = await send({
+			...submission('A55'),
+			metres: 50_000,
+		});
 		expect(status).toBe(403);
-		expect(db.rowsWritten).toBe(0);
+		expect(body).toEqual({ error: 'unverified' });
+		expect(db.statements).toBe(0);
 	});
 
 	it('answers with the board, without writing, when the score misses out', async () => {
-		const { db, isHuman, send } = setUp();
+		const { db, send } = setUp();
 		db.row = {
 			version: 3,
 			day: '',
@@ -359,8 +368,6 @@ describe('postScores', () => {
 			place: null,
 		});
 		expect(db.rowsWritten).toBe(0);
-		// No need to spend the token on a score that won't be saved.
-		expect(isHuman).not.toHaveBeenCalled();
 	});
 
 	it('keeps both scores when another lands first', async () => {

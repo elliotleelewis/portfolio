@@ -13,6 +13,15 @@ export const BOARD_SIZE = 10;
 const maxSpeed = 40;
 // More than enough for rounding, and any frames the game skips ahead.
 const metresSlack = 20;
+// The most trees I could ever flatten, a metre and a second. A bot playing
+// the real game, steering for the nearest tree it can reach, hit at most
+// 0.22 a metre (rolling slowly) and 2.1 a second (flat out), over 240 runs:
+// these are about twice that. The forest has about 0.5 trees a metre in the
+// lane, but I only ever reach a few of them.
+const maxHitsPerMetre = 0.4;
+const maxHitsPerSecond = 5;
+// For a lucky stretch of trees, which counts for most on a short run.
+const hitsSlack = 20;
 // More than one easter egg's blast is ever worth: 5 points a bear, times the
 // bears again (see `bearBlastPoints` in src/game/scoring.ts), for more bears
 // than one ever catches.
@@ -38,9 +47,13 @@ const isWithinReach = (run: Run): boolean => {
 	if (metres > maxSpeed * seconds + metresSlack) {
 		return false;
 	}
-	// At most a tree a metre, every one in a combo, plus every easter egg
-	// passed blasting a crowd of bears.
-	const hits = metres + 1;
+	// As many trees as I could reach in that distance and time, every one in
+	// a combo (worth its place in it), plus every easter egg passed blasting
+	// a crowd of bears.
+	const hits = Math.floor(
+		Math.min(maxHitsPerMetre * metres, maxHitsPerSecond * seconds) +
+			hitsSlack,
+	);
 	const eggs = Math.floor(metres / easterEggSpacing) + 1;
 	return trees <= (hits * (hits + 1)) / 2 + eggs * maxBlast;
 };

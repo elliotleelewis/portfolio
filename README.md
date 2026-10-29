@@ -97,7 +97,7 @@ The site stays static. The leaderboard is one Pages Function next to it: a [Hono
 - Each run asks for a lease as it sets off (`POST /api/runs`): one request, and no rows, as it's signed rather than stored.
 - [Turnstile](https://developers.cloudflare.com/turnstile/) checks that a person is saving each score. It's free with no limit on checks, and only loads when there's a score to save.
 
-Anyone can still send a made-up score, as with any game in a browser. The Function turns down runs that couldn't happen in real play, like one fast-forwarded with `hero.game.advance()`, timing each by its own clock: a run's lease is when it set off, signed with the `leaseSecret` secret (`functions/_lib/lease.ts`), and its score comes back with it. It also turns down rude initials: anything [obscenity](https://github.com/jo3-l/obscenity)'s word list catches, however it's spelled, plus any listed in the optional `blockedInitials` secret. That list is kept out of the repo.
+Anyone can still send a made-up score, as with any game in a browser. The Function turns down runs that couldn't happen in real play, like one fast-forwarded with `hero.game.advance()`, or flattened more trees than it could reach (`isPlausible` in `functions/_lib/board.ts`), timing each by its own clock: a run's lease is when it set off, signed with the `leaseSecret` secret (`functions/_lib/lease.ts`), and its score comes back with it. It also turns down rude initials: anything [obscenity](https://github.com/jo3-l/obscenity)'s word list catches, however it's spelled, plus any listed in the optional `blockedInitials` secret. That list is kept out of the repo.
 
 ### Adding an easter egg
 

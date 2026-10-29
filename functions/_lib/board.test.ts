@@ -45,6 +45,34 @@ describe('isPlausible', () => {
 		);
 	});
 
+	it('takes the best runs a bot could play', () => {
+		// Flat out, nearly every tree in one combo.
+		expect(isPlausible({ trees: 4753, metres: 1092, seconds: 45 })).toBe(
+			true,
+		);
+		// Slowly, for more trees a metre.
+		expect(isPlausible({ trees: 2289, metres: 914, seconds: 92 })).toBe(
+			true,
+		);
+	});
+
+	it('turns down more trees than a run could reach in the distance', () => {
+		// Time enough, but 2,000 metres only holds 820 trees: 336,610 in one
+		// combo, plus 42,000 for its easter eggs.
+		expect(
+			isPlausible({ trees: 400_000, metres: 2000, seconds: 600 }),
+		).toBe(false);
+	});
+
+	it('turns down more trees than a run could reach in the time', () => {
+		// A minute's honest wait, and as far as it allows, but 60 seconds
+		// only holds 320 trees: 51,360 in one combo, plus 50,000 for its
+		// easter eggs.
+		expect(isPlausible({ trees: 150_000, metres: 2400, seconds: 60 })).toBe(
+			false,
+		);
+	});
+
 	it('turns down numbers that are not counts', () => {
 		expect(isPlausible({ trees: -1, metres: 10, seconds: 10 })).toBe(false);
 		expect(isPlausible({ trees: 1.5, metres: 10, seconds: 10 })).toBe(

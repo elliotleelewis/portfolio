@@ -31,11 +31,17 @@ import {
 } from './atoms';
 import { readingDirection } from './direction';
 import { addHit, readHits } from './easter-egg-hits';
-import type { Run } from './leaderboard';
+import type { Run, SaveResult } from './leaderboard';
 
 type LeaderboardModule = typeof import('./leaderboard');
 
 type Store = ReturnType<typeof createStore>;
+
+// A finished run, with its lease from the leaderboard, which may still be on
+// its way (or never come, if the leaderboard couldn't be reached).
+interface FinishedRun extends Omit<Run, 'lease'> {
+	lease: Promise<string | undefined>;
+}
 
 // What the stage drew in its last frame, shadows included.
 interface Drawn {
@@ -73,10 +79,10 @@ export class HeroController {
 	private _game: Game | undefined;
 	private _gallery: Gallery | undefined;
 	private _calloutTimeout: ReturnType<typeof setTimeout> | undefined;
-	// When the run in play set off, in real time.
-	private _setOffAt: number | undefined;
+	// The run in play's lease from the leaderboard, asked for as it set off.
+	private _lease: Promise<string | undefined> | undefined;
 	// The last finished run, to save to the leaderboard.
-	private _lastRun: Run | undefined;
+	private _lastRun: FinishedRun | undefined;
 	// The leaderboard's code, loaded with the board.
 	private _leaderboard: LeaderboardModule | undefined;
 	private _boardLoad: Promise<void> | undefined;
@@ -180,8 +186,12 @@ export class HeroController {
 		}
 		this.show({ kind: 'game', scene: next });
 		this._game = next;
-		this._setOffAt = isHeld ? undefined : performance.now();
 		this.loadBoard();
+		// The lease waits on the board, so after it's asked for.
+		this._lease = undefined;
+		if (!isHeld) {
+			this.setOff();
+		}
 		this._gallery = undefined;
 		this.expose();
 		store.set(SCENE_ATOM, 'game');
@@ -208,6 +218,19 @@ export class HeroController {
 				// The game plays on without a board. Try again next run.
 				this._boardLoad = undefined;
 			}
+		})();
+	}
+
+	/**
+	 * Asks the leaderboard for a lease on the run as it sets off, so the
+	 * Function times the run by its own clock. Only once there's a board to
+	 * save it to.
+	 */
+	private setOff(): void {
+		const boardLoad = this._boardLoad;
+		this._lease = (async () => {
+			await boardLoad;
+			return this._leaderboard?.startRun();
 		})();
 	}
 
@@ -267,13 +290,10 @@ export class HeroController {
 
 	private finish(trees: number, metres: number): void {
 		const best = this._store.get(BEST_ATOM);
-		const run = {
+		const run: FinishedRun = {
 			trees,
 			metres: Math.floor(metres),
-			seconds:
-				this._setOffAt === undefined
-					? 0
-					: (performance.now() - this._setOffAt) / 1000,
+			lease: this._lease ?? Promise.resolve(undefined),
 		};
 		this._lastRun = run;
 		this._store.set(RESULT_ATOM, { trees, metres: run.metres, best });
@@ -294,7 +314,7 @@ export class HeroController {
 	 * @param run - The run.
 	 * @returns 'entering' if it does, to ask for my initials.
 	 */
-	private boardStatusFor(run: Run): EntryStatus {
+	private boardStatusFor(run: Omit<Run, 'lease'>): EntryStatus {
 		const board = this._store.get(BOARD_ATOM);
 		const leaderboard = this._leaderboard;
 		return board && leaderboard?.canMakeBoard(run, board.cutoff)
@@ -415,7 +435,7 @@ export class HeroController {
 		}
 		this._game.release();
 		this.wakeSound();
-		this._setOffAt = performance.now();
+		this.setOff();
 		this._store.set(WAITING_ATOM, false);
 	}
 
@@ -532,7 +552,16 @@ export class HeroController {
 		}
 		this._store.set(INITIALS_ATOM, initials);
 		this._store.set(BOARD_ENTRY_ATOM, { status: 'saving', attempt });
-		const result = await leaderboard.saveScore(initials, run, token);
+		const lease = await run.lease;
+		// Without a lease, the Function can't time the run, so turns it down.
+		const result: SaveResult =
+			lease === undefined
+				? { kind: 'rejected' }
+				: await leaderboard.saveScore(
+						initials,
+						{ trees: run.trees, metres: run.metres, lease },
+						token,
+					);
 		// Moved on to another run while it saved.
 		if (this._lastRun !== run) {
 			return;

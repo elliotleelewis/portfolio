@@ -94,9 +94,10 @@ The site stays static. The leaderboard is one Pages Function next to it: a [Hono
 - The row counts its own writes, in that same write, and takes no more than 1,000 scores a day (`DAILY_WRITE_LIMIT`). With the live board and the previews' board, that's at most 2,000 rows written a day, against D1's free 100,000 for the account.
 - Each request reads at most nine rows (a save can take three tries, each a read and a conditional write, which D1 counts as two), and Workers' free plan stops at 100,000 requests a day, so reads stay under D1's free 5 million a day. Past that limit, Cloudflare turns requests to `/api/scores` away rather than charging, and the game plays on without the board. The rest of the site is static, so its requests never reach the Function.
 - The page fetches the board once, when the game first loads, and only saves a score that makes it.
+- Each run asks for a lease as it sets off (`POST /api/runs`): one request, and no rows, as it's signed rather than stored.
 - [Turnstile](https://developers.cloudflare.com/turnstile/) checks that a person is saving each score. It's free with no limit on checks, and only loads when there's a score to save.
 
-Anyone can still send a made-up score, as with any game in a browser. The Function turns down runs that couldn't happen in real play, like one fast-forwarded with `hero.game.advance()`, and rude initials: anything [obscenity](https://github.com/jo3-l/obscenity)'s word list catches, however it's spelled, plus any listed in the optional `blockedInitials` secret. That list is kept out of the repo.
+Anyone can still send a made-up score, as with any game in a browser. The Function turns down runs that couldn't happen in real play, like one fast-forwarded with `hero.game.advance()`, timing each by its own clock: a run's lease is when it set off, signed with the `leaseSecret` secret (`functions/_lib/lease.ts`), and its score comes back with it. It also turns down rude initials: anything [obscenity](https://github.com/jo3-l/obscenity)'s word list catches, however it's spelled, plus any listed in the optional `blockedInitials` secret. That list is kept out of the repo.
 
 ### Adding an easter egg
 
@@ -124,7 +125,7 @@ Once, with the Cloudflare account on the Workers Free plan. On the Paid plan, re
 
 1. Give the Cloudflare API token (the `CLOUDFLARE_API_TOKEN` secret) the **D1 Edit** permission, so the deploy job can create the databases and migrate them.
 2. Add a Turnstile widget (Turnstile → Add widget) for `elliotleelewis.com`, in Managed mode.
-3. In the Pages project's Settings → Variables and Secrets, for Production, add the widget's secret key as a secret called `turnstileSecret`. Previews use Turnstile's test secret, from `wrangler.toml`.
+3. In the Pages project's Settings → Variables and Secrets, for Production, add the widget's secret key as a secret called `turnstileSecret`, and a long random string (say, from `openssl rand -hex 32`) as a secret called `leaseSecret`, which signs runs' leases. Previews use Turnstile's test secret and a lease key from `wrangler.toml`.
 4. In the GitHub repo's Settings → Secrets and variables → Actions → Variables, add the widget's site key as `TURNSTILE_SITE_KEY`. Deploys of `main` build with it. Without it, the page uses Turnstile's test key, which the live secret turns down.
 5. Optionally, for initials that word lists miss (three-letter abbreviations and slurs), add a secret called `blockedInitials` to the Pages project, for Production: the initials, separated by commas, like `ABC,XYZ`. Digits that read as letters are caught too, so `A8C` counts as `ABC`.
 

@@ -14,6 +14,7 @@
 //   Cloudflare turns requests away rather than charging.
 // - Turnstile, which checks a person is saving the score, is free with no
 //   limit on checks.
+// - A run's lease, which times it, is signed rather than stored: no rows.
 
 import type { D1Database } from '@cloudflare/workers-types';
 import { sValidator } from '@hono/standard-validator';
@@ -32,6 +33,7 @@ import {
 	readBoard,
 } from './board';
 import { INITIALS, isBlocked } from './initials';
+import { issueLease, secondsSince } from './lease';
 import { type Database, hasWrittenRow, readRow } from './store';
 import type { Visitor } from './turnstile';
 
@@ -42,22 +44,25 @@ const maxBodyLength = 2048;
 // Tries before giving up when other scores keep landing first.
 const maxAttempts = 3;
 
-// What a page sends to save a score. Whether the initials are polite and the
-// run could be real are checked after, so the page hears which it was.
+// What a page sends to save a score: the run's lease (from /api/runs)
+// rather than how long it took, which the Function works out itself. Whether
+// the initials are polite and the run could be real are checked after, so
+// the page hears which it was.
 const submission = z.object({
 	initials: INITIALS,
 	trees: z.number(),
 	metres: z.number(),
-	seconds: z.number(),
+	lease: z.string(),
 	token: z.string().check(z.minLength(1)),
 });
 
 // The Function's bindings, set in wrangler.toml and on the Pages project: the
-// D1 database, the Turnstile widget's secret key, and the extra initials to
-// turn away (both secrets).
+// D1 database, the Turnstile widget's secret key, the key runs' leases are
+// signed with, and the extra initials to turn away (all three secrets).
 export interface Bindings {
 	leaderboard?: D1Database;
 	turnstileSecret?: string;
+	leaseSecret?: string;
 	blockedInitials?: string;
 }
 
@@ -72,9 +77,11 @@ export interface AppOptions {
 		token: string,
 		visitor: Visitor,
 	) => Promise<boolean>;
+	// The key runs' leases are signed with, if it's set.
+	leaseSecret: (env: Bindings) => string | undefined;
 	// Extra initials to turn away (see `readBlocked`).
 	blocked: (env: Bindings) => ReadonlySet<string>;
-	// Now, for counting the day's writes.
+	// Now, for timing runs and counting the day's writes.
 	now?: () => Date;
 }
 
@@ -125,6 +132,17 @@ export const createApp = (options: AppOptions) =>
 			c.header('Cache-Control', 'public, max-age=30');
 			return c.json({ entries: board, cutoff: cutoffFor(board) }, 200);
 		})
+		// A lease for a run setting off now, which its score comes back
+		// with, so the Function times the run itself. No rows.
+		.post('/runs', async (c) => {
+			c.header('Cache-Control', 'no-store');
+			const secret = options.leaseSecret(c.env);
+			if (secret === undefined) {
+				return c.json({ error: 'unavailable' } as const, 503);
+			}
+			const now = (options.now?.() ?? new Date()).getTime();
+			return c.json({ lease: await issueLease(secret, now) }, 200);
+		})
 		// Saves a score, if it makes the board. The check for a person comes
 		// first, then everything else that can be checked without the
 		// database, and the score is written in one row write, only if the
@@ -157,7 +175,24 @@ export const createApp = (options: AppOptions) =>
 				if (isBlocked(run.initials, options.blocked(c.env))) {
 					return c.json({ error: 'blocked' } as const, 400);
 				}
-				if (!isPlausible(run)) {
+				const secret = options.leaseSecret(c.env);
+				if (secret === undefined) {
+					return c.json({ error: 'unavailable' } as const, 503);
+				}
+				const now = options.now?.() ?? new Date();
+				// Since the run set off, by this Function's clock. It counts
+				// the time on the game-over card too, which only ever gives a
+				// real run more room.
+				const seconds = await secondsSince(
+					secret,
+					run.lease,
+					now.getTime(),
+				);
+				// Not a lease this Function made, or it ran out.
+				if (seconds === undefined) {
+					return c.json({ error: 'invalid' } as const, 400);
+				}
+				if (!isPlausible({ ...run, seconds })) {
 					return c.json({ error: 'implausible' } as const, 400);
 				}
 				const db = options.database(c.env);
@@ -169,9 +204,7 @@ export const createApp = (options: AppOptions) =>
 					trees: run.trees,
 					metres: run.metres,
 				};
-				const day = (options.now?.() ?? new Date())
-					.toISOString()
-					.slice(0, 10);
+				const day = now.toISOString().slice(0, 10);
 
 				for (let attempt = 0; attempt < maxAttempts; attempt++) {
 					const row = await readRow(db);

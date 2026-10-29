@@ -60,7 +60,8 @@ const runSchema = z
 	.object({
 		trees: count(maxTrees),
 		metres: count(maxMetres),
-		// Real time from setting off to the game-over card.
+		// Real time since setting off, by the Function's clock (see
+		// ./lease.ts).
 		seconds: z.number().check(z.minimum(0)),
 	})
 	.check(z.refine(isWithinReach));

@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { DAILY_WRITE_LIMIT, createApp } from './app';
 import { BOARD_SIZE, type Entry } from './board';
+import { issueLease } from './lease';
 import type { Database } from './store';
 import type { Visitor } from './turnstile';
 
@@ -96,6 +97,9 @@ class TestDatabase {
 }
 
 const now = new Date('2026-10-05T12:00:00Z');
+const leaseSecret = 'lease-secret';
+// A run that set off a minute ago: long enough for 600 metres.
+const lease = await issueLease(leaseSecret, now.getTime() - 60_000);
 
 const submission = (
 	initials = 'ELL',
@@ -104,7 +108,7 @@ const submission = (
 	initials,
 	trees,
 	metres: 600,
-	seconds: 60,
+	lease,
 	token: 'token',
 });
 
@@ -130,15 +134,22 @@ interface SetUpOptions {
 	isBound?: boolean;
 	// Extra initials to turn away.
 	blocked?: string[];
+	// Whether the key leases are signed with is set.
+	isLeaseSet?: boolean;
 }
 
-const setUp = ({ isBound = true, blocked = [] }: SetUpOptions = {}): {
+const setUp = ({
+	isBound = true,
+	blocked = [],
+	isLeaseSet = true,
+}: SetUpOptions = {}): {
 	db: TestDatabase;
 	isHuman: ReturnType<
 		typeof vi.fn<(token: string, visitor: Visitor) => Promise<boolean>>
 	>;
 	send: (body: unknown, headers?: Record<string, string>) => Promise<Answer>;
 	get: () => Promise<Answer>;
+	start: (headers?: Record<string, string>) => Promise<Answer>;
 } => {
 	const db = new TestDatabase();
 	const isHuman = vi.fn<
@@ -150,6 +161,7 @@ const setUp = ({ isBound = true, blocked = [] }: SetUpOptions = {}): {
 	const app = createApp({
 		database: () => (isBound ? db.db : undefined),
 		verify: async (_env, token, visitor) => isHuman(token, visitor),
+		leaseSecret: () => (isLeaseSet ? leaseSecret : undefined),
 		blocked: () => new Set(blocked),
 		now: () => now,
 	});
@@ -173,7 +185,16 @@ const setUp = ({ isBound = true, blocked = [] }: SetUpOptions = {}): {
 		);
 		return answer(response);
 	};
-	return { db, isHuman, send, get };
+	const start = async (
+		headers: Record<string, string> = {},
+	): Promise<Answer> => {
+		const response = await app.request(
+			'https://elliotleelewis.com/api/runs',
+			{ method: 'POST', headers },
+		);
+		return answer(response);
+	};
+	return { db, isHuman, send, get, start };
 };
 
 describe('headers', () => {
@@ -294,6 +315,7 @@ describe('postScores', () => {
 			{ ...submission(), initials: 'el' },
 			{ ...submission(), token: '' },
 			{ ...submission(), trees: '40' },
+			{ ...submission(), lease: undefined },
 		]) {
 			const { status } = await send(body);
 			expect(status).toBe(400);
@@ -338,6 +360,37 @@ describe('postScores', () => {
 		expect(answer).toEqual({ error: 'implausible' });
 		// Spent, so the same token can't try a longer run.
 		expect(isHuman).toHaveBeenCalledOnce();
+	});
+
+	it('times the run itself, from its lease', async () => {
+		const { db, send } = setUp();
+		// Set off ten seconds ago: too soon for 600 metres, whatever the page
+		// says.
+		const recent = await issueLease(leaseSecret, now.getTime() - 10_000);
+		const { status, body } = await send({
+			...submission(),
+			lease: recent,
+			seconds: 60,
+		});
+		expect(status).toBe(400);
+		expect(body).toEqual({ error: 'implausible' });
+		expect(db.statements).toBe(0);
+	});
+
+	it('turns down a lease it didn’t make, without the database', async () => {
+		const { db, send } = setUp();
+		const forged = await issueLease('guessed', now.getTime() - 60_000);
+		const { status, body } = await send({ ...submission(), lease: forged });
+		expect(status).toBe(400);
+		expect(body).toEqual({ error: 'invalid' });
+		expect(db.statements).toBe(0);
+	});
+
+	it('is unavailable without the key leases are signed with', async () => {
+		const { db, send } = setUp({ isLeaseSet: false });
+		const { status } = await send(submission());
+		expect(status).toBe(503);
+		expect(db.statements).toBe(0);
 	});
 
 	it('turns down a score that fails the check for a person, before anything else', async () => {
@@ -473,5 +526,34 @@ describe('postScores', () => {
 		expect(body).toMatchObject({ place: 1 });
 		expect(db.row).toMatchObject({ version: 1, writes: 1 });
 		expect(db.rowsWritten).toBe(1);
+	});
+});
+
+describe('postRuns', () => {
+	it('gives a lease that times the run from now, without the database', async () => {
+		const { db, send, start } = setUp();
+		const { status, body, headers } = await start();
+		expect(status).toBe(200);
+		expect(headers.get('Cache-Control')).toBe('no-store');
+		expect(db.statements).toBe(0);
+		// Set off just now: too soon for any distance.
+		const issued =
+			typeof body === 'object' && body !== null && 'lease' in body
+				? body.lease
+				: undefined;
+		const { body: answer } = await send({ ...submission(), lease: issued });
+		expect(answer).toEqual({ error: 'implausible' });
+	});
+
+	it('is unavailable without the key leases are signed with', async () => {
+		const { start } = setUp({ isLeaseSet: false });
+		const { status } = await start();
+		expect(status).toBe(503);
+	});
+
+	it('turns down a run started from another site', async () => {
+		const { start } = setUp();
+		const { status } = await start({ origin: 'https://example.com' });
+		expect(status).toBe(403);
 	});
 });

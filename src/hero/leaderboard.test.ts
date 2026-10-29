@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { canMakeBoard, fetchBoard, saveScore } from './leaderboard';
+import { canMakeBoard, fetchBoard, saveScore, startRun } from './leaderboard';
 
 const entry = { initials: 'ELL', trees: 40, metres: 600 };
-const run = { trees: 40, metres: 600, seconds: 60 };
+const run = { trees: 40, metres: 600, lease: 'lease' };
 const cutoff = { trees: 10, metres: 100 };
 
 /**
@@ -50,6 +50,23 @@ describe('fetchBoard', () => {
 	it('throws when the board cannot be reached', async () => {
 		answer(503, { error: 'unavailable' });
 		await expect(fetchBoard()).rejects.toThrow('503');
+	});
+});
+
+describe('startRun', () => {
+	it('asks for a lease on the run', async () => {
+		answer(200, { lease: 'lease' });
+		expect(await startRun()).toBe('lease');
+		const [url, init] = vi.mocked(fetch).mock.calls[0] ?? [];
+		expect(url).toBe('/api/runs');
+		expect(init?.method).toBe('POST');
+	});
+
+	it('gives none when the leaderboard cannot give one', async () => {
+		answer(503, { error: 'unavailable' });
+		expect(await startRun()).toBeUndefined();
+		answer(200, 'not json');
+		expect(await startRun()).toBeUndefined();
 	});
 });
 

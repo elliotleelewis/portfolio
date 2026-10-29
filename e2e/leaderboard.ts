@@ -8,9 +8,12 @@ export interface Entry {
 
 // What a page sent to save a score.
 export interface Saved extends Entry {
-	seconds: number;
+	lease: string;
 	token: string;
 }
+
+// The lease the stand-in API gives every run.
+export const LEASE = 'test-lease';
 
 // The board holds this many runs.
 const boardSize = 10;
@@ -45,6 +48,8 @@ interface LeaderboardOptions {
 	entries?: Entry[];
 	// How the API answers a score, given what was sent.
 	onSave?: (saved: Saved) => { status: number; body: unknown };
+	// Whether the API gives runs a lease as they set off.
+	hasLease?: boolean;
 }
 
 /**
@@ -59,7 +64,14 @@ export const mockLeaderboard = async (
 	options: LeaderboardOptions = {},
 ): Promise<Saved[]> => {
 	const saved: Saved[] = [];
-	const { entries = [], onSave } = options;
+	const { entries = [], onSave, hasLease = true } = options;
+	await page.route('**/api/runs', (route: Route) =>
+		route.fulfill(
+			hasLease
+				? { json: { lease: LEASE } }
+				: { status: 503, json: { error: 'unavailable' } },
+		),
+	);
 	await page.route('**/api/scores', async (route: Route) => {
 		const request = route.request();
 		if (request.method() === 'GET') {

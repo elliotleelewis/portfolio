@@ -200,6 +200,29 @@ export default defineConfig(
 		},
 	},
 	{
+		// The world's models are made from the same few finishes and shapes
+		// (src/game/look/), so they look of a piece and merge into few draw
+		// calls.
+		files: ['src/game/**/*.ts', 'src/game/**/*.tsx'],
+		ignores: ['src/game/look/**', '**/*.test.ts'],
+		rules: {
+			'no-restricted-syntax': [
+				'error',
+				{
+					selector:
+						'NewExpression[callee.name=/^Mesh(Standard|Physical)Material$/]',
+					message:
+						'Make a model’s materials with surface() from src/game/look/surfaces.ts, in one of its finishes.',
+				},
+				{
+					selector: 'NewExpression[callee.name="BoxGeometry"]',
+					message:
+						'Make boxes with roundedBox() from src/game/look/shapes.ts, so their edges catch the light.',
+				},
+			],
+		},
+	},
+	{
 		// The Function runs on Cloudflare, apart from the site, so it never
 		// imports the site's code.
 		files: ['functions/**/*.ts'],

@@ -1,5 +1,4 @@
 import {
-	BoxGeometry,
 	type CanvasTexture,
 	CapsuleGeometry,
 	CircleGeometry,
@@ -17,8 +16,10 @@ import {
 } from 'three';
 
 import { m } from '../../paraglide/messages';
+import { roundedBox } from '../look/shapes';
+import { TONES, surface } from '../look/surfaces';
 
-import { canvasTexture, joint, part, standard } from './parts';
+import { canvasTexture, joint, part } from './parts';
 import type { EasterEgg, EasterEggFrame } from './types';
 
 // One dance beat, in seconds.
@@ -129,20 +130,28 @@ interface Dancer {
 // The dancer: short dark hair, faded at the sides; trimmed moustache and goatee;
 // the widest grin; a gold chain; and a Portugal-flag tee.
 const buildDancer = (parent: Object3D): Dancer => {
-	const skin = standard('#e8bf9f');
-	const hair = standard('#2a1d16', { roughness: 0.8 });
-	const fade = standard('#2a1d16', { transparent: true, opacity: 0.55 });
-	const stubble = standard('#2a1d16', { transparent: true, opacity: 0.4 });
-	const shirt = standard('#ffffff', { map: flagTexture(true) });
-	const shoulderShirt = standard('#ffffff', { map: flagTexture(false) });
-	const green = standard('#0a6a37');
-	const red = standard('#d8262e');
-	const gold = standard('#d8b04a', { metalness: 0.9, roughness: 0.3 });
-	const joggers = standard('#2f3238');
-	const trainers = standard('#f0f0ee');
-	const dark = standard('#1b1411');
-	const teeth = standard('#f7f3e8');
-	const mouth = standard('#6e3432');
+	const skin = surface('#e8bf9f');
+	const hair = surface('#2a1d16');
+	const fade = surface('#2a1d16', 'matte', {
+		transparent: true,
+		opacity: 0.55,
+	});
+	const stubble = surface('#2a1d16', 'matte', {
+		transparent: true,
+		opacity: 0.4,
+	});
+	const shirt = surface('#ffffff', 'matte', { map: flagTexture(true) });
+	const shoulderShirt = surface('#ffffff', 'matte', {
+		map: flagTexture(false),
+	});
+	const green = surface('#0a6a37');
+	const red = surface('#d8262e');
+	const gold = surface('#d8b04a', 'metal');
+	const joggers = surface('#2f3238');
+	const trainers = surface('#f0f0ee');
+	const dark = surface(TONES.pupil);
+	const teeth = surface(TONES.teeth);
+	const mouth = surface(TONES.mouth);
 	// Line the sphere's texture up with the cylinder's (the sphere's front is
 	// a quarter of the way round its texture).
 	if (shoulderShirt.map) {
@@ -167,12 +176,7 @@ const buildDancer = (parent: Object3D): Dancer => {
 			joggers,
 			[0, -0.2, 0],
 		);
-		part(
-			knee,
-			new BoxGeometry(0.12, 0.09, 0.27),
-			trainers,
-			[0, -0.44, 0.04],
-		);
+		part(knee, roundedBox(0.12, 0.09, 0.27), trainers, [0, -0.44, 0.04]);
 		return { hip, knee };
 	});
 
@@ -249,7 +253,7 @@ const buildDancer = (parent: Object3D): Dancer => {
 			0.148,
 			0.106,
 		]).scale.y = 0.5;
-		part(head, new BoxGeometry(0.05, 0.013, 0.012), hair, [
+		part(head, roundedBox(0.05, 0.013, 0.012), hair, [
 			side * 0.043,
 			0.182,
 			0.108,
@@ -274,9 +278,9 @@ const buildDancer = (parent: Object3D): Dancer => {
 	smile.scale.y = 0.4;
 	smile.rotation.x = -0.25;
 	// Moustache & goatee, over stubble.
-	part(head, new BoxGeometry(0.08, 0.014, 0.012), hair, [0, 0.098, 0.112]);
+	part(head, roundedBox(0.08, 0.014, 0.012), hair, [0, 0.098, 0.112]);
 	for (const side of [-1, 1]) {
-		part(head, new BoxGeometry(0.012, 0.05, 0.012), hair, [
+		part(head, roundedBox(0.012, 0.05, 0.012), hair, [
 			side * 0.043,
 			0.07,
 			0.106,
@@ -329,7 +333,7 @@ const buildDancer = (parent: Object3D): Dancer => {
 		[0, 0.19, 0.005],
 	);
 	top.scale.set(0.95, 1.2, 1.02);
-	const tuft = new BoxGeometry(0.04, 0.022, 0.05);
+	const tuft = roundedBox(0.04, 0.022, 0.05);
 	for (const [x, z, tilt] of [
 		[-0.04, 0.07, 0.2],
 		[0, 0.08, 0],
@@ -346,8 +350,8 @@ const buildDancer = (parent: Object3D): Dancer => {
 
 const buildCloud = (parent: Object3D): Group => {
 	const cloud = joint(parent, [0, cloudHeight, 0]);
-	const white = standard('#f4f6f7', { roughness: 1 });
-	const grey = standard('#c9ced3', { roughness: 1 });
+	const white = surface('#f4f6f7');
+	const grey = surface('#c9ced3');
 	for (const [x, y, z, r] of [
 		[0, 0.1, 0, 0.42],
 		[-0.42, 0, 0.05, 0.32],
@@ -401,17 +405,13 @@ export const MONEY_RAIN: EasterEgg = {
 		// The money: a flurry of notes, plus the odd loonie.
 		const noteGeometry = new PlaneGeometry(0.23, 0.108);
 		const noteMaterials = notes.map(({ value, color }) =>
-			standard('#ffffff', {
+			surface('#ffffff', 'satin', {
 				map: noteTexture(value, color),
 				side: DoubleSide,
-				roughness: 0.6,
 			}),
 		);
 		const loonie = new CylinderGeometry(0.045, 0.045, 0.01, 11);
-		const loonieMaterial = standard('#d6a83a', {
-			metalness: 0.85,
-			roughness: 0.3,
-		});
+		const loonieMaterial = surface('#d6a83a', 'metal');
 		const respawn = (money: Money, height: number): void => {
 			const angle = Math.random() * Math.PI * 2;
 			const radius = Math.sqrt(Math.random()) * 0.65;

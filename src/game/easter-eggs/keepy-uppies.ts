@@ -1,5 +1,4 @@
 import {
-	BoxGeometry,
 	BufferAttribute,
 	CapsuleGeometry,
 	Color,
@@ -15,8 +14,10 @@ import {
 } from 'three';
 
 import { m } from '../../paraglide/messages';
+import { roundedBox } from '../look/shapes';
+import { TONES, surface } from '../look/surfaces';
 
-import { joint, part, standard } from './parts';
+import { joint, part } from './parts';
 import type { EasterEgg, EasterEggFrame } from './types';
 
 // One touch of the ball every this many seconds, alternating feet.
@@ -67,11 +68,7 @@ const buildBall = (): Mesh => {
 	geometry.setAttribute('color', new BufferAttribute(colors, 3));
 	const ball = new Mesh(
 		geometry,
-		new MeshStandardMaterial({
-			vertexColors: true,
-			flatShading: true,
-			roughness: 0.6,
-		}),
+		surface('#ffffff', 'satin', { vertexColors: true, flatShading: true }),
 	);
 	ball.castShadow = true;
 	return ball;
@@ -80,19 +77,22 @@ const buildBall = (): Mesh => {
 // The juggler: navy trucker cap with a stars-and-stripes patch, moustache and
 // goatee, in the royal blue Everton home kit, fag in mouth.
 const buildJuggler = (parent: Object3D): Juggler => {
-	const skin = standard('#d8a684');
-	const hair = standard('#2a1c14', { roughness: 0.95 });
-	const stubble = standard('#2a1c14', { transparent: true, opacity: 0.45 });
-	const shirt = standard('#1c3f96', { roughness: 0.7 });
-	const white = standard('#f3f3f1', { roughness: 0.7 });
-	const cap = standard('#1f2b4d');
-	const flagRed = standard('#c8262f');
-	const flagBlue = standard('#23305e');
-	const boots = standard('#151515', { roughness: 0.5 });
-	const dark = standard('#1b1411');
-	const paper = standard('#f5f2ea');
-	const filter = standard('#d49a52');
-	const ember = standard('#ff7a1a', {
+	const skin = surface('#d8a684');
+	const hair = surface('#2a1c14');
+	const stubble = surface('#2a1c14', 'matte', {
+		transparent: true,
+		opacity: 0.45,
+	});
+	const shirt = surface('#1c3f96', 'satin');
+	const white = surface('#f3f3f1', 'satin');
+	const cap = surface('#1f2b4d');
+	const flagRed = surface('#c8262f');
+	const flagBlue = surface('#23305e');
+	const boots = surface('#151515', 'satin');
+	const dark = surface(TONES.pupil);
+	const paper = surface('#f5f2ea');
+	const filter = surface('#d49a52');
+	const ember = surface('#ff7a1a', 'matte', {
 		emissive: '#ff4d00',
 		emissiveIntensity: 1,
 	});
@@ -119,7 +119,7 @@ const buildJuggler = (parent: Object3D): Juggler => {
 			shirt,
 			[0, -0.04, 0],
 		);
-		part(knee, new BoxGeometry(0.11, 0.08, 0.25), boots, [0, -0.44, 0.05]);
+		part(knee, roundedBox(0.11, 0.08, 0.25), boots, [0, -0.44, 0.05]);
 		return { hip, knee };
 	});
 
@@ -137,7 +137,7 @@ const buildJuggler = (parent: Object3D): Juggler => {
 		0.35,
 		0.62,
 	);
-	part(body, new BoxGeometry(0.12, 0.03, 0.03), white, [0, 1.5, 0.12]);
+	part(body, roundedBox(0.12, 0.03, 0.03), white, [0, 1.5, 0.12]);
 	// A small club badge over the heart.
 	part(
 		body,
@@ -191,13 +191,13 @@ const buildJuggler = (parent: Object3D): Juggler => {
 			0.145,
 			0.106,
 		]).scale.y = 0.45;
-		part(head, new BoxGeometry(0.05, 0.011, 0.01), hair, [
+		part(head, roundedBox(0.05, 0.011, 0.01), hair, [
 			side * 0.043,
 			0.18,
 			0.11,
 		]).rotation.z = side * -0.08;
 		// Short dark sideburns under the cap.
-		part(head, new BoxGeometry(0.02, 0.07, 0.05), hair, [
+		part(head, roundedBox(0.02, 0.07, 0.05), hair, [
 			side * 0.105,
 			0.16,
 			0.02,
@@ -205,7 +205,7 @@ const buildJuggler = (parent: Object3D): Juggler => {
 	}
 	part(head, new SphereGeometry(0.017, 8, 6), skin, [0, 0.12, 0.122]);
 	// Moustache, goatee and stubble.
-	part(head, new BoxGeometry(0.075, 0.016, 0.014), hair, [0, 0.092, 0.11]);
+	part(head, roundedBox(0.075, 0.016, 0.014), hair, [0, 0.092, 0.11]);
 	part(
 		head,
 		new SphereGeometry(0.026, 12, 8),
@@ -228,7 +228,7 @@ const buildJuggler = (parent: Object3D): Juggler => {
 	);
 	jaw.scale.set(0.95, 1.15, 1);
 	jaw.castShadow = false;
-	part(head, new BoxGeometry(0.04, 0.008, 0.01), dark, [0, 0.075, 0.113]);
+	part(head, roundedBox(0.04, 0.008, 0.01), dark, [0, 0.075, 0.113]);
 
 	// Navy trucker cap, flag patch on the front.
 	const crown = part(
@@ -257,9 +257,9 @@ const buildJuggler = (parent: Object3D): Juggler => {
 	brim.rotation.x = 0.12;
 	const patch = joint(head, [0, 0.23, 0.107]);
 	patch.rotation.x = -0.5;
-	part(patch, new BoxGeometry(0.075, 0.045, 0.006), white, [0, 0, 0]);
+	part(patch, roundedBox(0.075, 0.045, 0.006), white, [0, 0, 0]);
 	for (let i = 0; i < 3; i++) {
-		part(patch, new BoxGeometry(0.075, 0.007, 0.004), flagRed, [
+		part(patch, roundedBox(0.075, 0.007, 0.004), flagRed, [
 			0,
 			-0.018 + i * 0.015,
 			0.004,
@@ -267,7 +267,7 @@ const buildJuggler = (parent: Object3D): Juggler => {
 	}
 	part(
 		patch,
-		new BoxGeometry(0.03, 0.022, 0.005),
+		roundedBox(0.03, 0.022, 0.005),
 		flagBlue,
 		[-0.022, 0.011, 0.005],
 	);
@@ -322,7 +322,7 @@ export const KEEPY_UPPIES: EasterEgg = {
 		// Smoke drifting up from the cigarette.
 		const puffGeometry = new SphereGeometry(0.035, 8, 6);
 		const puffs = Array.from({ length: puffCount }, (_, i) => {
-			const material = standard('#d9dcde', {
+			const material = surface('#d9dcde', 'matte', {
 				transparent: true,
 				depthWrite: false,
 			});

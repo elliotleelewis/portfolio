@@ -6,22 +6,9 @@ import {
 	type Material,
 	Mesh,
 	MeshStandardMaterial,
-	type MeshStandardMaterialParameters,
 	type Object3D,
 	SRGBColorSpace,
 } from 'three';
-
-/**
- * Creates a standard material.
- * @param color - Base colour.
- * @param parameters - Any other material options.
- * @returns The material.
- */
-export const standard = (
-	color: string,
-	parameters: MeshStandardMaterialParameters = {},
-): MeshStandardMaterial =>
-	new MeshStandardMaterial({ color, roughness: 0.85, ...parameters });
 
 /**
  * Adds a shadow-casting mesh to a parent at a position.

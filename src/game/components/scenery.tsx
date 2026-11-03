@@ -1,3 +1,4 @@
+import { useThree } from '@react-three/fiber';
 import {
 	type FC,
 	useEffect,
@@ -23,6 +24,7 @@ import {
 import type { Mirror } from '../direction';
 import { withBudget } from '../draw-budget';
 import { disposeObject } from '../easter-eggs';
+import { lightWithEnvironment } from '../look/environment';
 import { SYSTEM_ORDER } from '../systems';
 import { createMountains, createStars } from '../world';
 
@@ -195,6 +197,40 @@ const Lighting: FC<LightingProps> = ({
 	);
 };
 
+interface ReflectionsProps {
+	atmosphere: Atmosphere;
+	// -1 to put the sun on the other side, for a mirrored scene.
+	mirror: Mirror;
+}
+
+/**
+ * The sky that shiny things reflect, and that lights everything a little
+ * from all round, with the sun (or moon) in it. Remade when the theme
+ * changes, never each frame.
+ * @param props - Component props.
+ * @param props.atmosphere - The atmosphere.
+ * @param props.mirror - -1 to put the sun on the other side.
+ * @returns Nothing drawn.
+ */
+const Reflections: FC<ReflectionsProps> = ({ atmosphere, mirror }) => {
+	const renderer = useThree((state) => state.gl);
+	const scene = useThree((state) => state.scene);
+
+	useLayoutEffect(
+		() =>
+			lightWithEnvironment(
+				scene,
+				renderer,
+				atmosphere,
+				sunOffset.clone().setX(sunOffset.x * mirror),
+				atmosphere.environmentIntensity,
+			),
+		[renderer, scene, atmosphere, mirror],
+	);
+
+	return null;
+};
+
 interface HorizonProps {
 	atmosphere: Atmosphere;
 }
@@ -272,6 +308,7 @@ export const Surroundings: FC<Props> = ({ near, far, ...lighting }) => {
 		<>
 			<Sky fog={atmosphere.fog} near={near} far={far} />
 			<Lighting atmosphere={atmosphere} {...lighting} />
+			<Reflections atmosphere={atmosphere} mirror={lighting.mirror} />
 			<Horizon atmosphere={atmosphere} />
 		</>
 	);

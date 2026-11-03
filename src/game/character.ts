@@ -1,5 +1,4 @@
 import {
-	BoxGeometry,
 	type BufferGeometry,
 	CapsuleGeometry,
 	CircleGeometry,
@@ -19,6 +18,8 @@ import {
 
 import { withBudget } from './draw-budget';
 import { mergeParts } from './easter-eggs';
+import { roundedBox } from './look/shapes';
+import { TONES, surface } from './look/surfaces';
 
 /**
  * Height (from the feet) of the point the character spins around while
@@ -50,21 +51,32 @@ export interface Character {
 	unmerge: () => void;
 }
 
-const colors = {
-	skin: '#efc3a4',
-	hair: '#c9a46c',
-	shirt: '#868b84',
-	trousers: '#3e434a',
-	shoes: '#5b4a3a',
-	pack: '#4e5452',
-	frames: '#b9bcbd',
-	eye: '#3a2e28',
-	teeth: '#f6f2ea',
-	mouth: '#7a3b36',
-};
-
-const material = (color: string): MeshStandardMaterial =>
-	new MeshStandardMaterial({ color, roughness: 0.85 });
+// My clothes and colouring, each finished like the rest of the world.
+const createMaterials = (): Record<
+	| 'skin'
+	| 'hair'
+	| 'shirt'
+	| 'trousers'
+	| 'shoes'
+	| 'pack'
+	| 'frames'
+	| 'eye'
+	| 'teeth'
+	| 'mouth',
+	MeshStandardMaterial
+> => ({
+	skin: surface('#efc3a4'),
+	hair: surface('#c9a46c'),
+	shirt: surface('#868b84'),
+	trousers: surface('#3e434a'),
+	shoes: surface('#5b4a3a'),
+	pack: surface('#4e5452'),
+	// Clear glasses.
+	frames: surface('#b9bcbd', 'gloss', { transparent: true, opacity: 0.6 }),
+	eye: surface('#3a2e28'),
+	teeth: surface(TONES.teeth),
+	mouth: surface(TONES.mouth),
+});
 
 const mesh = (
 	geometry: BufferGeometry,
@@ -100,7 +112,7 @@ const glassesFrameGeometry = (): ExtrudeGeometry => {
 };
 
 const buildHead = (
-	mats: Record<keyof typeof colors, MeshStandardMaterial>,
+	mats: ReturnType<typeof createMaterials>,
 ): { head: Group; eyes: Mesh[] } => {
 	const head = new Group();
 
@@ -158,7 +170,7 @@ const buildHead = (
 	});
 
 	// Brows.
-	const brow = new BoxGeometry(0.045, 0.009, 0.01);
+	const brow = roundedBox(0.045, 0.009, 0.01);
 	for (const side of [-1, 1]) {
 		const b = mesh(brow, mats.hair, side * 0.043, 0.185, 0.11);
 		b.rotation.z = side * -0.12;
@@ -207,7 +219,7 @@ const buildHead = (
 		f.castShadow = false;
 		head.add(f);
 		const arm = mesh(
-			new BoxGeometry(0.006, 0.006, 0.12),
+			roundedBox(0.006, 0.006, 0.12),
 			mats.frames,
 			side * 0.093,
 			0.155,
@@ -217,7 +229,7 @@ const buildHead = (
 		head.add(arm);
 	}
 	const bridge = mesh(
-		new BoxGeometry(0.02, 0.006, 0.006),
+		roundedBox(0.02, 0.006, 0.006),
 		mats.frames,
 		0,
 		0.16,
@@ -244,7 +256,7 @@ const markerAt = (part: Object3D): Object3D => {
 
 const buildArm = (
 	side: 1 | -1,
-	mats: Record<keyof typeof colors, MeshStandardMaterial>,
+	mats: ReturnType<typeof createMaterials>,
 ): { arm: Group; hand: Mesh } => {
 	const arm = new Group();
 	arm.position.set(side * 0.235, 1.46, 0);
@@ -272,20 +284,14 @@ const buildArm = (
 
 const buildLeg = (
 	side: 1 | -1,
-	mats: Record<keyof typeof colors, MeshStandardMaterial>,
+	mats: ReturnType<typeof createMaterials>,
 ): { leg: Group; foot: Mesh } => {
 	const leg = new Group();
 	leg.position.set(side * 0.1, 0.95, 0);
 	leg.add(
 		mesh(new CapsuleGeometry(0.075, 0.72, 4, 10), mats.trousers, 0, -0.43),
 	);
-	const foot = mesh(
-		new BoxGeometry(0.12, 0.09, 0.26),
-		mats.shoes,
-		0,
-		-0.9,
-		0.04,
-	);
+	const foot = mesh(roundedBox(0.12, 0.09, 0.26), mats.shoes, 0, -0.9, 0.04);
 	leg.add(foot);
 	return { leg, foot };
 };
@@ -296,12 +302,7 @@ const buildLeg = (
  * @returns The character rig.
  */
 export const createCharacter = (): Character => {
-	const mats = Object.fromEntries(
-		Object.entries(colors).map(([key, color]) => [key, material(color)]),
-	) as Record<keyof typeof colors, MeshStandardMaterial>;
-	mats.frames.transparent = true;
-	mats.frames.opacity = 0.6;
-	mats.frames.roughness = 0.3;
+	const mats = createMaterials();
 
 	const body = new Group();
 	body.position.y = -pivotHeight;
@@ -333,17 +334,11 @@ export const createCharacter = (): Character => {
 	body.add(hips);
 
 	// Backpack & straps.
-	const pack = mesh(
-		new BoxGeometry(0.3, 0.38, 0.14),
-		mats.pack,
-		0,
-		1.22,
-		-0.17,
-	);
+	const pack = mesh(roundedBox(0.3, 0.38, 0.14), mats.pack, 0, 1.22, -0.17);
 	body.add(pack);
 	for (const side of [-1, 1]) {
 		const strap = mesh(
-			new BoxGeometry(0.045, 0.42, 0.02),
+			roundedBox(0.045, 0.42, 0.02),
 			mats.pack,
 			side * 0.11,
 			1.28,
@@ -352,7 +347,7 @@ export const createCharacter = (): Character => {
 		strap.rotation.x = -0.12;
 		body.add(strap);
 		const top = mesh(
-			new BoxGeometry(0.045, 0.02, 0.26),
+			roundedBox(0.045, 0.02, 0.26),
 			mats.pack,
 			side * 0.11,
 			1.5,

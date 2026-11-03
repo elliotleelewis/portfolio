@@ -54,6 +54,7 @@ src/
   game/         The game and the easter egg gallery (plain TypeScript and three.js).
     components/ The React Three Fiber components that build their worlds.
     easter-eggs/ One module per easter egg.
+    look/       What the world's models are made of: finishes, shapes and the light they reflect.
 functions/      The leaderboard's API, a Cloudflare Pages Function. Only the page's types come from here.
   api/          The route: everything under /api goes to the Hono app.
   _lib/         The app, the board's rules, the D1 schema, and their tests.
@@ -73,6 +74,7 @@ The game is split so most of it can be tested without a browser:
 - **The game page** (`src/pages/game.astro`, at `/game`) is the same island on its own, filling the window. There's no photo: the game loads straight away and waits on a start screen of its own, and leaving a run goes back there.
 - **The sound** (`src/game/sound.ts`) is three.js's audio, with a listener that rides on the game's camera. It starts with the first press that starts a run, as browsers only let sound start after one, and not at all while it's muted. `GameAudio` plays the run: the rush of rolling down the mountain, made from filtered noise that gets louder and brighter the faster I go, and CC0 recordings (`src/game/sounds/`, listed in `clips.ts` and credited in `/licenses.txt`) of trees going down, a pizzicato note that climbs an octave with a combo, easter eggs going up, and bears, whose growls come from where they are. The mute button (or M) is kept between visits.
 - **The worlds** (`src/game/components/`) are React Three Fiber components that add the sky, light, mountains, ground and trees to a scene and hook into its systems with `useSystem`. The light and air come from the site's theme, so the mountain is day in light mode and night in dark mode, with a lantern to see by.
+- **The look** (`src/game/look/`) keeps the models of a piece. Every material is a colour in one of five finishes (matte, satin, gloss, metal and cast iron, `FINISHES`), boxes have rounded edges (`roundedBox`), and faces share their colours (`TONES`). ESLint turns down any other material or box in the game. The scene's sky, haze and ground, with the sun in it, are drawn once into an environment map that shiny things reflect and that lights everything from all round (`lightWithEnvironment`), and ACES tone mapping rolls off the highlights. Parts in the same finish merge into one draw call, so fewer finishes means fewer draw calls.
 
 The game in play is also on `hero.game` in the browser's console, on the live site too. Try `hero.game.advance(30)` to skip ahead, `hero.game.rollIntoEasterEgg()` to smash the next easter egg, or `hero.game.catchPlayer()` to end the run. `hero.drawn` is what the last frame cost to draw: its draw calls and triangles, shadows included. The end-to-end tests use them the same way.
 

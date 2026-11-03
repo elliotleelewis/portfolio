@@ -1,6 +1,5 @@
 import {
 	BackSide,
-	BoxGeometry,
 	CapsuleGeometry,
 	CircleGeometry,
 	ConeGeometry,
@@ -19,8 +18,10 @@ import {
 } from 'three';
 
 import { m } from '../../paraglide/messages';
+import { roundedBox } from '../look/shapes';
+import { TONES, surface } from '../look/surfaces';
 
-import { canvasTexture, joint, part, standard } from './parts';
+import { canvasTexture, joint, part } from './parts';
 import type { EasterEgg, EasterEggFrame } from './types';
 
 // How close I get before he goes into overdrive and lights it.
@@ -56,19 +57,21 @@ interface Stoker {
 // The stoker: a heathered oatmeal beanie over wavy dark hair, light stubble, a
 // black quarter-zip, a silver chain and a black backpack.
 const buildStoker = (parent: Object3D): Stoker => {
-	const skin = standard('#f0c9ae');
-	const hair = standard('#2e1e15', { roughness: 0.6 });
-	const stubble = standard('#3a281c', { transparent: true, opacity: 0.3 });
-	const fleece = standard('#17181a', { roughness: 0.9 });
-	const joggers = standard('#2b2d31');
-	const boots = standard('#4b3a2c');
-	const strap = standard('#26272b');
-	const chain = standard('#d9dcdf', { metalness: 0.9, roughness: 0.25 });
-	const eye = standard('#2f4f6f');
-	const brow = standard('#2e1e15');
-	const mouth = standard('#6e3432');
-	const beanie = standard('#ffffff', {
-		roughness: 1,
+	const skin = surface('#f0c9ae');
+	const hair = surface('#2e1e15');
+	const stubble = surface('#3a281c', 'matte', {
+		transparent: true,
+		opacity: 0.3,
+	});
+	const fleece = surface('#17181a');
+	const joggers = surface('#2b2d31');
+	const boots = surface('#4b3a2c');
+	const strap = surface('#26272b');
+	const chain = surface('#d9dcdf', 'metal');
+	const eye = surface('#2f4f6f');
+	const brow = surface('#2e1e15');
+	const mouth = surface(TONES.mouth);
+	const beanie = surface('#ffffff', 'matte', {
 		map: canvasTexture(128, 64, (context) => {
 			// Heathered knit: oatmeal flecked with light and dark.
 			context.fillStyle = '#c9b6a2';
@@ -97,7 +100,7 @@ const buildStoker = (parent: Object3D): Stoker => {
 			joggers,
 			[0, -0.2, 0],
 		);
-		part(knee, new BoxGeometry(0.12, 0.1, 0.27), boots, [0, -0.44, 0.04]);
+		part(knee, roundedBox(0.12, 0.1, 0.27), boots, [0, -0.44, 0.04]);
 		return { hip, knee };
 	});
 	part(
@@ -131,8 +134,8 @@ const buildStoker = (parent: Object3D): Stoker => {
 	collar.scale.z = 0.9;
 	part(
 		upper,
-		new BoxGeometry(0.008, 0.2, 0.008),
-		standard('#56585c'),
+		roundedBox(0.008, 0.2, 0.008),
+		surface('#56585c'),
 		[0, 0.44, 0.148],
 	);
 	const necklace = part(
@@ -143,9 +146,9 @@ const buildStoker = (parent: Object3D): Stoker => {
 	);
 	necklace.rotation.x = Math.PI / 2 - 0.9;
 	// Backpack and straps.
-	part(upper, new BoxGeometry(0.34, 0.42, 0.15), strap, [0, 0.28, -0.22]);
+	part(upper, roundedBox(0.34, 0.42, 0.15), strap, [0, 0.28, -0.22]);
 	for (const side of [-1, 1]) {
-		part(upper, new BoxGeometry(0.05, 0.44, 0.02), strap, [
+		part(upper, roundedBox(0.05, 0.44, 0.02), strap, [
 			side * 0.13,
 			0.3,
 			0.146,
@@ -180,7 +183,7 @@ const buildStoker = (parent: Object3D): Stoker => {
 	const stick = part(
 		arms[1]?.wrist ?? upper,
 		new CylinderGeometry(0.022, 0.026, stickLength, 6),
-		standard('#6a4b2f', { roughness: 0.95 }),
+		surface('#6a4b2f'),
 		[0, -0.06, 0],
 	);
 	stick.rotation.x = Math.PI / 2;
@@ -203,7 +206,7 @@ const buildStoker = (parent: Object3D): Stoker => {
 			0.145,
 			0.105,
 		]).scale.y = 0.75;
-		part(head, new BoxGeometry(0.05, 0.011, 0.012), brow, [
+		part(head, roundedBox(0.05, 0.011, 0.012), brow, [
 			side * 0.043,
 			0.178,
 			0.107,
@@ -213,7 +216,7 @@ const buildStoker = (parent: Object3D): Stoker => {
 	// A calm, closed smile; swapped for a shout when it catches.
 	const smile = part(
 		head,
-		new BoxGeometry(0.05, 0.008, 0.008),
+		roundedBox(0.05, 0.008, 0.008),
 		mouth,
 		[0, 0.083, 0.112],
 	);
@@ -279,8 +282,8 @@ const buildStoker = (parent: Object3D): Stoker => {
 	cuff.rotation.x = -0.08;
 	part(
 		head,
-		new BoxGeometry(0.004, 0.025, 0.02),
-		standard('#141414'),
+		roundedBox(0.004, 0.025, 0.02),
+		surface('#141414'),
 		[0.131, 0.2, -0.02],
 	);
 
@@ -334,22 +337,22 @@ const buildStove = (
 	smoke: { mesh: Mesh; material: MeshStandardMaterial; age: number }[];
 	chimneyTop: number;
 } => {
-	const iron = standard('#1b1c1e', { metalness: 0.55, roughness: 0.55 });
-	const ironDark = standard('#101112', { metalness: 0.4, roughness: 0.7 });
+	const iron = surface('#1b1c1e', 'cast');
+	const ironDark = surface('#101112', 'cast');
 	// Only its inside faces, so it doesn't hide the fire from the front.
-	const firebox = standard('#0b0908', { roughness: 1, side: BackSide });
-	const steel = standard('#b9bec4', { metalness: 0.9, roughness: 0.3 });
-	const slate = standard('#4a4f55', { roughness: 0.9 });
-	const wood = standard('#6a4b2f', { roughness: 0.95 });
-	const woodLight = standard('#8b6843', { roughness: 0.95 });
+	const firebox = surface('#0b0908', 'matte', { side: BackSide });
+	const steel = surface('#b9bec4', 'metal');
+	const slate = surface('#4a4f55');
+	const wood = surface('#6a4b2f');
+	const woodLight = surface('#8b6843');
 
 	// Slate hearth pad.
-	part(parent, new BoxGeometry(1.1, 0.04, 1.1), slate, [0, 0.02, 0.1]);
+	part(parent, roundedBox(1.1, 0.04, 1.1), slate, [0, 0.02, 0.1]);
 
 	// Legs, then the firebox: panels round an opening at the front.
 	for (const x of [-0.24, 0.24]) {
 		for (const z of [-0.19, 0.19]) {
-			part(parent, new BoxGeometry(0.06, 0.18, 0.06), iron, [x, 0.13, z]);
+			part(parent, roundedBox(0.06, 0.18, 0.06), iron, [x, 0.13, z]);
 		}
 	}
 	const width = 0.62;
@@ -361,7 +364,7 @@ const buildStove = (
 		size: [number, number, number],
 		position: [number, number, number],
 	): void => {
-		part(parent, new BoxGeometry(...size), iron, position);
+		part(parent, roundedBox(...size), iron, position);
 	};
 	panel([width, 0.04, depth], [0, bottom, 0]);
 	panel([width, 0.04, depth], [0, bottom + height, 0]);
@@ -390,19 +393,19 @@ const buildStove = (
 	// Sooty lining inside.
 	part(
 		parent,
-		new BoxGeometry(width - 0.06, height - 0.06, depth - 0.06),
+		roundedBox(width - 0.06, height - 0.06, depth - 0.06),
 		firebox,
 		[0, middle, -0.005],
 	).scale.z = 0.98;
 	// Cast-iron details: a lipped top plate, ribs down the sides.
-	part(parent, new BoxGeometry(width + 0.06, 0.035, depth + 0.06), ironDark, [
+	part(parent, roundedBox(width + 0.06, 0.035, depth + 0.06), ironDark, [
 		0,
 		bottom + height + 0.035,
 		0,
 	]);
 	for (const x of [-1, 1]) {
 		for (let i = 0; i < 3; i++) {
-			part(parent, new BoxGeometry(0.02, height - 0.1, 0.03), ironDark, [
+			part(parent, roundedBox(0.02, height - 0.1, 0.03), ironDark, [
 				x * (width / 2 + 0.01),
 				middle,
 				-0.15 + i * 0.15,
@@ -435,7 +438,7 @@ const buildStove = (
 			['#ffe066', 0.035, 0.16, 0.95, 0.03, 3],
 		] as const
 	).map(([color, radius, flameHeight, opacity, spread, count]) => {
-		const material = standard(color, {
+		const material = surface(color, 'matte', {
 			emissive: color,
 			emissiveIntensity: 1.8,
 			transparent: true,
@@ -478,14 +481,14 @@ const buildStove = (
 	const doorHeight = openingHeight + 0.04;
 	const bar = 0.06;
 	for (const y of [-1, 1]) {
-		part(door, new BoxGeometry(doorWidth, bar, 0.025), iron, [
+		part(door, roundedBox(doorWidth, bar, 0.025), iron, [
 			-doorWidth / 2,
 			y * (doorHeight / 2 - bar / 2),
 			0,
 		]);
 	}
 	for (const x of [0, 1]) {
-		part(door, new BoxGeometry(bar, doorHeight - bar * 2, 0.025), iron, [
+		part(door, roundedBox(bar, doorHeight - bar * 2, 0.025), iron, [
 			-bar / 2 - x * (doorWidth - bar),
 			0,
 			0,
@@ -493,18 +496,16 @@ const buildStove = (
 	}
 	// Smoked glass: see-through, so the flames show, with a warm tint once
 	// it's burning.
-	const glass = standard('#2a1a10', {
+	const glass = surface('#2a1a10', 'gloss', {
 		emissive: '#ff6a10',
 		emissiveIntensity: 0,
-		roughness: 0.1,
-		metalness: 0.2,
 		transparent: true,
 		opacity: 0.45,
 		depthWrite: false,
 	});
 	part(
 		door,
-		new BoxGeometry(openingWidth - 0.06, openingHeight - 0.06, 0.006),
+		roundedBox(openingWidth - 0.06, openingHeight - 0.06, 0.006),
 		glass,
 		[-(openingWidth + 0.04) / 2, 0, 0.013],
 	).castShadow = false;
@@ -530,7 +531,7 @@ const buildStove = (
 			-0.1,
 		]);
 	}
-	part(parent, new BoxGeometry(0.2, 0.015, 0.015), steel, [
+	part(parent, roundedBox(0.2, 0.015, 0.015), steel, [
 		0.08,
 		pipeBottom + 0.35,
 		-0.1,
@@ -541,7 +542,7 @@ const buildStove = (
 		-0.1,
 	]);
 	for (const angle of [0, (Math.PI * 2) / 3, (Math.PI * 4) / 3]) {
-		part(parent, new BoxGeometry(0.012, 0.08, 0.012), ironDark, [
+		part(parent, roundedBox(0.012, 0.08, 0.012), ironDark, [
 			Math.cos(angle) * 0.07,
 			pipeTop + 0.03,
 			-0.1 + Math.sin(angle) * 0.07,
@@ -549,7 +550,7 @@ const buildStove = (
 	}
 
 	// Warm light spilling out onto the hearth.
-	const glowMaterial = standard('#ff7a1a', {
+	const glowMaterial = surface('#ff7a1a', 'matte', {
 		emissive: '#ff6a00',
 		emissiveIntensity: 1,
 		transparent: true,
@@ -570,15 +571,18 @@ const buildStove = (
 	const spark = part(
 		parent,
 		new SphereGeometry(0.03, 8, 6),
-		standard('#fff2a8', { emissive: '#ffd24d', emissiveIntensity: 3 }),
+		surface('#fff2a8', 'matte', {
+			emissive: '#ffd24d',
+			emissiveIntensity: 3,
+		}),
 		[0, bottom + 0.1, 0.12],
 	);
 	spark.castShadow = false;
 	spark.visible = false;
 
 	// Sparks and smoke out of the top of the chimney.
-	const emberGeometry = new BoxGeometry(0.02, 0.02, 0.02);
-	const emberMaterial = standard('#ffb347', {
+	const emberGeometry = roundedBox(0.02, 0.02, 0.02);
+	const emberMaterial = surface('#ffb347', 'matte', {
 		emissive: '#ff7a00',
 		emissiveIntensity: 2,
 	});
@@ -603,7 +607,7 @@ const buildStove = (
 	}));
 	const puff = new SphereGeometry(0.09, 8, 6);
 	const smoke = Array.from({ length: smokeCount }, (_, i) => {
-		const material = standard('#9ea3a8', {
+		const material = surface('#9ea3a8', 'matte', {
 			transparent: true,
 			opacity: 0,
 			depthWrite: false,

@@ -1,6 +1,7 @@
 import {
 	type BufferGeometry,
 	type Camera,
+	Color,
 	Group,
 	InstancedMesh,
 	MathUtils,
@@ -15,12 +16,8 @@ import {
 } from 'three';
 
 import { withBudget } from './draw-budget';
-import {
-	APPEAR_AHEAD,
-	LANE_HALF_WIDTH,
-	createTreeGeometry,
-	terrainHeight,
-} from './world';
+import { createPines, pineTint } from './pines';
+import { APPEAR_AHEAD, LANE_HALF_WIDTH, terrainHeight } from './world';
 
 // How far behind me a tree goes before it's recycled.
 const recycleDistance = 25;
@@ -101,6 +98,7 @@ export class Forest<Occupant> {
 	private readonly _framing: InstancedMesh[];
 	// For placing them.
 	private readonly _body = new Object3D();
+	private readonly _tint = new Color();
 	// See-through stand-ins for the trees fading out of the camera's way,
 	// which can't fade within a batch, and spare ones to reuse.
 	private readonly _ghosts = new Map<Tree<Occupant>, Ghost>();
@@ -118,19 +116,9 @@ export class Forest<Occupant> {
 
 	public constructor(hooks: ForestHooks<Occupant>) {
 		this._hooks = hooks;
-		this._geometries = [
-			createTreeGeometry(6, 8, 1.5),
-			createTreeGeometry(5, 6.5, 1.7),
-			createTreeGeometry(8, 11, 1.4),
-		];
-		this._materials = ['#ffffff', '#dfe8d4', '#c9d6c2'].map(
-			(color) =>
-				new MeshLambertMaterial({
-					color,
-					vertexColors: true,
-					flatShading: true,
-				}),
-		);
+		const pines = createPines();
+		this._geometries = pines.geometries;
+		this._materials = pines.materials;
 
 		const kinds = this._geometries.length;
 		this._batches = this._geometries.map((geometry, kind) => {
@@ -139,6 +127,13 @@ export class Forest<Occupant> {
 				this._materials[kind],
 				Math.ceil((treeCount - kind) / kinds),
 			);
+			// Each tree its own tint, kept wherever it's replanted.
+			for (let slot = 0; slot < batch.count; slot++) {
+				batch.setColorAt(
+					slot,
+					pineTint(slot * kinds + kind, this._tint),
+				);
+			}
 			batch.castShadow = true;
 			// The trees move about too much to cull the batch as a whole.
 			batch.frustumCulled = false;
@@ -195,6 +190,7 @@ export class Forest<Occupant> {
 				this._body.scale.setScalar(scale);
 				this._body.updateMatrix();
 				batch.setMatrixAt(i, this._body.matrix);
+				batch.setColorAt(i, pineTint(index, this._tint));
 			}
 			batch.castShadow = true;
 			this.framing.add(batch);
@@ -252,7 +248,15 @@ export class Forest<Occupant> {
 		tree.isFading = true;
 		const ghost = this._spareGhosts.pop() ?? createGhost();
 		ghost.geometry = this._geometries[tree.kind];
-		ghost.material.color.copy(this._materials[tree.kind].color);
+		// Tinted like the tree it stands in for.
+		ghost.material.color
+			.copy(this._materials[tree.kind].color)
+			.multiply(
+				pineTint(
+					tree.slot * this._geometries.length + tree.kind,
+					this._tint,
+				),
+			);
 		ghost.material.opacity = tree.opacity;
 		this._ghosts.set(tree, ghost);
 		this.group.add(ghost);

@@ -155,7 +155,7 @@ export default defineConfig(
 	},
 	{
 		// What tests run in the page, with `page.evaluate`.
-		files: ['e2e/**'],
+		files: ['e2e/**', 'shots/**'],
 		languageOptions: {
 			globals: globals.browser,
 		},

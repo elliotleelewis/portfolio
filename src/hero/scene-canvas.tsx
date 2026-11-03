@@ -1,6 +1,6 @@
 import { Canvas, useFrame } from '@react-three/fiber';
 import { type FC, useRef } from 'react';
-import type { WebGLRenderer } from 'three';
+import { ACESFilmicToneMapping, type WebGLRenderer } from 'three';
 
 import { GalleryWorld } from '../game/components/gallery-world';
 import { GameWorld } from '../game/components/world';
@@ -64,15 +64,20 @@ interface Props {
  * @returns The canvas.
  */
 export const SceneCanvas: FC<Props> = ({ shown, onFirstFrame }) => (
-	// `flat` keeps three's default (no) tone mapping, and "percentage" is its
-	// PCF shadow map, so the scenes look as they were designed.
+	// "percentage" is three's PCF shadow map.
 	<Canvas
-		flat
 		shadows="percentage"
 		dpr={[1, 2]}
-		// Smoothing the edges costs a lot on high-density screens (most phones),
-		// where the pixels are too small for jagged edges to show.
-		gl={{ antialias: globalThis.devicePixelRatio < 2 }}
+		gl={{
+			// Smoothing the edges costs a lot on high-density screens (most
+			// phones), where the pixels are too small for jagged edges to show.
+			antialias: globalThis.devicePixelRatio < 2,
+			// Rolls off highlights (the sun on metal and snow, the fire) softly
+			// instead of clipping them, and gives the light some depth. Of the
+			// tone mappings, it keeps closest to the palette by day and night:
+			// Neutral turns the night olive, and AgX washes the day out.
+			toneMapping: ACESFilmicToneMapping,
+		}}
 	>
 		<Frame scene={shown.scene} onFirstFrame={onFirstFrame} />
 		{/* A fresh world for each scene. */}

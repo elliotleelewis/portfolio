@@ -3,12 +3,12 @@ import {
 	Group,
 	IcosahedronGeometry,
 	Mesh,
-	MeshStandardMaterial,
 	SphereGeometry,
 	TorusGeometry,
 } from 'three';
 
 import type { EasterEggInstance, EasterEggShowcase } from './easter-eggs';
+import { surface } from './look/surfaces';
 
 // The caption for an easter egg I've not found yet.
 export const MYSTERY_CAPTION = '?????';
@@ -42,11 +42,9 @@ export const createMystery = (): EasterEggInstance => {
 	const root = new Group();
 
 	const mark = new Group();
-	const material = new MeshStandardMaterial({
-		color: '#f8f1dc',
+	const material = surface('#f8f1dc', 'satin', {
 		emissive: '#f5c451',
 		emissiveIntensity: 0.25,
-		roughness: 0.5,
 		flatShading: true,
 	});
 	// The hook: three quarters of a ring, from the left round the top and
@@ -68,9 +66,7 @@ export const createMystery = (): EasterEggInstance => {
 	root.add(mark);
 
 	const cloud = new Group();
-	const puffMaterial = new MeshStandardMaterial({
-		color: '#ffffff',
-		roughness: 1,
+	const puffMaterial = surface('#ffffff', 'matte', {
 		flatShading: true,
 		transparent: true,
 		opacity: 0.92,

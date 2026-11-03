@@ -60,6 +60,11 @@ The site and the game share one look: a trail map on a misty mountain. Keep new 
 - **Focus:** anything pressable has `focus-visible:ring-4`, `ring-accent/50` on the page and `ring-accent/70` over the game.
 - **Motion:** gentle fades and rises (`duration-500` to `700`). Decorative motion goes behind `motion-safe:`.
 - **Hidden panels** fade rather than leave the page, so each is `inert` while hidden. `e2e/keyboard.spec.ts` checks Tab only lands on what's visible.
+- **Models** share one look, from `src/game/look/` (ESLint enforces it):
+  - Materials are `surface(colour, finish)`, in one of `FINISHES`: `matte` (cloth, skin, fur, wood, hair), `satin` (leather, plastic, paint), `gloss` (glass, lenses, car paint), `metal` and `cast` (iron). Pick the nearest one rather than adding a finish: each finish merges into its own draw call. Mouths, teeth and pupils use `TONES`.
+  - Boxes are `roundedBox`. Keep spheres and cylinders' segments to what shows at the size they're seen.
+  - The landscape (ground, trees, horizon) and effects stay Lambert or basic, cheap on a phone's many pixels.
+  - Shiny things reflect the scene's environment (`lightWithEnvironment`), made from the `--scene-*` colours. Its strength is `environmentIntensity` in `atmosphere.ts`, with the sky's light: they add up.
 - **Game UI** builds on `Button` (`src/hero/button.tsx`, with a `variant`) and `Card` (`src/hero/card.tsx`), not restyled `<button>`s or panels.
 
 ## Code

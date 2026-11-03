@@ -1,5 +1,4 @@
 import {
-	BoxGeometry,
 	type CanvasTexture,
 	CapsuleGeometry,
 	CircleGeometry,
@@ -18,8 +17,10 @@ import {
 } from 'three';
 
 import { m } from '../../paraglide/messages';
+import { roundedBox } from '../look/shapes';
+import { TONES, surface } from '../look/surfaces';
 
-import { canvasTexture, joint, part, standard } from './parts';
+import { canvasTexture, joint, part } from './parts';
 import type { EasterEgg, EasterEggFrame } from './types';
 
 // The worker sits at z = sitZ facing -z, at a low table whose top is at
@@ -183,11 +184,10 @@ const chatTexture = (): CanvasTexture =>
 	});
 
 const screenMaterial = (texture: CanvasTexture): MeshStandardMaterial =>
-	standard('#000000', {
+	surface('#000000', 'gloss', {
 		emissive: '#ffffff',
 		emissiveMap: texture,
 		emissiveIntensity: 1.1,
-		roughness: 0.3,
 	});
 
 // ---------------------------------------------------------------------------
@@ -201,25 +201,28 @@ interface Workstation {
 }
 
 const buildWorkstation = (parent: Object3D): Workstation => {
-	const wood = standard('#9a7148', { roughness: 0.9 });
-	const black = standard('#161719', { roughness: 0.5 });
-	const metal = standard('#8f969d', { metalness: 0.8, roughness: 0.35 });
-	const aluminium = standard('#c9ccd1', { metalness: 0.7, roughness: 0.3 });
-	const white = standard('#eef0f2');
-	const yellow = standard('#f2b705');
-	const red = standard('#c8262f');
-	const mug = standard('#e9e4da');
-	const can = standard('#1f7fd1', { metalness: 0.6, roughness: 0.3 });
+	const wood = surface('#9a7148');
+	const black = surface('#161719', 'satin');
+	const metal = surface('#8f969d', 'metal');
+	const aluminium = surface('#c9ccd1', 'metal');
+	const white = surface('#eef0f2');
+	const yellow = surface('#f2b705');
+	const red = surface('#c8262f');
+	const mug = surface('#e9e4da');
+	const can = surface('#1f7fd1', 'metal');
 	const rgb = Array.from({ length: 4 }, () =>
-		standard('#111111', { emissive: '#ff00ff', emissiveIntensity: 1.4 }),
+		surface('#111111', 'matte', {
+			emissive: '#ff00ff',
+			emissiveIntensity: 1.4,
+		}),
 	);
 
 	const table = joint(parent, [0, 0, tableZ]);
 	// A low wooden table: top and four legs.
-	part(table, new BoxGeometry(1.6, 0.05, 0.66), wood, [0, tableHeight, 0]);
+	part(table, roundedBox(1.6, 0.05, 0.66), wood, [0, tableHeight, 0]);
 	for (const x of [-0.74, 0.74]) {
 		for (const z of [-0.28, 0.28]) {
-			part(table, new BoxGeometry(0.05, tableHeight, 0.05), wood, [
+			part(table, roundedBox(0.05, tableHeight, 0.05), wood, [
 				x,
 				tableHeight / 2,
 				z,
@@ -253,7 +256,7 @@ const buildWorkstation = (parent: Object3D): Workstation => {
 		mount.rotation.y = yaw;
 		part(
 			mount,
-			new BoxGeometry(width + 0.03, height + 0.03, 0.03),
+			roundedBox(width + 0.03, height + 0.03, 0.03),
 			black,
 			[0, 0, 0],
 		);
@@ -263,7 +266,7 @@ const buildWorkstation = (parent: Object3D): Workstation => {
 			screenMaterial(texture),
 			[0, 0, 0.016],
 		).castShadow = false;
-		part(mount, new BoxGeometry(0.02, 0.02, 0.14), metal, [0, 0, -0.08]);
+		part(mount, roundedBox(0.02, 0.02, 0.14), metal, [0, 0, -0.08]);
 	};
 	monitor(code, [0, top + 0.46, -0.14], 0);
 	monitor(dashboard, [-0.63, top + 0.46, -0.05], 0.45);
@@ -273,10 +276,10 @@ const buildWorkstation = (parent: Object3D): Workstation => {
 	// Laptop, open, off to the left.
 	const laptop = joint(table, [-0.45, top, 0.06]);
 	laptop.rotation.y = 0.3;
-	part(laptop, new BoxGeometry(0.32, 0.015, 0.22), aluminium, [0, 0.008, 0]);
+	part(laptop, roundedBox(0.32, 0.015, 0.22), aluminium, [0, 0.008, 0]);
 	const lid = joint(laptop, [0, 0.015, -0.11]);
 	lid.rotation.x = -0.25;
-	part(lid, new BoxGeometry(0.32, 0.21, 0.01), aluminium, [0, 0.105, 0]);
+	part(lid, roundedBox(0.32, 0.21, 0.01), aluminium, [0, 0.105, 0]);
 	part(
 		lid,
 		new PlaneGeometry(0.29, 0.18),
@@ -285,14 +288,14 @@ const buildWorkstation = (parent: Object3D): Workstation => {
 	).castShadow = false;
 
 	// Mechanical keyboard with RGB underglow, mouse on a glowing pad.
-	part(table, new BoxGeometry(0.44, 0.03, 0.15), black, [0, top + 0.02, 0.2]);
-	part(table, new BoxGeometry(0.45, 0.006, 0.16), rgb[0] ?? black, [
+	part(table, roundedBox(0.44, 0.03, 0.15), black, [0, top + 0.02, 0.2]);
+	part(table, roundedBox(0.45, 0.006, 0.16), rgb[0] ?? black, [
 		0,
 		top + 0.004,
 		0.2,
 	]);
-	const keycap = new BoxGeometry(0.022, 0.012, 0.022);
-	const keycapMaterial = standard('#2d2f33');
+	const keycap = roundedBox(0.022, 0.012, 0.022);
+	const keycapMaterial = surface('#2d2f33');
 	for (let row = 0; row < 4; row++) {
 		for (let key = 0; key < 15; key++) {
 			part(table, keycap, keycapMaterial, [
@@ -302,7 +305,7 @@ const buildWorkstation = (parent: Object3D): Workstation => {
 			]).castShadow = false;
 		}
 	}
-	part(table, new BoxGeometry(0.28, 0.004, 0.22), rgb[1] ?? black, [
+	part(table, roundedBox(0.28, 0.004, 0.22), rgb[1] ?? black, [
 		0.38,
 		top + 0.002,
 		0.18,
@@ -338,15 +341,11 @@ const buildWorkstation = (parent: Object3D): Workstation => {
 
 	// A gaming PC beside the table, fans glowing.
 	const tower = joint(parent, [1.08, 0, -0.3]);
-	part(tower, new BoxGeometry(0.22, 0.48, 0.46), black, [0, 0.24, 0]);
+	part(tower, roundedBox(0.22, 0.48, 0.46), black, [0, 0.24, 0]);
 	part(
 		tower,
 		new PlaneGeometry(0.44, 0.44),
-		standard('#1c2733', {
-			transparent: true,
-			opacity: 0.55,
-			roughness: 0.1,
-		}),
+		surface('#1c2733', 'gloss', { transparent: true, opacity: 0.55 }),
 		[-0.112, 0.25, 0],
 	).rotation.y = -Math.PI / 2;
 	for (const [i, y] of [0.12, 0.25, 0.38].entries()) {
@@ -361,15 +360,15 @@ const buildWorkstation = (parent: Object3D): Workstation => {
 
 	// A generator to power it all, humming away.
 	const generator = joint(parent, [-1.25, 0, -0.1]);
-	part(generator, new BoxGeometry(0.5, 0.36, 0.34), yellow, [0, 0.22, 0]);
-	part(generator, new BoxGeometry(0.52, 0.04, 0.36), black, [0, 0.04, 0]);
+	part(generator, roundedBox(0.5, 0.36, 0.34), yellow, [0, 0.22, 0]);
+	part(generator, roundedBox(0.52, 0.04, 0.36), black, [0, 0.04, 0]);
 	part(
 		generator,
 		new CylinderGeometry(0.1, 0.1, 0.22, 14).rotateZ(Math.PI / 2),
 		red,
 		[0, 0.44, 0],
 	);
-	part(generator, new BoxGeometry(0.46, 0.03, 0.03), black, [0, 0.43, 0.17]);
+	part(generator, roundedBox(0.46, 0.03, 0.03), black, [0, 0.43, 0.17]);
 
 	// And a Starlink dish, for the Wi-Fi.
 	const dishBase = joint(parent, [-1.1, 0, -0.95]);
@@ -389,11 +388,10 @@ const buildWorkstation = (parent: Object3D): Workstation => {
 		leg.rotation.set(Math.cos(angle) * 0.35, 0, -Math.sin(angle) * 0.35);
 	}
 	const dish = joint(dishBase, [0, 1.22, 0]);
-	part(dish, new BoxGeometry(0.5, 0.03, 0.3), white, [0, 0, 0]).castShadow =
-		true;
+	part(dish, roundedBox(0.5, 0.03, 0.3), white, [0, 0, 0]).castShadow = true;
 
 	// Cables snaking between everything.
-	const cable = standard('#101010');
+	const cable = surface('#101010');
 	for (const [from, to] of [
 		[new Vector3(-1.05, 0.02, -0.1), new Vector3(-0.3, 0.02, -0.55)],
 		[new Vector3(-0.3, 0.02, -0.55), new Vector3(0.95, 0.02, -0.4)],
@@ -457,20 +455,20 @@ const limb = (
 // The worker: short dark hair, a neat full beard, clubmaster sunglasses, and an
 // olive zip-up fleece hoodie. Built facing +z, sitting cross-legged.
 const buildWorker = (parent: Object3D): Worker => {
-	const skin = standard('#efc6aa');
-	const hair = standard('#3a2619', { roughness: 0.85 });
-	const beard = standard('#4f3423', { roughness: 0.95 });
-	const fleece = standard('#4a4c38', { roughness: 0.95 });
-	const fleeceDark = standard('#3b3d2c', { roughness: 0.95 });
-	const jeans = standard('#3a4250');
-	const boots = standard('#5a4030');
-	const lens = standard('#0f1110', { metalness: 0.6, roughness: 0.1 });
-	const browline = standard('#1c1512', { roughness: 0.4 });
-	const gold = standard('#c9a656', { metalness: 0.85, roughness: 0.3 });
-	const teeth = standard('#f7f3e8');
-	const mouth = standard('#6e3432');
-	const white = standard('#f4f4f4');
-	const cushion = standard('#2f4858');
+	const skin = surface('#efc6aa');
+	const hair = surface('#3a2619');
+	const beard = surface('#4f3423');
+	const fleece = surface('#4a4c38');
+	const fleeceDark = surface('#3b3d2c');
+	const jeans = surface('#3a4250');
+	const boots = surface('#5a4030');
+	const lens = surface('#0f1110', 'gloss');
+	const browline = surface('#1c1512', 'satin');
+	const gold = surface('#c9a656', 'metal');
+	const teeth = surface(TONES.teeth);
+	const mouth = surface(TONES.mouth);
+	const white = surface('#f4f4f4');
+	const cushion = surface('#2f4858');
 
 	part(
 		parent,
@@ -491,14 +489,14 @@ const buildWorker = (parent: Object3D): Worker => {
 		);
 		limb(hips, hip, knee, 0.08, jeans);
 		limb(hips, knee, ankle, 0.068, jeans);
-		const boot = part(hips, new BoxGeometry(0.1, 0.1, 0.22), boots, [
+		const boot = part(hips, roundedBox(0.1, 0.1, 0.22), boots, [
 			ankle.x - side * 0.08,
 			ankle.y,
 			ankle.z - 0.02,
 		]);
 		boot.rotation.y = side * -1.2;
 	}
-	part(hips, new BoxGeometry(0.34, 0.14, 0.24), jeans, [0, 0.03, 0]);
+	part(hips, roundedBox(0.34, 0.14, 0.24), jeans, [0, 0.03, 0]);
 
 	// Upper body leans in to the keyboard.
 	const upper = joint(hips, [0, 0.06, 0]);
@@ -515,19 +513,9 @@ const buildWorker = (parent: Object3D): Worker => {
 		0.35,
 		0.66,
 	);
-	part(
-		upper,
-		new BoxGeometry(0.012, 0.44, 0.012),
-		fleeceDark,
-		[0, 0.27, 0.146],
-	);
-	part(
-		upper,
-		new BoxGeometry(0.1, 0.005, 0.01),
-		fleeceDark,
-		[0.1, 0.26, 0.142],
-	);
-	part(upper, new BoxGeometry(0.035, 0.018, 0.006), white, [0.1, 0.4, 0.143]);
+	part(upper, roundedBox(0.012, 0.44, 0.012), fleeceDark, [0, 0.27, 0.146]);
+	part(upper, roundedBox(0.1, 0.005, 0.01), fleeceDark, [0.1, 0.26, 0.142]);
+	part(upper, roundedBox(0.035, 0.018, 0.006), white, [0.1, 0.4, 0.143]);
 	// The hood, bunched up behind his neck.
 	const hood = part(
 		upper,
@@ -609,7 +597,7 @@ const buildWorker = (parent: Object3D): Worker => {
 		[0, 0.13, 0.006],
 	);
 	beardShell.scale.set(0.97, 1.16, 1.02);
-	part(head, new BoxGeometry(0.08, 0.018, 0.016), beard, [0, 0.098, 0.116]);
+	part(head, roundedBox(0.08, 0.018, 0.016), beard, [0, 0.098, 0.116]);
 	// A wide smile.
 	const grin = part(
 		head,
@@ -637,7 +625,7 @@ const buildWorker = (parent: Object3D): Worker => {
 		]);
 		lensMesh.scale.set(1.1, 0.85, 1);
 		lensMesh.rotation.y = side * 0.15;
-		part(head, new BoxGeometry(0.072, 0.014, 0.012), browline, [
+		part(head, roundedBox(0.072, 0.014, 0.012), browline, [
 			side * 0.044,
 			0.166,
 			0.116,
@@ -650,13 +638,13 @@ const buildWorker = (parent: Object3D): Worker => {
 		);
 		rim.rotation.z = Math.PI;
 		rim.scale.set(1.1, 0.85, 1);
-		part(head, new BoxGeometry(0.005, 0.008, 0.11), browline, [
+		part(head, roundedBox(0.005, 0.008, 0.11), browline, [
 			side * 0.088,
 			0.162,
 			0.065,
 		]);
 	}
-	part(head, new BoxGeometry(0.02, 0.005, 0.006), gold, [0, 0.155, 0.12]);
+	part(head, roundedBox(0.02, 0.005, 0.006), gold, [0, 0.155, 0.12]);
 
 	// Short dark hair, pushed up a little at the front.
 	const crown = part(

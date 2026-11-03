@@ -6,7 +6,6 @@ import {
 	type Material,
 	Matrix4,
 	Mesh,
-	MeshStandardMaterial,
 	Quaternion,
 	SphereGeometry,
 	Sprite,
@@ -14,6 +13,8 @@ import {
 	Vector3,
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+
+import { surface } from './look/surfaces';
 
 /**
 Height of a bear's middle above the ground when on all fours.
@@ -121,11 +122,11 @@ const alertTexture = (): CanvasTexture => {
  * @returns The shared parts.
  */
 export const createBearParts = (): BearParts => ({
-	fur: new MeshStandardMaterial({ color: '#1f1b19', roughness: 0.95 }),
-	muzzle: new MeshStandardMaterial({ color: '#8a6a4c', roughness: 0.9 }),
-	nose: new MeshStandardMaterial({ color: '#0b0b0b', roughness: 0.4 }),
-	glint: new MeshStandardMaterial({
-		color: '#ffffff',
+	fur: surface('#1f1b19'),
+	muzzle: surface('#8a6a4c'),
+	// Wet.
+	nose: surface('#0b0b0b', 'gloss'),
+	glint: surface('#ffffff', 'gloss', {
 		emissive: '#ffffff',
 		emissiveIntensity: 0.4,
 	}),

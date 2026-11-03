@@ -35,6 +35,9 @@ export interface Atmosphere {
 	sky: Color;
 	ground: Color;
 	skyIntensity: number;
+	// How much shiny things reflect the sky, and everything is lit by it
+	// from all round (src/game/look/environment.ts).
+	environmentIntensity: number;
 	// The lantern I carry, lit only at night.
 	lantern: Color;
 	lanternIntensity: number;
@@ -43,13 +46,31 @@ export interface Atmosphere {
 }
 
 // How bright each light is, by day and by night. Their colours are in the
-// site's theme (src/styles/global.css), with the rest of the palette.
+// site's theme (src/styles/global.css), with the rest of the palette. The
+// environment and the sky's light add up, both lighting everything from all
+// round, so the sky's is only what the environment leaves.
 const intensities: Record<
 	TimeOfDay,
-	Pick<Atmosphere, 'sunIntensity' | 'skyIntensity' | 'lanternIntensity'>
+	Pick<
+		Atmosphere,
+		| 'sunIntensity'
+		| 'skyIntensity'
+		| 'environmentIntensity'
+		| 'lanternIntensity'
+	>
 > = {
-	day: { sunIntensity: 2.2, skyIntensity: 2.1, lanternIntensity: 0 },
-	night: { sunIntensity: 0.9, skyIntensity: 1.1, lanternIntensity: 22 },
+	day: {
+		sunIntensity: 2.2,
+		skyIntensity: 1.1,
+		environmentIntensity: 0.6,
+		lanternIntensity: 0,
+	},
+	night: {
+		sunIntensity: 0.9,
+		skyIntensity: 0.5,
+		environmentIntensity: 0.6,
+		lanternIntensity: 22,
+	},
 };
 
 // culori converts only between colour spaces registered first. Only the

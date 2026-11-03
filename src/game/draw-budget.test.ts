@@ -56,8 +56,9 @@ const budgets: Record<DrawBudget, Cost> = {
 	// Two for each bear after me, its "!" and the one pinned to the edge of
 	// the view, with every bear after me at once.
 	'bear alerts': { draws: 2 * MAX_BEARS, triangles: 0 },
-	// Each easter egg, as it plays and once it's smashed.
-	'easter egg': { draws: 60, triangles: 20_000 },
+	// Each easter egg, as it plays and once it's smashed. Rounded edges
+	// (src/game/look/shapes.ts) cost a few thousand triangles.
+	'easter egg': { draws: 60, triangles: 24_000 },
 	// Every tree there is, with four fading out of the camera's way.
 	trees: { draws: 16, triangles: 55_000 },
 	ground: { draws: 6, triangles: 15_000 },

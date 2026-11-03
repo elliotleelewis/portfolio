@@ -1,5 +1,4 @@
 import {
-	BoxGeometry,
 	CapsuleGeometry,
 	CircleGeometry,
 	CylinderGeometry,
@@ -13,8 +12,10 @@ import {
 } from 'three';
 
 import { m } from '../../paraglide/messages';
+import { roundedBox } from '../look/shapes';
+import { TONES, surface } from '../look/surfaces';
 
-import { joint, part, standard } from './parts';
+import { joint, part } from './parts';
 import type { EasterEgg, EasterEggFrame } from './types';
 
 // The outhouse is 1.4m square; its door faces +z (uphill, towards me).
@@ -38,13 +39,13 @@ interface Occupant {
 }
 
 const buildOuthouse = (parent: Object3D): Group => {
-	const bark = standard('#6b4a2f', { roughness: 0.95 });
-	const barkDark = standard('#57391f', { roughness: 0.95 });
-	const endGrain = standard('#b98f5f');
-	const plank = standard('#8a6440', { roughness: 0.9 });
-	const roof = standard('#4d3a2a', { roughness: 0.95 });
-	const dark = standard('#1e1611');
-	const paper = standard('#f4f2ec');
+	const bark = surface('#6b4a2f');
+	const barkDark = surface('#57391f');
+	const endGrain = surface('#b98f5f');
+	const plank = surface('#8a6440');
+	const roof = surface('#4d3a2a');
+	const dark = surface('#1e1611');
+	const paper = surface('#f4f2ec');
 
 	const logs = Math.round(wallHeight / (logRadius * 2));
 	const logGeometry = (length: number): CylinderGeometry =>
@@ -112,7 +113,7 @@ const buildOuthouse = (parent: Object3D): Group => {
 	// Plank roof, sloping down to the back.
 	const lid = part(
 		parent,
-		new BoxGeometry(halfSize * 2 + 0.5, 0.08, halfSize * 2 + 0.6),
+		roundedBox(halfSize * 2 + 0.5, 0.08, halfSize * 2 + 0.6),
 		roof,
 		[0, wallHeight + 0.22, 0],
 	);
@@ -121,11 +122,11 @@ const buildOuthouse = (parent: Object3D): Group => {
 	// Inside: dark floor, the seat, a loo roll.
 	part(
 		parent,
-		new BoxGeometry(halfSize * 2 - 0.1, 0.04, halfSize * 2 - 0.1),
+		roundedBox(halfSize * 2 - 0.1, 0.04, halfSize * 2 - 0.1),
 		dark,
 		[0, 0.02, 0],
 	);
-	part(parent, new BoxGeometry(1.1, 0.45, 0.5), plank, [0, 0.23, -0.4]);
+	part(parent, roundedBox(1.1, 0.45, 0.5), plank, [0, 0.23, -0.4]);
 	part(
 		parent,
 		new CylinderGeometry(0.14, 0.14, 0.01, 16),
@@ -146,7 +147,7 @@ const buildOuthouse = (parent: Object3D): Group => {
 	for (let i = 0; i < 4; i++) {
 		part(
 			door,
-			new BoxGeometry(doorWidth / 4 - 0.008, doorHeight - 0.04, 0.04),
+			roundedBox(doorWidth / 4 - 0.008, doorHeight - 0.04, 0.04),
 			plank,
 			[
 				-doorWidth / 2 + doorWidth / 8 + (i * doorWidth) / 4,
@@ -156,7 +157,7 @@ const buildOuthouse = (parent: Object3D): Group => {
 		);
 	}
 	for (const y of [0.35, doorHeight - 0.35]) {
-		part(door, new BoxGeometry(doorWidth - 0.04, 0.1, 0.03), barkDark, [
+		part(door, roundedBox(doorWidth - 0.04, 0.1, 0.03), barkDark, [
 			0,
 			y,
 			0.035,
@@ -164,7 +165,7 @@ const buildOuthouse = (parent: Object3D): Group => {
 	}
 	const brace = part(
 		door,
-		new BoxGeometry(0.08, doorHeight - 0.8, 0.03),
+		roundedBox(0.08, doorHeight - 0.8, 0.03),
 		barkDark,
 		[0, doorHeight / 2, 0.035],
 	);
@@ -174,7 +175,7 @@ const buildOuthouse = (parent: Object3D): Group => {
 	moon.absarc(0.045, 0, 0.065, Math.PI * 1.55, Math.PI * 0.45, true);
 	part(door, new ShapeGeometry(moon, 12), dark, [0, doorHeight - 0.2, 0.051]);
 	// Handle.
-	part(door, new BoxGeometry(0.03, 0.12, 0.04), barkDark, [
+	part(door, roundedBox(0.03, 0.12, 0.04), barkDark, [
 		-doorWidth / 2 + 0.08,
 		1,
 		0.05,
@@ -186,9 +187,9 @@ const buildOuthouse = (parent: Object3D): Group => {
 // A white glove with brown fingertips. The fingers point down -y, the palm
 // faces +z.
 const buildGlove = (parent: Object3D): void => {
-	const glove = standard('#f6f6f3', { roughness: 0.8 });
-	const tip = standard('#5b3a1d', { roughness: 0.9 });
-	part(parent, new BoxGeometry(0.085, 0.09, 0.04), glove, [0, -0.045, 0]);
+	const glove = surface('#f6f6f3');
+	const tip = surface('#5b3a1d');
+	part(parent, roundedBox(0.085, 0.09, 0.04), glove, [0, -0.045, 0]);
 	part(
 		parent,
 		new CylinderGeometry(0.052, 0.045, 0.05, 10),
@@ -217,19 +218,22 @@ const buildGlove = (parent: Object3D): void => {
 // a navy half-zip windbreaker with white piping over a grey tee and a
 // silver chain.
 const buildOccupant = (parent: Object3D): Occupant => {
-	const skin = standard('#d7a17c');
-	const hair = standard('#211611', { roughness: 0.5 });
-	const stubble = standard('#2a1c14', { transparent: true, opacity: 0.35 });
-	const jacket = standard('#1e2a4c', { roughness: 0.45 });
-	const piping = standard('#e9ecef');
-	const collar = standard('#3f6d77');
-	const tee = standard('#8b8e8d');
-	const chain = standard('#d9dcdf', { metalness: 0.9, roughness: 0.25 });
-	const trousers = standard('#34373d');
-	const trainers = standard('#eeeeec');
-	const dark = standard('#1b1411');
-	const teeth = standard('#f7f3e8');
-	const mouth = standard('#6e3432');
+	const skin = surface('#d7a17c');
+	const hair = surface('#211611');
+	const stubble = surface('#2a1c14', 'matte', {
+		transparent: true,
+		opacity: 0.35,
+	});
+	const jacket = surface('#1e2a4c', 'satin');
+	const piping = surface('#e9ecef');
+	const collar = surface('#3f6d77');
+	const tee = surface('#8b8e8d');
+	const chain = surface('#d9dcdf', 'metal');
+	const trousers = surface('#34373d');
+	const trainers = surface('#eeeeec');
+	const dark = surface(TONES.pupil);
+	const teeth = surface(TONES.teeth);
+	const mouth = surface(TONES.mouth);
 
 	const root = joint(parent, [0, 0, insideZ]);
 	const body = joint(root, [0, 0, 0]);
@@ -242,12 +246,7 @@ const buildOccupant = (parent: Object3D): Occupant => {
 			trousers,
 			[0, -0.44, 0],
 		);
-		part(
-			hip,
-			new BoxGeometry(0.12, 0.09, 0.27),
-			trainers,
-			[0, -0.88, 0.04],
-		);
+		part(hip, roundedBox(0.12, 0.09, 0.27), trainers, [0, -0.88, 0.04]);
 		return hip;
 	});
 
@@ -271,8 +270,8 @@ const buildOccupant = (parent: Object3D): Occupant => {
 		0.64,
 	);
 	// Half-zip, open at the neck: teal collar, grey tee, chain.
-	part(body, new BoxGeometry(0.012, 0.3, 0.012), piping, [0, 1.25, 0.14]);
-	part(body, new BoxGeometry(0.09, 0.06, 0.015), tee, [0, 1.49, 0.115]);
+	part(body, roundedBox(0.012, 0.3, 0.012), piping, [0, 1.25, 0.14]);
+	part(body, roundedBox(0.09, 0.06, 0.015), tee, [0, 1.49, 0.115]);
 	const neckband = part(
 		body,
 		new TorusGeometry(0.075, 0.025, 8, 16),
@@ -298,7 +297,7 @@ const buildOccupant = (parent: Object3D): Occupant => {
 			jacket,
 			[0, -0.15, 0],
 		);
-		part(shoulder, new BoxGeometry(0.01, 0.28, 0.01), piping, [
+		part(shoulder, roundedBox(0.01, 0.28, 0.01), piping, [
 			side * 0.066,
 			-0.15,
 			0,
@@ -335,7 +334,7 @@ const buildOccupant = (parent: Object3D): Occupant => {
 			0.148,
 			0.106,
 		]).scale.y = 0.55;
-		part(head, new BoxGeometry(0.055, 0.014, 0.012), hair, [
+		part(head, roundedBox(0.055, 0.014, 0.012), hair, [
 			side * 0.043,
 			0.183,
 			0.108,
@@ -376,7 +375,7 @@ const buildOccupant = (parent: Object3D): Occupant => {
 	);
 	jaw.scale.set(0.95, 1.13, 1);
 	jaw.castShadow = false;
-	part(head, new BoxGeometry(0.07, 0.012, 0.01), stubble, [0, 0.1, 0.113]);
+	part(head, roundedBox(0.07, 0.012, 0.01), stubble, [0, 0.1, 0.113]);
 
 	// Slicked-back hair, long at the back and over the ears.
 	const crown = part(

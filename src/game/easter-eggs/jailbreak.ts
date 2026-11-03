@@ -1,5 +1,4 @@
 import {
-	BoxGeometry,
 	CapsuleGeometry,
 	CircleGeometry,
 	CylinderGeometry,
@@ -15,8 +14,10 @@ import {
 } from 'three';
 
 import { m } from '../../paraglide/messages';
+import { roundedBox } from '../look/shapes';
+import { TONES, surface } from '../look/surfaces';
 
-import { canvasTexture, joint, part, standard } from './parts';
+import { canvasTexture, joint, part } from './parts';
 import type { EasterEgg, EasterEggFrame } from './types';
 
 // How close I get before the prisoner makes his break.
@@ -48,10 +49,10 @@ interface Outfit {
 
 // A person, facing +z, with the joints needed to struggle, run and flail.
 const buildRunner = (parent: Object3D, outfit: Outfit): Runner => {
-	const skin = standard(outfit.skin);
-	const top = standard(outfit.top, { roughness: 0.8 });
-	const bottoms = standard(outfit.bottoms);
-	const shoes = standard(outfit.shoes);
+	const skin = surface(outfit.skin);
+	const top = surface(outfit.top);
+	const bottoms = surface(outfit.bottoms);
+	const shoes = surface(outfit.shoes);
 	const { build } = outfit;
 
 	const root = joint(parent, [0, 0, 0]);
@@ -71,7 +72,7 @@ const buildRunner = (parent: Object3D, outfit: Outfit): Runner => {
 			bottoms,
 			[0, -0.2, 0],
 		);
-		part(knee, new BoxGeometry(0.12, 0.09, 0.27), shoes, [0, -0.44, 0.04]);
+		part(knee, roundedBox(0.12, 0.09, 0.27), shoes, [0, -0.44, 0.04]);
 		return { hip, knee };
 	});
 
@@ -145,14 +146,14 @@ const face = (
 		isBearded = false,
 	}: { hair: MeshStandardMaterial; isGrinning: boolean; isBearded?: boolean },
 ): void => {
-	const dark = standard('#1b1411');
+	const dark = surface(TONES.pupil);
 	for (const side of [-1, 1]) {
 		part(head, new SphereGeometry(0.012, 8, 6), dark, [
 			side * 0.043,
 			0.148,
 			0.107,
 		]).scale.y = 0.6;
-		part(head, new BoxGeometry(0.052, 0.014, 0.012), hair, [
+		part(head, roundedBox(0.052, 0.014, 0.012), hair, [
 			side * 0.043,
 			0.18,
 			0.11,
@@ -161,7 +162,7 @@ const face = (
 	const mouth = part(
 		head,
 		new CircleGeometry(isGrinning ? 0.034 : 0.026, 14, Math.PI, Math.PI),
-		standard('#6e3432'),
+		surface(TONES.mouth),
 		// Out in front of a beard, if there is one.
 		[0, 0.083, isBearded ? 0.127 : 0.113],
 	);
@@ -179,8 +180,8 @@ const buildPrisoner = (parent: Object3D): Runner => {
 		shoes: '#3b3b3e',
 		build: 0.25,
 	});
-	const hair = standard('#1c1411', { roughness: 0.5 });
-	const beard = standard('#1f1612', { roughness: 0.95 });
+	const hair = surface('#1c1411');
+	const beard = surface('#1f1612');
 	const { head, body } = prisoner;
 	face(head, { hair, isGrinning: true, isBearded: true });
 
@@ -200,7 +201,7 @@ const buildPrisoner = (parent: Object3D): Runner => {
 		[0, 0.13, 0.004],
 	);
 	beardShell.scale.set(0.97, 1.14, 1.04);
-	part(head, new BoxGeometry(0.085, 0.02, 0.018), beard, [0, 0.1, 0.128]);
+	part(head, roundedBox(0.085, 0.02, 0.018), beard, [0, 0.1, 0.128]);
 
 	// Short, wet-look hair with a spiky fringe.
 	const crown = part(
@@ -221,15 +222,15 @@ const buildPrisoner = (parent: Object3D): Runner => {
 	const hood = part(
 		body,
 		new TorusGeometry(0.1, 0.055, 8, 16),
-		standard('#6b1f2c', { roughness: 0.8 }),
+		surface('#6b1f2c'),
 		[0, 1.52, -0.04],
 	);
 	hood.rotation.x = Math.PI / 2 + 0.3;
 	hood.scale.set(1.2, 1, 1);
 	part(
 		body,
-		new BoxGeometry(0.06, 0.015, 0.006),
-		standard('#e9e6f2'),
+		roundedBox(0.06, 0.015, 0.006),
+		surface('#e9e6f2'),
 		[0.12, 1.36, 0.172],
 	);
 	return prisoner;
@@ -245,15 +246,15 @@ const buildOfficer = (parent: Object3D): Runner => {
 		shoes: '#0d0d0d',
 		build: 0.23,
 	});
-	const hair = standard('#6b4a33');
+	const hair = surface('#6b4a33');
 	const { head, body } = officer;
 	face(head, { hair, isGrinning: false });
-	part(head, new BoxGeometry(0.1, 0.028, 0.02), hair, [0, 0.1, 0.118]);
+	part(head, roundedBox(0.1, 0.028, 0.02), hair, [0, 0.1, 0.118]);
 
 	// Peaked cap.
-	const navy = standard('#18233b');
-	const black = standard('#0e0e10', { roughness: 0.3 });
-	const band = standard('#ffffff', {
+	const navy = surface('#18233b');
+	const black = surface('#0e0e10', 'gloss');
+	const band = surface('#ffffff', 'matte', {
 		map: canvasTexture(128, 16, (context) => {
 			for (let x = 0; x < 128; x += 8) {
 				for (let y = 0; y < 16; y += 8) {
@@ -294,17 +295,14 @@ const buildOfficer = (parent: Object3D): Runner => {
 	peak.rotation.x = 0.25;
 	part(
 		head,
-		new BoxGeometry(0.03, 0.03, 0.01),
-		standard('#d9b84a', {
-			metalness: 0.8,
-			roughness: 0.3,
-		}),
+		roundedBox(0.03, 0.03, 0.01),
+		surface('#d9b84a', 'metal'),
 		[0, 0.265, 0.14],
 	);
 
 	// Hi-vis vest with POLICE across the back.
-	const vest = standard('#c9e23a', { roughness: 0.6 });
-	const reflective = standard('#dfe3e6', { metalness: 0.6, roughness: 0.25 });
+	const vest = surface('#c9e23a', 'satin');
+	const reflective = surface('#dfe3e6', 'metal');
 	const vestBody = part(
 		body,
 		new CylinderGeometry(0.245, 0.225, 0.46, 18, 1, true),
@@ -324,7 +322,7 @@ const buildOfficer = (parent: Object3D): Runner => {
 	const label = part(
 		body,
 		new PlaneGeometry(0.3, 0.08),
-		standard('#ffffff', {
+		surface('#ffffff', 'matte', {
 			transparent: true,
 			map: canvasTexture(256, 64, (context) => {
 				context.fillStyle = '#10131a';
@@ -345,7 +343,7 @@ const buildOfficer = (parent: Object3D): Runner => {
 		black,
 		[0, 0.98, 0],
 	);
-	part(body, new BoxGeometry(0.06, 0.12, 0.08), black, [0.24, 0.94, 0.02]);
+	part(body, roundedBox(0.06, 0.12, 0.08), black, [0.24, 0.94, 0.02]);
 	return officer;
 };
 
@@ -404,7 +402,7 @@ export const JAILBREAK: EasterEgg = {
 		officer.root.rotation.y = 0.35;
 
 		// Handcuffs: a cuff on each wrist, three links between them.
-		const steel = standard('#c5cbd1', { metalness: 0.9, roughness: 0.25 });
+		const steel = surface('#c5cbd1', 'metal');
 		for (const { wrist } of prisoner.arms) {
 			const cuff = part(
 				wrist,

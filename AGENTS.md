@@ -19,7 +19,7 @@ pnpm e2e
 - `pnpm knip` fails on unused dependencies, files and exports. Delete them, or stop exporting what only its own file uses. If something is used in a way it can't see, say so in `knip.ts`.
 - The build needs Node 24: the page's `dir` comes from `Intl.Locale`'s `getTextInfo()`.
 - If Playwright's own browser isn't installed, point `PLAYWRIGHT_CHROMIUM_EXECUTABLE` at a Chromium you have.
-- For changes to the game or the page's look, take screenshots in light and dark mode. The tests can't tell you whether it looks right.
+- For changes to the game or the page's look, take screenshots in light and dark mode. The tests can't tell you whether it looks right. For the 3D scene, `pnpm shots` on `main` and then on your branch, and compare them in `shots/out/compare.html`.
 
 ## Don't break these
 
@@ -63,7 +63,7 @@ The site and the game share one look: a trail map on a misty mountain. Keep new 
 - **Models** share one look, from `src/game/look/` (ESLint enforces it):
   - Materials are `surface(colour, finish)`, in one of `FINISHES`: `matte` (cloth, skin, fur, wood, hair), `satin` (leather, plastic, paint), `gloss` (glass, lenses, car paint), `metal` and `cast` (iron). Pick the nearest one rather than adding a finish: each finish merges into its own draw call. Mouths, teeth and pupils use `TONES`.
   - Boxes are `roundedBox`. Keep spheres and cylinders' segments to what shows at the size they're seen.
-  - The landscape (ground, trees, horizon) and effects stay Lambert or basic, cheap on a phone's many pixels.
+  - The landscape (ground, trees, horizon) and effects stay Lambert or basic, cheap on a phone's many pixels. Their light and shade is painted into their vertex colours, like the pines' (`pines.ts`).
   - Shiny things reflect the scene's environment (`lightWithEnvironment`), made from the `--scene-*` colours. Its strength is `environmentIntensity` in `atmosphere.ts`, with the sky's light: they add up.
 - **Game UI** builds on `Button` (`src/hero/button.tsx`, with a `variant`) and `Card` (`src/hero/card.tsx`), not restyled `<button>`s or panels.
 

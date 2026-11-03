@@ -238,7 +238,8 @@ export class HeroController {
 	 * Puts the game in play on `globalThis.hero`, for anyone who wants to
 	 * play with it from the console, and for the end-to-end tests, which
 	 * fast-forward it and check what each frame costs to draw, and that
-	 * everything drawn has a budget. It's read
+	 * everything drawn has a budget, and for the screenshots (shots/), which
+	 * step the gallery by hand so its camera has arrived. It's read
 	 * when it's asked for, so it never keeps a finished game from being
 	 * freed.
 	 */
@@ -252,6 +253,7 @@ export class HeroController {
 			return { calls, triangles };
 		};
 		const shown = (): Scene | undefined => this._scene?.scene;
+		const stage = (): StageScene | undefined => this._scene;
 		Object.defineProperty(globalThis, 'hero', {
 			configurable: true,
 			value: {
@@ -264,6 +266,10 @@ export class HeroController {
 				// What's in the stage, for checking everything drawn has a budget.
 				get scene() {
 					return shown();
+				},
+				// The scene itself, game or gallery, to step by hand.
+				get stage() {
+					return stage();
 				},
 			},
 		});

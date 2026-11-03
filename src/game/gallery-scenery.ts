@@ -12,7 +12,7 @@ import {
 } from 'three';
 
 import { GALLERY_SPACING } from './gallery';
-import { createTreeGeometry } from './world';
+import { createPines, pineTint } from './pines';
 
 // How many trees to scatter around the row (before leaving it open).
 const treeCount = 260;
@@ -65,19 +65,7 @@ export const createGalleryGround = (count: number): Mesh => {
  */
 export const createGalleryTrees = (count: number): Group => {
 	const group = new Group();
-	const geometries = [
-		createTreeGeometry(6, 8, 1.5),
-		createTreeGeometry(5, 6.5, 1.7),
-		createTreeGeometry(8, 11, 1.4),
-	];
-	const materials = ['#ffffff', '#dfe8d4', '#c9d6c2'].map(
-		(color) =>
-			new MeshLambertMaterial({
-				color,
-				vertexColors: true,
-				flatShading: true,
-			}),
-	);
+	const { geometries, materials } = createPines();
 	const end = (count - 1) * GALLERY_SPACING;
 	let seed = 11;
 	const random = (): number => {
@@ -112,7 +100,8 @@ export const createGalleryTrees = (count: number): Group => {
 			),
 		);
 	}
-	// Every tree of each kind, drawn in one go.
+	// Every tree of each kind, drawn in one go, each tinted its own way.
+	const tint = new Color();
 	for (const [kind, matrices] of placed.entries()) {
 		const trees = new InstancedMesh(
 			geometries[kind],
@@ -121,6 +110,7 @@ export const createGalleryTrees = (count: number): Group => {
 		);
 		for (const [i, matrix] of matrices.entries()) {
 			trees.setMatrixAt(i, matrix);
+			trees.setColorAt(i, pineTint(i * geometries.length + kind, tint));
 		}
 		trees.castShadow = true;
 		group.add(trees);

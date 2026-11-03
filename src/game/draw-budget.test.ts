@@ -59,12 +59,15 @@ const budgets: Record<DrawBudget, Cost> = {
 	// Each easter egg, as it plays and once it's smashed. Rounded edges
 	// (src/game/look/shapes.ts) cost a few thousand triangles.
 	'easter egg': { draws: 60, triangles: 24_000 },
-	// Every tree there is, with four fading out of the camera's way.
-	trees: { draws: 16, triangles: 55_000 },
+	// Every tree there is, with four fading out of the camera's way. Each
+	// pine's star-shaped tiers (src/game/pines.ts) cost a fifth more
+	// triangles than plain cones, and no more draw calls.
+	trees: { draws: 16, triangles: 65_000 },
 	ground: { draws: 6, triangles: 15_000 },
 	horizon: { draws: 2, triangles: 20_000 },
 	effects: { draws: 4, triangles: 2500 },
-	'gallery scenery': { draws: 8, triangles: 65_000 },
+	// Mostly pines, as above.
+	'gallery scenery': { draws: 8, triangles: 75_000 },
 };
 
 /**

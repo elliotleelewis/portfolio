@@ -18,6 +18,7 @@
     "knip": "knip",
     "test": "vitest run src functions",
     "e2e": "playwright test",
+    "shots": "playwright test --config playwright.shots.config.ts",
     "db:generate": "drizzle-kit generate && oxfmt migrations"
   },
   "dependencies": {

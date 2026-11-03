@@ -3,7 +3,6 @@ import {
 	BufferGeometry,
 	Color,
 	ConeGeometry,
-	CylinderGeometry,
 	Float32BufferAttribute,
 	Group,
 	Mesh,
@@ -179,58 +178,6 @@ export const createLedge = (
 	ledge.geometry.computeVertexNormals();
 	ledge.geometry.computeBoundingSphere();
 	return ledge;
-};
-
-const paint = (geometry: BufferGeometry, color: string): BufferGeometry => {
-	const c = new Color(color);
-	const count = geometry.getAttribute('position').count;
-	const colors = new Float32Array(count * 3);
-	for (let i = 0; i < count; i++) {
-		colors.set([c.r, c.g, c.b], i * 3);
-	}
-	geometry.setAttribute('color', new BufferAttribute(colors, 3));
-	return geometry;
-};
-
-/**
- * Builds a conifer as a single geometry (trunk plus stacked cones), so each
- * tree costs one draw call.
- * @param tiers - Number of stacked cones.
- * @param height - Overall height.
- * @param radius - Radius of the lowest cone.
- * @returns The merged tree geometry.
- */
-export const createTreeGeometry = (
-	tiers: number,
-	height: number,
-	radius: number,
-): BufferGeometry => {
-	const parts: BufferGeometry[] = [
-		paint(
-			new CylinderGeometry(0.1, 0.2, height * 0.35, 6).translate(
-				0,
-				height * 0.175,
-				0,
-			),
-			'#5a4230',
-		),
-	];
-	const greens = ['#2f4f2a', '#3b5d30', '#456a36', '#3e6233'];
-	const start = height * 0.2;
-	const step = (height - start) / (tiers + 0.6);
-	for (let i = 0; i < tiers; i++) {
-		const r = radius * (1 - i / (tiers + 0.5));
-		const h = step * 1.9;
-		const cone = new ConeGeometry(r, h, 7);
-		cone.translate(0, start + i * step + h / 2, 0);
-		cone.rotateY(i * 0.9);
-		parts.push(paint(cone, greens[i % greens.length] ?? '#3b5d30'));
-	}
-	const merged = mergeGeometries(parts);
-	for (const part of parts) {
-		part.dispose();
-	}
-	return merged;
 };
 
 /**

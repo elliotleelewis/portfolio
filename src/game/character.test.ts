@@ -180,14 +180,14 @@ describe('createCharacter', () => {
 		c.root.updateMatrixWorld(true);
 		const box = new Box3().setFromObject(c.root, true);
 		expect(box.min.toArray()).toEqual([
-			expect.closeTo(-0.338, 3),
-			expect.closeTo(0.005, 3),
-			expect.closeTo(-0.24, 3),
+			expect.closeTo(-0.322, 3),
+			expect.closeTo(0.004, 3),
+			expect.closeTo(-0.295, 3),
 		]);
 		expect(box.max.toArray()).toEqual([
-			expect.closeTo(0.338, 3),
-			expect.closeTo(1.889, 3),
-			expect.closeTo(0.17, 3),
+			expect.closeTo(0.322, 3),
+			expect.closeTo(1.905, 3),
+			expect.closeTo(0.178, 3),
 		]);
 	});
 });

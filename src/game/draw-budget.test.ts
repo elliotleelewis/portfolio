@@ -50,7 +50,9 @@ interface Cost {
 // drawn without one. Raising a budget is fine, but do it on purpose: see
 // "The drawing budget" in the README.
 const budgets: Record<DrawBudget, Cost> = {
-	me: { draws: 8, triangles: 10_000 },
+	// Sculpted rather than built from primitives (src/game/character.ts):
+	// smooth, so more triangles, in the same draw calls.
+	me: { draws: 8, triangles: 22_000 },
 	// However many bears are out.
 	bears: { draws: 12, triangles: 125_000 },
 	// Two for each bear after me, its "!" and the one pinned to the edge of

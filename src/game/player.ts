@@ -228,7 +228,6 @@ export class Player {
 	}
 
 	public dispose(): void {
-		this._character.unmerge();
 		disposeObject(this._character.root);
 	}
 }

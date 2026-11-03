@@ -77,6 +77,9 @@ const hurry = 4;
  * A little mountain-rolling game: I look around, strike a star pose, then
  * cartwheel down the mountain flattening trees.
  */
+// Loads what each run needs before it starts: my model.
+export { loadCharacterModel as loadModels } from './character';
+
 export class Game implements StageScene {
 	private readonly _callbacks: GameCallbacks;
 	private readonly _scene = new Scene();

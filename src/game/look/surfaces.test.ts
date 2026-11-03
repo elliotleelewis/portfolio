@@ -98,7 +98,6 @@ describe('the world', () => {
 		expect(materialsUnder(me.root).filter((m) => !hasAFinish(m))).toEqual(
 			[],
 		);
-		me.unmerge();
 	});
 
 	it('finishes the bears and the mystery in its finishes', () => {

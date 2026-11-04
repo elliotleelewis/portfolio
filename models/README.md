@@ -6,19 +6,21 @@ So far it's only me: `me.glb`.
 
 ## How I'm made
 
-I'm modelled by a script, in Blender (`scripts/models/blender/me.py`), so I can be changed and made again: run `pnpm models:me` with [Blender](https://www.blender.org/download/) 4.2 on the PATH (or `BLENDER` set to it), which writes `models/me.glb`. Then `pnpm models` gets me ready for the game.
+I'm made by a script, in Blender (`scripts/models/blender/me.py`), so I can be changed and made again: run `pnpm models:me` with [Blender](https://www.blender.org/download/) 4.2 on the PATH (or `BLENDER` set to it), which writes `models/me.glb`. Then `pnpm models` gets me ready for the game.
 
-The script builds me from scratch:
+The script starts from a game-ready base, not from scratch: the Superhero male from [Quaternius's Universal Base Characters](https://quaternius.com/packs/universalbasecharacters.html) (CC0, in `base/quaternius/`, with his buzzed hair and textures). His body is modelled to deform, with the edge loops round his shoulders, elbows and hips that a game character needs, and weighted by hand to a full humanoid skeleton. The script makes him me:
 
-- **My body** is one continuous skin over a stick skeleton (Blender's Skin modifier, then smoothed), from my neck down to my ankles and fingertips, coloured by what I'm wearing.
-- **My head** is shaped from a sphere: a jaw narrowing to my chin, a brow and full cheeks. My eyes, brows, nose, grin and glasses are placed on it by casting rays at its surface.
-- **My hair** is a close crop and tufts swept up and back, with a quiff, darker at the roots.
-- **My clothes:** the tee's collar and hem, trail shoes on darker soles, and a daypack with a lid, a pocket and straps that follow my shoulders.
-- **Light and shade** are baked into my colours: Cycles' ambient occlusion darkens where parts of me shade each other (under my arms and chin, where my clothes meet), so the game gets the depth for nothing. What's painted on my face is left unshaded, so it stays clear.
-- **Skinning:** my body bends where Blender's heat weighting says, smoothly from bone to bone at my shoulders, hips and neck. Everything else moves with one bone, as one.
+- **The rest pose:** from his T-pose to the game's, my arms down a little out from my sides, made his new rest pose.
+- **The skeleton:** the bones the game turns renamed to its names (`pelvis` is `body`, `upperarm_l` is `arm.L`, `thigh_l` is `leg.L`, and so on), and `hand` and `foot` added at my palms and soles. His other bones (spine, clavicles, elbows, knees, fingers) come too, posed as they are.
+- **Slimmer than a superhero:** the flesh round my arms, neck, chest and legs drawn in toward each bone.
+- **Colour:** my skin in the game's skin tone, keeping the painted detail of his face (lips, cheeks, shading) from his texture as lighter and darker. His eyes from theirs, and everything else from the palette at the top of the script.
+- **Clothes from my own surface:** a tee and walking trousers made from copies of my skin, cut clean along planes (hem, sleeves, cuffs), smoothed of muscle and loosened round each bone, so they hang rather than cling. They keep my weights, so they bend just as I do. The skin under them is taken away, so it can't poke through.
+- **The rest of me:** a collar, trail shoes on darker soles (with my feet), spiky tufts on top of his buzzed hair, clear-framed glasses placed from my eyes, and a daypack whose straps follow my shoulders.
+- **Light and shade** baked into my colours (Cycles' ambient occlusion), except on my eyes, brows and glasses, which stay clear.
+- **Blinking:** a `blink` shape key squashes my eyes and brings my lids down.
 - **Previews:** `pnpm models:me -- --preview DIR` renders me from the front, the side, the back, up close and in my star pose into `DIR`, to look at before trying me in the game.
 
-To change me, change the script (its colours are at the top) and run it again. Whatever made me, the game only needs what's below.
+To change me, change the script (its colours are at the top) and run it again.
 
 ## Modelling me by hand
 
@@ -65,4 +67,4 @@ The game turns me from my rest pose, so model me in it:
 The game won't load a model without everything it turns: every bone above, the `blink` shape key, and every material named for its finish. The tests load it the same way, and also check that:
 
 - my hands and feet are where the cartwheel needs them, and my joints turn my bones however I'm posed (`src/game/character.test.ts`)
-- I fit inside my drawing budget, 16,000 triangles counting my shadow (`src/game/draw-budget.test.ts`), so about 8,000 triangles in Blender
+- I fit inside my drawing budget, 36,000 triangles counting my shadow (`src/game/draw-budget.test.ts`), so about 18,000 triangles in Blender, in at most three materials (draw calls are what a phone runs short of)

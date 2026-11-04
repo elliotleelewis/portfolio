@@ -1,7 +1,15 @@
-"""Models me in Blender, from scratch, and exports me as models/me.glb.
+"""Models me in Blender, from a base character, and exports me as
+models/me.glb.
 
-Run headless: `pnpm models:me` (Blender on the PATH, or BLENDER set to it).
-Pass `-- --preview DIR` to also render previews of me into DIR.
+Run headless: `pnpm models:me` (Blender 4.2 on the PATH, or BLENDER set to
+it). Pass `-- --preview DIR` to also render previews of me into DIR.
+
+I start from Quaternius's Universal Base Characters (CC0, in
+models/base/quaternius/): a rigged, game-ready body, with a face and
+topology made to deform. This script makes him me: re-posed to the game's
+rest pose, slimmed, dressed in a tee, walking trousers and trail shoes made
+from his own surface (so they bend just as he does), given my hair, glasses,
+grin and backpack, coloured from the game's palette, and shaded.
 
 What the game needs of the model (the skeleton, the `blink` shape key and
 materials named for their finishes) is in models/README.md. Blender's axes:
@@ -14,11 +22,13 @@ import sys
 
 import bmesh
 import bpy
+import numpy as np
 from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..')
 OUT = os.path.join(ROOT, 'models', 'me.glb')
+BASE = os.path.join(ROOT, 'models', 'base', 'quaternius')
 
 # ---------------------------------------------------------------------------
 # Colours, as the game's palette would pick them (sRGB hex), and helpers.
@@ -136,13 +146,6 @@ def primitive(kind, name, **kwargs):
     return obj
 
 
-def subdivide(obj, levels=1):
-    modifier = obj.modifiers.new('subdivide', 'SUBSURF')
-    modifier.levels = levels
-    modifier.render_levels = levels
-    return obj
-
-
 def smooth(obj):
     select_only(obj)
     bpy.ops.object.shade_smooth()
@@ -179,212 +182,6 @@ def tube(name, points, radii, sides=8, closed=False):
     return bpy.context.active_object
 
 
-# ---------------------------------------------------------------------------
-# Where my joints are (the game's own numbers: see src/game/character.ts).
-
-HIPS = Vector((0, 0, 0.95))
-NECK_TOP = Vector((0, 0, 1.57))
-SHOULDER = Vector((0.235, 0, 1.46))
-HAND = Vector((0.29, -0.02, 0.772))
-HIP = Vector((0.1, 0, 0.95))
-FOOT = Vector((0.1, -0.04, 0.05))
-HEAD_CENTRE = Vector((0, 0.005, 1.712))
-
-
-def mirrored(v):
-    return Vector((-v.x, v.y, v.z))
-
-
-# ---------------------------------------------------------------------------
-# My body: one continuous skin over a stick skeleton, from my neck to my
-# ankles and fingertips, coloured by what I'm wearing.
-
-def build_body():
-    verts = []
-    edges = []
-    radii = []
-
-    def add(at, radius, parent=None):
-        verts.append(tuple(at))
-        radii.append(radius)
-        index = len(verts) - 1
-        if parent is not None:
-            edges.append((parent, index))
-        return index
-
-    pelvis = add((0, 0.0, 0.90), (0.155, 0.105))
-    waist = add((0, 0.0, 1.06), (0.15, 0.1), pelvis)
-    chest = add((0, -0.005, 1.27), (0.18, 0.115), waist)
-    upper = add((0, 0.0, 1.40), (0.17, 0.11), chest)
-    neck = add((0, 0.0, 1.50), (0.066, 0.064), upper)
-    add((0, 0.006, 1.6), (0.058, 0.056), neck)
-
-    for side in (1, -1):
-        shoulder = add((side * 0.19, 0, 1.445), (0.078, 0.074), upper)
-        arm = add((side * 0.238, 0, 1.425), (0.074, 0.07), shoulder)
-        elbow = add((side * 0.264, -0.008, 1.13), (0.052, 0.049), arm)
-        wrist = add((side * 0.284, -0.018, 0.86), (0.035, 0.03), elbow)
-        palm = add((side * 0.29, -0.02, 0.80), (0.024, 0.041), wrist)
-        # Four fingers, hanging, a little curled, and a thumb in front.
-        for i, along in enumerate((-0.026, -0.009, 0.008, 0.024)):
-            length = 0.07 - abs(i - 1.5) * 0.008
-            knuckle = add(
-                (side * 0.29, -0.02 + along, 0.765), (0.0125, 0.0125), palm
-            )
-            tip = add(
-                (side * 0.284, -0.026 + along, 0.765 - length),
-                (0.0105, 0.0105),
-                knuckle,
-            )
-            verts[tip] = verts[tip]
-        add((side * 0.278, -0.062, 0.79), (0.0135, 0.0135), palm)
-
-        hip = add((side * 0.095, 0, 0.88), (0.088, 0.088), pelvis)
-        knee = add((side * 0.1, -0.012, 0.5), (0.068, 0.068), hip)
-        add((side * 0.1, 0.0, 0.13), (0.058, 0.058), knee)
-
-    body = mesh_object('body', verts, edges=edges)
-    skin = body.modifiers.new('skin', 'SKIN')
-    skin.use_smooth_shade = True
-    skin.branch_smoothing = 1.0
-    for vertex, radius in zip(body.data.skin_vertices[0].data, radii):
-        vertex.radius = radius
-    body.data.skin_vertices[0].data[pelvis].use_root = True
-    subdivide(body, 1)
-    apply_modifiers(body)
-    smooth(body)
-
-    def colour(at):
-        is_arm = abs(at.x) > 0.205 and at.z < 1.47
-        if at.z > 1.5:
-            return COLOURS['skin']
-        if is_arm:
-            # A short sleeve, down to just above my elbow.
-            return COLOURS['shirt'] if at.z > 1.26 else COLOURS['skin']
-        if at.z > 0.92:
-            return COLOURS['shirt']
-        return COLOURS['trousers']
-
-    paint(body, colour)
-    return body
-
-
-# ---------------------------------------------------------------------------
-# My head: a jaw that narrows to the chin, full cheeks, a brow, ears, a
-# nose, eyes that blink, a big grin, spiky sandy hair and clear glasses.
-
-def build_head():
-    head = primitive(
-        'uv_sphere', 'head', segments=28, ring_count=16, radius=1,
-        location=HEAD_CENTRE,
-    )
-    for vertex in head.data.vertices:
-        x, y, z = vertex.co
-        # Round, a little deeper than wide, and taller than either.
-        x *= 0.118
-        y *= 0.127
-        z *= 0.15
-        if z < 0:
-            # The jaw narrows a little down to a rounded chin.
-            t = smoothstep(0, -0.15, z)
-            x *= 1 - 0.24 * t
-            y *= 1 - 0.1 * t
-        if y < 0:
-            # A flatter face, a brow over my eyes, and full cheeks.
-            y *= 0.95
-            y -= 0.009 * math.exp(-((z - 0.04) / 0.016) ** 2) * max(0.0, 1 - abs(x) / 0.1)
-            cheek = math.exp(-((z + 0.035) / 0.03) ** 2) * math.exp(-((abs(x) - 0.06) / 0.03) ** 2)
-            y -= 0.007 * cheek
-        vertex.co = (x, y, z)
-    smooth(head)
-    paint(head, COLOURS['skin'])
-    parts = [head]
-    find = surface_of(head)
-
-    # Nose: a soft, rounded wedge, out and down from between my eyes.
-    hit, _ = find(0, HEAD_CENTRE.z - 0.01)
-    nose = primitive(
-        'uv_sphere', 'nose', segments=10, ring_count=6, radius=1,
-        location=hit + Vector((0, -0.006, 0)),
-        rotation=(-0.45, 0, 0),
-    )
-    nose.scale = (0.015, 0.02, 0.03)
-    select_only(nose)
-    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
-    smooth(nose)
-    paint(nose, COLOURS['skin'])
-    parts.append(nose)
-
-    # Ears.
-    for side in (1, -1):
-        ear = primitive(
-            'uv_sphere', 'ear', segments=10, ring_count=6, radius=1,
-            location=HEAD_CENTRE + Vector((side * 0.112, 0.01, -0.005)),
-        )
-        ear.scale = (0.014, 0.024, 0.034)
-        ear.rotation_euler = (0, side * 0.15, side * -0.25)
-        select_only(ear)
-        bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
-        smooth(ear)
-        paint(ear, COLOURS['skin'])
-        parts.append(ear)
-
-    # Eyes: dark and oval, set into my face. They blink (see `blink`).
-    eyes = []
-    eye_centres = {}
-    for side in (1, -1):
-        hit, _ = find(side * 0.043, HEAD_CENTRE.z + 0.018)
-        centre = hit + Vector((0, 0.003, 0))
-        eye_centres[side] = centre
-        eye = primitive(
-            'uv_sphere', 'eye', segments=10, ring_count=6, radius=1,
-            location=centre,
-        )
-        eye.scale = (0.0145, 0.008, 0.019)
-        select_only(eye)
-        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-        smooth(eye)
-        paint(eye, COLOURS['eye'])
-        eyes.append(eye)
-    parts.extend(eyes)
-
-    # Brows, arched over them, on my brow.
-    for side in (1, -1):
-        points = []
-        for x, h in ((0.02, -0.002), (0.042, 0.004), (0.064, -0.003)):
-            hit, _ = find(side * x, HEAD_CENTRE.z + 0.048 + h, out=0.003)
-            points.append(hit)
-        brow = tube('brow', points, [0.0045, 0.0062, 0.0035])
-        smooth(brow)
-        paint(brow, COLOURS['brow'])
-        parts.append(brow)
-
-    # A big grin: a row of teeth over a dark mouth, on my face.
-    mouth_z = HEAD_CENTRE.z - 0.052
-    columns, rows = 11, 5
-    verts = []
-    faces = []
-    for j in range(rows + 1):
-        for i in range(columns + 1):
-            u = i / columns * 2 - 1
-            v = j / rows
-            x = u * 0.042
-            z = mouth_z + 0.01 * u * u - v * 0.028 * (1 - u * u) ** 0.8
-            hit, _ = find(x, z, out=0.0012)
-            verts.append(tuple(hit))
-    for j in range(rows):
-        for i in range(columns):
-            a = j * (columns + 1) + i
-            # Wound to face out of my face (three.js only draws front faces).
-            faces.append((a, a + columns + 1, a + columns + 2, a + 1))
-    grin = mesh_object('grin', verts, faces)
-    smooth(grin)
-    paint(grin, lambda at: COLOURS['teeth'] if at.z > mouth_z - 0.009 + 0.01 * (at.x / 0.042) ** 2 else COLOURS['mouth'])
-    grin['unshaded'] = True
-    parts.append(grin)
-
-    return parts, eyes, eye_centres, find
-
 
 def tuft(base, lean, across, length, width, bend):
     """A lock of hair: a flattened, tapering spike, bent a little."""
@@ -414,304 +211,6 @@ def tuft(base, lean, across, length, width, bend):
     return obj
 
 
-def build_hair(find):
-    """Short and sandy, swept up and back into spiky tufts, and a quiff."""
-    tufts = []
-    centre = HEAD_CENTRE + Vector((0, 0.01, 0.015))
-    seed = 7
-
-    def random():
-        nonlocal seed
-        seed = (seed * 16807) % 2147483647
-        return (seed - 1) / 2147483646
-
-    # A close crop over my skull: the top of a sphere, tipped back, so it's
-    # high at my forehead and low at my nape.
-    crop = primitive(
-        'uv_sphere', 'crop', segments=22, ring_count=12, radius=1,
-        location=centre,
-    )
-    for vertex in crop.data.vertices:
-        x, y, z = vertex.co
-        vertex.co = (x * 0.124, y * 0.134, z * 0.152)
-    bm = bmesh.new()
-    bm.from_mesh(crop.data)
-    tilt = Matrix.Rotation(-0.3, 3, 'X')
-    for vertex in list(bm.verts):
-        tipped = tilt @ vertex.co
-        line = -0.03 + 0.1 * smoothstep(0.0, -0.11, tipped.y)
-        if tipped.z < line:
-            bm.verts.remove(vertex)
-    bm.to_mesh(crop.data)
-    bm.free()
-    solidify = crop.modifiers.new('solidify', 'SOLIDIFY')
-    solidify.thickness = 0.006
-    apply_modifiers(crop)
-    smooth(crop)
-    tufts.append(crop)
-
-    up = Vector((0, 0, 1))
-    back = Vector((0, 1, 0))
-    for i in range(40):
-        ring = i // 10
-        elevation = 0.55 + ring * 0.26 + random() * 0.12
-        azimuth = (i / 10) * 2 * math.pi + ring * 0.45 + random() * 0.35
-        direction = Vector((
-            math.cos(azimuth) * math.cos(elevation),
-            math.sin(azimuth) * math.cos(elevation),
-            math.sin(elevation),
-        ))
-        base = centre + Vector((direction.x * 0.118, direction.y * 0.128, direction.z * 0.145))
-        lean = (direction * 0.55 + up * 0.85 + back * 0.45).normalized()
-        across = up.cross(direction) if abs(direction.z) < 0.95 else Vector((1, 0, 0))
-        tufts.append(tuft(
-            base, lean, across,
-            length=0.03 + random() * 0.025,
-            width=0.024 + random() * 0.01,
-            bend=0.01,
-        ))
-    # The quiff, up and forward over my forehead.
-    for i in range(-4, 5):
-        x = i * 0.017
-        base = centre + Vector((x, -0.09, 0.09 - abs(i) * 0.004))
-        tufts.append(tuft(
-            base, Vector((x * 0.6, -0.35, 1.0)), Vector((1, 0, 0)),
-            length=0.055 - abs(i) * 0.004,
-            width=0.022,
-            bend=0.015,
-        ))
-    for lock in tufts:
-        smooth(lock)
-        # Darker at the roots, so the tufts stand out from each other.
-        paint(lock, lambda at: mix(
-            COLOURS['hair_root'], COLOURS['hair'],
-            smoothstep(0.0, 0.05, (at - centre).length - 0.11),
-        ))
-    return tufts
-
-
-def build_glasses(eye_centres, find):
-    """Clear-framed glasses, their arms back over my ears."""
-    parts = []
-    lens_y = min(c.y for c in eye_centres.values()) - 0.018
-    for side in (1, -1):
-        centre = eye_centres[side]
-        frame = primitive(
-            'torus', 'frame', major_radius=1, minor_radius=0.11,
-            major_segments=16, minor_segments=3,
-            location=Vector((centre.x + side * 0.004, lens_y, centre.z + 0.002)),
-            rotation=(math.pi / 2, 0, side * -0.18),
-        )
-        frame.scale = (0.027, 0.02, 0.027)
-        select_only(frame)
-        bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
-        smooth(frame)
-        parts.append(frame)
-        arm = tube(
-            'temple',
-            [Vector((side * 0.072, lens_y + 0.008, centre.z + 0.008)),
-             Vector((side * 0.112, lens_y + 0.045, centre.z + 0.01)),
-             Vector((side * 0.118, HEAD_CENTRE.y + 0.0, centre.z + 0.0)),
-             Vector((side * 0.11, HEAD_CENTRE.y + 0.03, centre.z - 0.025))],
-            [0.0026] * 4,
-            sides=4,
-        )
-        smooth(arm)
-        parts.append(arm)
-    bridge = tube(
-        'bridge',
-        [Vector((x, lens_y - 0.002, eye_centres[1].z + 0.008 + 0.004 * (1 - abs(x) / 0.018)))
-         for x in (-0.018, 0.0, 0.018)],
-        [0.0025] * 3,
-        sides=4,
-    )
-    smooth(bridge)
-    parts.append(bridge)
-    for part in parts:
-        paint(part, COLOURS['frames'])
-    return parts
-
-
-def build_clothes():
-    """The edges of my tee, so it reads as clothes: its collar and hem; and
-    trail shoes. (My sleeves and trouser legs end where their colour does:
-    a ring round a limb stands off it as the limb bends.)"""
-    parts = []
-
-    def ring(name, at, radius, thickness, scale=(1, 1, 1), rotation=(0, 0, 0), colour='shirt', bone='body'):
-        obj = primitive(
-            'torus', name, major_radius=radius, minor_radius=thickness,
-            major_segments=18, minor_segments=4, location=at, rotation=rotation,
-        )
-        obj.scale = scale
-        select_only(obj)
-        bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
-        smooth(obj)
-        paint(obj, COLOURS[colour])
-        # Each edge moves with what it's round, as one.
-        obj['bone'] = bone
-        parts.append(obj)
-
-    ring('collar', Vector((0, 0.002, 1.505)), 0.058, 0.008, scale=(1, 0.95, 1))
-    ring('hem', Vector((0, 0, 0.915)), 0.158, 0.007, scale=(1, 0.68, 1))
-    for side in (1, -1):
-        limb = 'L' if side > 0 else 'R'
-
-        # A trail shoe: a rounded upper, wider at the toe, on a darker sole.
-        upper = primitive(
-            'cube', 'shoe', size=1,
-            location=Vector((side * 0.1, -0.05, 0.07)),
-        )
-        upper.scale = (0.112, 0.27, 0.095)
-        select_only(upper)
-        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-        for vertex in upper.data.vertices:
-            x, y, z = vertex.co
-            toe = smoothstep(0.0, -0.12, y)
-            vertex.co = (x * (1 + 0.1 * toe), y, z - 0.025 * toe * (1 if z > 0 else 0))
-        bevel(upper, 0.02, 3)
-        apply_modifiers(upper)
-        smooth(upper)
-        paint(upper, COLOURS['shoes'])
-        upper['bone'] = f'leg.{limb}'
-        parts.append(upper)
-        sole = primitive(
-            'cube', 'sole', size=1,
-            location=Vector((side * 0.1, -0.052, 0.016)),
-        )
-        sole.scale = (0.12, 0.282, 0.032)
-        select_only(sole)
-        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-        bevel(sole, 0.01, 2)
-        apply_modifiers(sole)
-        smooth(sole)
-        paint(sole, COLOURS['soles'])
-        sole['bone'] = f'leg.{limb}'
-        parts.append(sole)
-    return parts
-
-
-def build_pack(body):
-    """A soft daypack, with a lid and a front pocket, its straps over my
-    shoulders."""
-    parts = []
-
-    def block(name, at, size, round_by, colour):
-        obj = primitive('cube', name, size=1, location=at)
-        obj.scale = size
-        select_only(obj)
-        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-        bevel(obj, round_by, 2)
-        apply_modifiers(obj)
-        smooth(obj)
-        paint(obj, COLOURS[colour])
-        parts.append(obj)
-
-    block('pack', Vector((0, 0.2, 1.22)), (0.3, 0.15, 0.4), 0.05, 'pack')
-    block('lid', Vector((0, 0.2, 1.415)), (0.28, 0.165, 0.07), 0.025, 'pack_trim')
-    block('pocket', Vector((0, 0.285, 1.12)), (0.22, 0.05, 0.16), 0.02, 'pack_trim')
-    find = surface_of(body)
-    tree = BVHTree.FromObject(body, bpy.context.evaluated_depsgraph_get())
-    for side in (1, -1):
-        x = side * 0.105
-        # Over the top of my shoulder, found from above.
-        top, _, _, _ = tree.ray_cast(Vector((x * 1.1, 0.0, 2.0)), Vector((0, 0, -1)))
-        points = [
-            find(x, 1.38, forward=1, out=0.012)[0],
-            find(x * 1.05, 1.47, forward=1, out=0.01)[0],
-            top + Vector((0, 0, 0.008)),
-            find(x * 1.08, 1.45, out=0.008)[0],
-            find(x * 1.05, 1.3, out=0.007)[0],
-            find(x * 0.98, 1.14, out=0.007)[0],
-        ]
-        strap = tube('strap', points, [0.016] * 6, sides=6)
-        smooth(strap)
-        paint(strap, COLOURS['pack_trim'])
-        parts.append(strap)
-    return parts
-
-
-# ---------------------------------------------------------------------------
-# The skeleton the game turns (models/README.md), and how each part of me
-# moves with it.
-
-BONES = [
-    ('body', HIPS, HIPS + Vector((0, 0, 0.55)), None, True),
-    ('head', NECK_TOP, NECK_TOP + Vector((0, 0, 0.25)), 'body', True),
-    ('arm.L', SHOULDER, HAND + Vector((0, 0, 0.04)), 'body', True),
-    ('arm.R', mirrored(SHOULDER), mirrored(HAND) + Vector((0, 0, 0.04)), 'body', True),
-    ('leg.L', HIP, FOOT + Vector((0, 0.04, 0.1)), 'body', True),
-    ('leg.R', mirrored(HIP), mirrored(FOOT) + Vector((0, 0.04, 0.1)), 'body', True),
-    ('hand.L', HAND, HAND + Vector((0, 0, -0.06)), 'arm.L', False),
-    ('hand.R', mirrored(HAND), mirrored(HAND) + Vector((0, 0, -0.06)), 'arm.R', False),
-    ('foot.L', FOOT, FOOT + Vector((0, -0.1, 0)), 'leg.L', False),
-    ('foot.R', mirrored(FOOT), mirrored(FOOT) + Vector((0, -0.1, 0)), 'leg.R', False),
-]
-
-
-def build_armature():
-    data = bpy.data.armatures.new('skeleton')
-    armature = link(bpy.data.objects.new('skeleton', data))
-    select_only(armature)
-    bpy.ops.object.mode_set(mode='EDIT')
-    for name, head, tail, parent, deforms in BONES:
-        bone = data.edit_bones.new(name)
-        bone.head = head
-        bone.tail = tail
-        bone.use_deform = deforms
-        if parent:
-            bone.parent = data.edit_bones[parent]
-    bpy.ops.object.mode_set(mode='OBJECT')
-    return armature
-
-
-def weights_at(at):
-    """How much each bone moves a point on me: my shoulders, hips and neck
-    bend smoothly, between my body and each limb."""
-    weights = {}
-    # My head, from the top of my neck.
-    head = smoothstep(1.53, 1.6, at.z)
-    # My arms, out from my shoulders.
-    side = 1 if at.x > 0 else -1
-    shoulder = SHOULDER if side > 0 else mirrored(SHOULDER)
-    hand = HAND if side > 0 else mirrored(HAND)
-    along = (hand - shoulder).normalized()
-    reach = (at - shoulder).dot(along)
-    arm = smoothstep(-0.05, 0.07, reach) * smoothstep(0.15, 0.21, abs(at.x))
-    # My legs, down from my hips, each its own side.
-    leg = smoothstep(0.95, 0.8, at.z) * (1 - smoothstep(1.3, 1.4, at.z))
-    left = smoothstep(-0.025, 0.025, at.x)
-    if at.z > 1.5 or abs(at.x) < 0.12:
-        arm = 0.0
-    weights['head'] = head
-    rest = 1 - head
-    weights['arm.L' if side > 0 else 'arm.R'] = arm * rest
-    rest -= arm * rest
-    weights['leg.L'] = leg * left * rest
-    weights['leg.R'] = leg * (1 - left) * rest
-    rest -= leg * rest
-    weights['body'] = max(rest, 0.0)
-    return weights
-
-
-def skin_to(obj, armature, rigid=None, keep=False):
-    """Weights an object to the skeleton: all of it to one bone, or (keeping
-    the weights it has) with every bone's group there to join."""
-    for name, *_ in BONES:
-        if name not in obj.vertex_groups:
-            obj.vertex_groups.new(name=name)
-    if keep:
-        return
-    matrix = obj.matrix_world
-    for vertex in obj.data.vertices:
-        weights = {rigid: 1.0} if rigid else weights_at(matrix @ vertex.co)
-        for name, weight in weights.items():
-            if weight > 0.001:
-                obj.vertex_groups[name].add([vertex.index], weight, 'REPLACE')
-
-
-# ---------------------------------------------------------------------------
-# Light and shade painted on: ambient occlusion, baked into the colours.
 
 def bake_shading(obj, strength=0.55):
     scene = bpy.context.scene
@@ -777,89 +276,701 @@ def join(objects, name):
     return joined
 
 
+
+# ---------------------------------------------------------------------------
+# The base: Quaternius's Superhero male, his eyes, brows and buzzed hair.
+
+def load_base():
+    reset()
+    bpy.ops.import_scene.gltf(filepath=os.path.join(BASE, 'Superhero_Male_FullBody.gltf'))
+    armature = next(o for o in bpy.data.objects if o.type == 'ARMATURE')
+    armature.name = 'skeleton'
+    body = bpy.data.objects['SuperHero_Male']
+    eyes = bpy.data.objects['Eyes']
+    brows = bpy.data.objects['Eyebrows']
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=os.path.join(BASE, 'Hair_Buzzed.gltf'))
+    imported = set(bpy.data.objects) - before
+    hair = next(o for o in imported if o.type == 'MESH' and o.name.startswith('Hair'))
+    # The hair comes on a skeleton of its own: put it on mine.
+    world = hair.matrix_world.copy()
+    hair.parent = armature
+    hair.matrix_world = world
+    for modifier in hair.modifiers:
+        if modifier.type == 'ARMATURE':
+            modifier.object = armature
+    for obj in list(bpy.data.objects):
+        if obj.name.startswith('Icosphere') or (obj in imported and obj is not hair):
+            bpy.data.objects.remove(obj)
+    return armature, body, eyes, brows, hair
+
+
+def world_bone(armature, name):
+    bone = armature.data.bones[name]
+    matrix = armature.matrix_world
+    return matrix @ bone.head_local, matrix @ bone.tail_local
+
+
+def turn_about_forward(armature, angles):
+    """Turns bones about my forward axis (Blender's Y), about their heads, in
+    pose mode."""
+    select_only(armature)
+    bpy.ops.object.mode_set(mode='POSE')
+    for name, angle in angles.items():
+        bone = armature.pose.bones[name]
+        head = bone.head.copy()
+        bone.matrix = (
+            Matrix.Translation(head) @ Matrix.Rotation(angle, 4, 'Y')
+            @ Matrix.Translation(-head) @ bone.matrix
+        )
+        bpy.context.view_layer.update()
+    bpy.ops.object.mode_set(mode='OBJECT')
+
+
+def rest_as_posed(armature, meshes):
+    """Makes how I'm posed now my rest pose: my meshes take the pose, then my
+    skeleton does."""
+    for mesh in meshes:
+        select_only(mesh)
+        skin = next((m for m in mesh.modifiers if m.type == 'ARMATURE'), None)
+        if skin is None:
+            continue
+        bpy.ops.object.modifier_copy(modifier=skin.name)
+        copy = mesh.modifiers[-1]
+        bpy.ops.object.modifier_move_to_index(modifier=copy.name, index=0)
+        bpy.ops.object.modifier_apply(modifier=copy.name)
+    select_only(armature)
+    bpy.ops.object.mode_set(mode='POSE')
+    bpy.ops.pose.select_all(action='SELECT')
+    bpy.ops.pose.armature_apply(selected=False)
+    bpy.ops.object.mode_set(mode='OBJECT')
+
+
+# The game's names for the bones it turns (models/README.md), from the
+# base's (Unreal's) names.
+RENAMES = {
+    'pelvis': 'body',
+    'Head': 'head',
+    'upperarm_l': 'arm.L',
+    'upperarm_r': 'arm.R',
+    'thigh_l': 'leg.L',
+    'thigh_r': 'leg.R',
+}
+
+
+def rename_bones(armature, meshes):
+    for old, new in RENAMES.items():
+        armature.data.bones[old].name = new
+        for mesh in meshes:
+            group = mesh.vertex_groups.get(old)
+            if group:
+                group.name = new
+
+
+def add_contacts(armature):
+    """Where my hands and feet touch the ground mid-cartwheel: my palms and
+    soles, as bones that move with them but skin nothing."""
+    select_only(armature)
+    bpy.ops.object.mode_set(mode='EDIT')
+    bones = armature.data.edit_bones
+    for side, limb in (('l', 'L'), ('r', 'R')):
+        hand = bones[f'hand_{side}']
+        along = (hand.tail - hand.head).normalized()
+        palm = bones.new(f'hand.{limb}')
+        palm.head = hand.head + along * 0.075
+        palm.tail = palm.head + along * 0.04
+        palm.parent = hand
+        palm.use_deform = False
+        foot = bones[f'foot_{side}']
+        sole = bones.new(f'foot.{limb}')
+        sole.head = Vector((foot.head.x, foot.head.y - 0.035, 0.02))
+        sole.tail = sole.head + Vector((0, -0.08, 0))
+        sole.parent = foot
+        sole.use_deform = False
+    bpy.ops.object.mode_set(mode='OBJECT')
+
+
+# ---------------------------------------------------------------------------
+# Making him me: slimmer than a superhero.
+
+# How far in toward each bone the flesh round it comes.
+SLIM = {
+    'arm.L': 0.8, 'arm.R': 0.8,
+    'lowerarm_l': 0.86, 'lowerarm_r': 0.86,
+    'neck_01': 0.86,
+    'spine_02': 0.9, 'spine_03': 0.86,
+    'leg.L': 0.92, 'leg.R': 0.92,
+    'calf_l': 0.94, 'calf_r': 0.94,
+}
+
+
+def closest_on(head, tail, point):
+    along = tail - head
+    t = max(0.0, min(1.0, (point - head).dot(along) / along.length_squared))
+    return head + along * t
+
+
+def slim(armature, body):
+    segments = {name: world_bone(armature, name) for name in SLIM}
+    groups = {g.index: g.name for g in body.vertex_groups}
+    matrix = body.matrix_world
+    inverse = matrix.inverted()
+    for vertex in body.data.vertices:
+        at = matrix @ vertex.co
+        moved = Vector((0, 0, 0))
+        total = 0.0
+        for g in vertex.groups:
+            name = groups[g.group]
+            weight = g.weight
+            if weight <= 0:
+                continue
+            if name in SLIM:
+                centre = closest_on(*segments[name], at)
+                moved += (centre + (at - centre) * SLIM[name]) * weight
+            else:
+                moved += at * weight
+            total += weight
+        if total > 0:
+            vertex.co = inverse @ (moved / total)
+
+
+def dominant_bone(obj):
+    """The bone that moves each vertex of an object most."""
+    groups = {g.index: g.name for g in obj.vertex_groups}
+    result = []
+    for vertex in obj.data.vertices:
+        best = max(vertex.groups, key=lambda g: g.weight, default=None)
+        result.append(groups[best.group] if best else None)
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Colour.
+
+def texture_pixels(name):
+    image = bpy.data.images.load(os.path.join(BASE, name))
+    width, height = image.size
+    pixels = np.empty(width * height * 4, dtype=np.float32)
+    image.pixels.foreach_get(pixels)
+    return pixels.reshape(height, width, 4), width, height
+
+
+def sample(texture, uv):
+    pixels, width, height = texture
+    x = min(width - 1, max(0, int(uv[0] % 1.0 * width)))
+    y = min(height - 1, max(0, int(uv[1] % 1.0 * height)))
+    return pixels[y, x, :3]
+
+
+def vertex_uvs(obj):
+    """Each vertex's UV (the first of its corners')."""
+    mesh = obj.data
+    uv = mesh.uv_layers.active.data
+    result = [None] * len(mesh.vertices)
+    for loop in mesh.loops:
+        if result[loop.vertex_index] is None:
+            result[loop.vertex_index] = uv[loop.index].uv.copy()
+    return result
+
+
+def paint_skin(body):
+    """My skin, in the game's skin tone, keeping the base's painted detail:
+    lips, cheeks and the shading of the face, as lighter and darker than its
+    average."""
+    texture = texture_pixels('T_Superhero_Male_Light.png')
+    uvs = vertex_uvs(body)
+    samples = np.array([sample(texture, uv) if uv else (0.6, 0.45, 0.35) for uv in uvs])
+    average = samples.mean(axis=0)
+    skin = np.array(linear(COLOURS['skin'])[:3])
+    attribute = body.data.color_attributes.new('Col', 'FLOAT_COLOR', 'POINT')
+    for i, colour in enumerate(samples):
+        detail = np.clip(colour / average, 0.6, 1.4)
+        attribute.data[i].color = (*(skin * detail), 1.0)
+    body.data.color_attributes.active_color = attribute
+
+
+def paint_eyes(eyes):
+    texture = texture_pixels('T_Eye_Brown.png')
+    uvs = vertex_uvs(eyes)
+    attribute = eyes.data.color_attributes.new('Col', 'FLOAT_COLOR', 'POINT')
+    for i, uv in enumerate(uvs):
+        srgb = sample(texture, uv) if uv else (1, 1, 1)
+        attribute.data[i].color = (*[c ** 2.2 for c in srgb], 1.0)
+    eyes.data.color_attributes.active_color = attribute
+
+
+# ---------------------------------------------------------------------------
+# Clothes, made from my own surface, so they bend just as I do.
+
+# How much looser than me each piece of clothing hangs, round each bone.
+LOOSE = {
+    'body': 1.1, 'spine_01': 1.1, 'spine_02': 1.08, 'spine_03': 1.05,
+    'arm.L': 1.2, 'arm.R': 1.2,
+    'leg.L': 1.16, 'leg.R': 1.16, 'calf_l': 1.24, 'calf_r': 1.24,
+}
+
+
+TORSO = {'body', 'spine_01', 'spine_02', 'spine_03'}
+LEGS = {'leg.L', 'leg.R'}
+
+
+def loosen(armature, obj, is_tee=False):
+    """Clothes hang off me rather than cling: out from each bone they're on."""
+    segments = {name: world_bone(armature, name) for name in LOOSE}
+    groups = {g.index: g.name for g in obj.vertex_groups}
+    matrix = obj.matrix_world
+    inverse = matrix.inverted()
+    for vertex in obj.data.vertices:
+        at = matrix @ vertex.co
+        moved = Vector((0, 0, 0))
+        total = 0.0
+        for g in vertex.groups:
+            name = groups[g.group]
+            if g.weight <= 0:
+                continue
+            if name in LOOSE:
+                centre = closest_on(*segments[name], at)
+                factor = LOOSE[name]
+                if name in TORSO:
+                    # Out round my middle, never down past my hem.
+                    centre.z = at.z
+                if name in LEGS and is_tee:
+                    # My tee hangs round my hips as it does round my middle.
+                    factor = LOOSE['body']
+                    centre.z = at.z
+                elif name in LEGS:
+                    # Loose down my legs, but snug at my hips, under my tee.
+                    factor = 1 + (factor - 1) * smoothstep(0.95, 0.8, at.z)
+                moved += (centre + (at - centre) * factor) * g.weight
+            else:
+                moved += at * g.weight
+            total += g.weight
+        if total > 0:
+            vertex.co = inverse @ (moved / total)
+
+
+def shell(source, name, keep, cuts, colour):
+    """Clothing from my own surface: a copy of the faces `keep` keeps, cut
+    clean along planes (each `(point, normal, bones)`: what's past the plane,
+    along its normal, goes), smoothed of my muscles, and coloured. It keeps
+    my weights, so it bends just as I do."""
+    obj = source.copy()
+    obj.data = source.data.copy()
+    obj.name = name
+    link(obj)
+    bones = dominant_bone(source)
+    matrix = source.matrix_world
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bm.verts.ensure_lookup_table()
+    keepers = {v.index for v in bm.verts if keep(matrix @ v.co, bones[v.index])}
+    doomed = [f for f in bm.faces if not all(v.index in keepers for v in f.verts)]
+    bmesh.ops.delete(bm, geom=doomed, context='FACES')
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context='VERTS')
+    deform = bm.verts.layers.deform.active
+    names = {g.index: g.name for g in obj.vertex_groups}
+    for point, normal, only in cuts:
+        def leading(v):
+            weights = v[deform]
+            return names[max(weights.keys(), key=lambda k: weights[k])] if weights else None
+        geom = [f for f in bm.faces if only is None or any(leading(v) in only for v in f.verts)]
+        geom = geom + list({e for f in geom for e in f.edges}) + list({v for f in geom for v in f.verts})
+        bmesh.ops.bisect_plane(
+            bm, geom=geom, plane_co=point, plane_no=normal, clear_outer=True,
+        )
+    # Smoothed, but not at the edges, which stay where they were cut.
+    inner = [v for v in bm.verts if not v.is_boundary]
+    for _ in range(8):
+        bmesh.ops.smooth_vert(bm, verts=inner, factor=0.5,
+                              use_axis_x=True, use_axis_y=True, use_axis_z=True)
+    bm.to_mesh(obj.data)
+    bm.free()
+    obj.data.color_attributes.remove(obj.data.color_attributes['Col'])
+    paint(obj, colour)
+    return obj, keepers
+
+
+def follow_arms(obj):
+    """My sleeves move with my arms, all of them: what my arm moves most, it
+    moves alone, so the hem doesn't trail behind as I raise my arm. Nearer
+    my shoulder, they still blend into my body."""
+    for name in ('arm.L', 'arm.R'):
+        arm = obj.vertex_groups[name].index
+        for vertex in obj.data.vertices:
+            weight = next((g.weight for g in vertex.groups if g.group == arm), 0.0)
+            if weight > 0.6:
+                for g in vertex.groups:
+                    g.weight = 1.0 if g.group == arm else 0.0
+
+
+def offset_out(obj, distance):
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bm.normal_update()
+    for v in bm.verts:
+        v.co += v.normal * distance
+    bm.to_mesh(obj.data)
+    bm.free()
+
+
+def build_shoes(armature):
+    """Trail shoes: a rounded upper, wider at the toe, on a darker sole, each
+    moving with my foot."""
+    shoes = []
+    for side in ('l', 'r'):
+        ankle = world_bone(armature, f'foot_{side}')[0]
+        for name, at, size, colour in (
+            ('shoe', Vector((ankle.x, ankle.y - 0.045, 0.062)), (0.11, 0.27, 0.1), 'shoes'),
+            ('sole', Vector((ankle.x, ankle.y - 0.048, 0.016)), (0.118, 0.282, 0.032), 'soles'),
+        ):
+            obj = primitive('cube', name, size=1, location=at)
+            obj.scale = size
+            select_only(obj)
+            bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+            if name == 'shoe':
+                for vertex in obj.data.vertices:
+                    x, y, z = vertex.co
+                    toe = smoothstep(0.0, -0.12, y)
+                    vertex.co = (x * (1 + 0.1 * toe), y, z - 0.03 * toe * (1 if z > 0 else 0))
+            bevel(obj, 0.02 if name == 'shoe' else 0.01, 3)
+            apply_modifiers(obj)
+            smooth(obj)
+            paint(obj, COLOURS[colour])
+            rigid(obj, armature, f'foot_{side}')
+            shoes.append(obj)
+    return shoes
+
+
+def dress(armature, body):
+    """A grey tee with short sleeves, walking trousers and trail shoes."""
+    hem = 0.93
+    torso = {'body', 'spine_01', 'spine_02', 'spine_03', 'clavicle_l', 'clavicle_r'}
+    arms = {'arm.L', 'arm.R'}
+
+    def tee(at, bone):
+        # Down over my hips (moved mostly by my legs) to the hem.
+        return (bone in arms and at.z > 1.1) or (bone in torso | LEGS and hem - 0.04 < at.z)
+
+    def trousers(at, bone):
+        return bone in {'body', 'leg.L', 'leg.R', 'calf_l', 'calf_r'} and 0.1 < at.z < 1.06
+
+    sleeve_cuts = []
+    for name in arms:
+        shoulder, elbow = world_bone(armature, name)
+        along = (elbow - shoulder).normalized()
+        sleeve_cuts.append((shoulder + along * 0.17, along, {name}))
+    shirt, under_shirt = shell(
+        body, 'tee', tee,
+        [(Vector((0, 0, hem)), Vector((0, 0, -1)), None)] + sleeve_cuts,
+        COLOURS['shirt'],
+    )
+    legs, under_legs = shell(
+        body, 'trousers', trousers,
+        [(Vector((0, 0, 0.15)), Vector((0, 0, -1)), None),
+         (Vector((0, 0, 1.03)), Vector((0, 0, 1)), None)],
+        COLOURS['trousers'],
+    )
+    loosen(armature, shirt, is_tee=True)
+    follow_arms(shirt)
+    loosen(armature, legs)
+    offset_out(shirt, 0.012)
+    offset_out(legs, 0.006)
+    # A collar round my neck, where the tee ends.
+    neck = world_bone(armature, 'neck_01')[0]
+    collar = primitive(
+        'torus', 'collar', major_radius=0.066, minor_radius=0.011,
+        major_segments=20, minor_segments=5, location=neck + Vector((0, -0.01, -0.012)),
+        rotation=(-0.3, 0, 0),
+    )
+    collar.scale = (1, 0.9, 1)
+    select_only(collar)
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+    smooth(collar)
+    paint(collar, COLOURS['shirt'])
+    rigid(collar, armature, 'spine_03')
+    shoes = build_shoes(armature)
+
+    # The skin under my clothes and shoes is never seen: take it away, so it
+    # can't poke through as I bend, and isn't drawn for nothing.
+    bones = dominant_bone(body)
+    feet = {i for i, b in enumerate(bones) if b in {'foot_l', 'foot_r', 'ball_l', 'ball_r'}}
+    feet |= {v.index for v in body.data.vertices if (body.matrix_world @ v.co).z < 0.1}
+    hidden = under_shirt | under_legs | feet
+    bm = bmesh.new()
+    bm.from_mesh(body.data)
+    covered = [f for f in bm.faces if all(v.index in hidden for v in f.verts)]
+    # Keep the skin right at each edge of my clothes, so there's no gap.
+    edge = {v.index for f in bm.faces if f not in covered for v in f.verts}
+    covered = [f for f in covered if not any(v.index in edge for v in f.verts)]
+    bmesh.ops.delete(bm, geom=covered, context='FACES')
+    bm.to_mesh(body.data)
+    bm.free()
+    return [shirt, legs, collar] + shoes
+
+
+# ---------------------------------------------------------------------------
+# My head: hair, brows, glasses and a grin.
+
+def centres_of(eyes):
+    """The middles of my two eyes, from the base's eyes mesh."""
+    matrix = eyes.matrix_world
+    sides = {1: [], -1: []}
+    for vertex in eyes.data.vertices:
+        at = matrix @ vertex.co
+        sides[1 if at.x > 0 else -1].append(at)
+    return {
+        side: sum(points, Vector()) / len(points) for side, points in sides.items()
+    }
+
+
+def style_hair(hair):
+    """Short sandy hair, darker at the roots, spiked up on top."""
+    tree = BVHTree.FromObject(hair, bpy.context.evaluated_depsgraph_get())
+    to_world = hair.matrix_world
+    to_local = to_world.inverted()
+    top = max((to_world @ v.co).z for v in hair.data.vertices)
+    points = [to_world @ v.co for v in hair.data.vertices]
+    centre = sum(points, Vector()) / len(points)
+    centre.z = top - 0.12
+    paint(hair, lambda at: mix(
+        COLOURS['hair_root'], COLOURS['hair'], smoothstep(-0.02, 0.08, at.z - centre.z),
+    ))
+    tufts = []
+    seed = 11
+
+    def random():
+        nonlocal seed
+        seed = (seed * 16807) % 2147483647
+        return (seed - 1) / 2147483646
+
+    up = Vector((0, 0, 1))
+    back = Vector((0, 1, 0))
+    for i in range(44):
+        ring = i // 11
+        reach = 0.085 - ring * 0.022 + random() * 0.012
+        angle = (i / 11) * 2 * math.pi + ring * 0.5 + random() * 0.35
+        x = centre.x + math.cos(angle) * reach * 0.9
+        y = centre.y + math.sin(angle) * reach - 0.005
+        origin = to_local @ Vector((x, y, top + 0.2))
+        hit, normal, _, _ = tree.ray_cast(origin, to_local.to_3x3() @ Vector((0, 0, -1)))
+        if hit is None:
+            continue
+        base = to_world @ hit - Vector((0, 0, 0.004))
+        normal = (to_world.to_3x3() @ normal).normalized()
+        lean = (normal * 0.7 + up * 0.6 + back * 0.4).normalized()
+        across = up.cross(normal) if abs(normal.z) < 0.95 else Vector((1, 0, 0))
+        lock = tuft(
+            base, lean, across,
+            length=0.028 + random() * 0.022,
+            width=0.022 + random() * 0.008,
+            bend=0.008,
+        )
+        smooth(lock)
+        paint(lock, lambda at: mix(
+            COLOURS['hair_root'], COLOURS['hair'], smoothstep(-0.02, 0.08, at.z - centre.z),
+        ))
+        tufts.append(lock)
+    return tufts
+
+
+def build_glasses(eye_centres, ear_x):
+    """Clear-framed glasses, their arms back over my ears."""
+    parts = []
+    front = min(c.y for c in eye_centres.values())
+    lens_y = front - 0.016
+    for side in (1, -1):
+        centre = eye_centres[side]
+        frame = primitive(
+            'torus', 'frame', major_radius=1, minor_radius=0.11,
+            major_segments=16, minor_segments=3,
+            location=Vector((centre.x + side * 0.003, lens_y, centre.z + 0.002)),
+            rotation=(math.pi / 2, 0, side * -0.15),
+        )
+        frame.scale = (0.025, 0.019, 0.025)
+        select_only(frame)
+        bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+        smooth(frame)
+        parts.append(frame)
+        temple = tube(
+            'temple',
+            [Vector((side * (abs(centre.x) + 0.027), lens_y + 0.006, centre.z + 0.008)),
+             Vector((side * (ear_x + 0.006), lens_y + 0.04, centre.z + 0.01)),
+             Vector((side * (ear_x + 0.006), centre.y + 0.07, centre.z)),
+             Vector((side * (ear_x - 0.004), centre.y + 0.095, centre.z - 0.025))],
+            [0.0024] * 4,
+            sides=4,
+        )
+        smooth(temple)
+        parts.append(temple)
+    gap = abs(eye_centres[1].x) - 0.022
+    bridge = tube(
+        'bridge',
+        [Vector((x, lens_y - 0.002, eye_centres[1].z + 0.008 + 0.004 * (1 - abs(x) / gap)))
+         for x in (-gap, 0.0, gap)],
+        [0.0024] * 3,
+        sides=4,
+    )
+    smooth(bridge)
+    parts.append(bridge)
+    for part in parts:
+        paint(part, COLOURS['frames'])
+    return parts
+
+
+def build_pack(armature, tee):
+    """A soft daypack, with a lid and a front pocket, its straps over my
+    shoulders and down my front."""
+    parts = []
+    back = max((tee.matrix_world @ v.co).y for v in tee.data.vertices if 1.1 < (tee.matrix_world @ v.co).z < 1.35)
+    middle = (world_bone(armature, 'spine_02')[0].z + world_bone(armature, 'spine_03')[0].z) / 2 + 0.05
+
+    def block(name, at, size, round_by, colour):
+        obj = primitive('cube', name, size=1, location=at)
+        obj.scale = size
+        select_only(obj)
+        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+        bevel(obj, round_by, 2)
+        apply_modifiers(obj)
+        smooth(obj)
+        paint(obj, COLOURS[colour])
+        parts.append(obj)
+
+    block('pack', Vector((0, back + 0.07, middle)), (0.3, 0.14, 0.4), 0.05, 'pack')
+    block('lid', Vector((0, back + 0.07, middle + 0.195)), (0.28, 0.155, 0.07), 0.025, 'pack_trim')
+    block('pocket', Vector((0, back + 0.15, middle - 0.1)), (0.22, 0.05, 0.16), 0.02, 'pack_trim')
+    find = surface_of(tee)
+    tree = BVHTree.FromObject(tee, bpy.context.evaluated_depsgraph_get())
+    for side in (1, -1):
+        x = side * 0.1
+        top, _, _, _ = tree.ray_cast(Vector((x * 1.15, 0.0, 2.0)), Vector((0, 0, -1)))
+        points = [
+            Vector((x, back + 0.01, middle + 0.15)),
+            find(x * 1.05, top.z - 0.06, forward=1, out=0.01)[0],
+            top + Vector((0, 0, 0.008)),
+            find(x * 1.08, top.z - 0.07, out=0.02)[0],
+            find(x * 1.05, middle, out=0.02)[0],
+            find(x * 0.98, middle - 0.15, out=0.019)[0],
+        ]
+        strap = tube('strap', points, [0.014] * 6, sides=6)
+        smooth(strap)
+        paint(strap, COLOURS['pack_trim'])
+        parts.append(strap)
+    return parts
+
+
+def rigid(obj, armature, bone):
+    """Moves all of an object with one bone."""
+    obj.vertex_groups.clear()
+    obj.vertex_groups.new(name=bone).add([v.index for v in obj.data.vertices], 1.0, 'REPLACE')
+    obj.parent = armature
+    modifier = obj.modifiers.new('skeleton', 'ARMATURE')
+    modifier.object = armature
+
+
+def add_blink(me, eye_centres):
+    """Blinking squashes my eyes down to a line, and brings my lids down
+    over them, about their middles."""
+    select_only(me)
+    if not me.data.shape_keys:
+        me.shape_key_add(name='Basis')
+    blink = me.shape_key_add(name='blink')
+    eye_group = me.vertex_groups['eyes'].index
+    lid_group = me.vertex_groups.get('lids')
+    for vertex in me.data.vertices:
+        groups = {g.group for g in vertex.groups}
+        side = 1 if vertex.co.x > 0 else -1
+        centre = eye_centres[side]
+        co = vertex.co.copy()
+        if eye_group in groups:
+            co.z = centre.z + (co.z - centre.z) * 0.1
+        elif lid_group and lid_group.index in groups and co.z > centre.z:
+            co.z = centre.z + (co.z - centre.z) * 0.25
+        blink.data[vertex.index].co = co
+
+
 # ---------------------------------------------------------------------------
 # Everything together.
 
 def build():
-    reset()
-    armature = build_armature()
+    armature, body, eyes, brows, hair = load_base()
+    meshes = [body, eyes, brows, hair]
 
-    body = build_body()
-    head_parts, eyes, eye_centres, find = build_head()
-    hair = build_hair(find)
-    glasses = build_glasses(eye_centres, find)
-    clothes = build_clothes()
-    pack = build_pack(body)
+    # From the base's T-pose to the game's rest pose: my arms down, a little
+    # out from my sides.
+    turn_about_forward(armature, {'upperarm_l': math.radians(85), 'upperarm_r': math.radians(-85)})
+    rest_as_posed(armature, meshes)
+    rename_bones(armature, meshes)
+    add_contacts(armature)
+    slim(armature, body)
 
-    # My body bends where Blender's heat weighting says, smoothly from each
-    # bone to the next; everything else moves with one bone, as one.
-    bpy.ops.object.select_all(action='DESELECT')
-    body.select_set(True)
-    armature.select_set(True)
-    bpy.context.view_layer.objects.active = armature
-    bpy.ops.object.parent_set(type='ARMATURE_AUTO')
-    for modifier in list(body.modifiers):
-        body.modifiers.remove(modifier)
-    body.parent = None
-    skin_to(body, armature, keep=True)
-    for part in head_parts + hair + glasses:
-        skin_to(part, armature, 'head')
-    for part in clothes + pack:
-        skin_to(part, armature, part.get('bone', 'body'))
-    for eye in eyes:
-        eye.vertex_groups.new(name='eyes').add(
-            [v.index for v in eye.data.vertices], 1.0, 'REPLACE'
-        )
-        eye['unshaded'] = True
-    for part in head_parts + glasses:
-        if part.get('unshaded') or part.name.startswith('brow') or part in glasses:
-            part.vertex_groups.new(name='unshaded').add(
-                [v.index for v in part.data.vertices], 1.0, 'REPLACE'
-            )
+    paint_skin(body)
+    paint_eyes(eyes)
+    paint(brows, COLOURS['brow'])
+    tufts = style_hair(hair)
+    clothes = dress(armature, body)
+
+    eye_centres = centres_of(eyes)
+    ear_x = max(abs((body.matrix_world @ v.co).x) for v in body.data.vertices
+                if abs((body.matrix_world @ v.co).z - eye_centres[1].z) < 0.03
+                and (body.matrix_world @ v.co).y > eye_centres[1].y)
+    glasses = build_glasses(eye_centres, ear_x)
+    pack = build_pack(armature, clothes[0])
+
+    # My eyelids: the skin just round my eyes, which blinking brings down.
+    lids = body.vertex_groups.new(name='lids')
+    for vertex in body.data.vertices:
+        at = body.matrix_world @ vertex.co
+        for centre in eye_centres.values():
+            offset = at - centre
+            if abs(offset.x) < 0.022 and 0 < offset.z < 0.016 and offset.y < 0.004:
+                lids.add([vertex.index], 1.0, 'REPLACE')
+    eyes.vertex_groups.new(name='eyes').add([v.index for v in eyes.data.vertices], 1.0, 'REPLACE')
+    for part in (eyes, brows):
+        part.vertex_groups.new(name='unshaded').add(
+            [v.index for v in part.data.vertices], 1.0, 'REPLACE')
+    for part in tufts:
+        rigid(part, armature, 'head')
+    for part in glasses:
+        rigid(part, armature, 'head')
+        part.vertex_groups.new(name='unshaded').add(
+            [v.index for v in part.data.vertices], 1.0, 'REPLACE')
+    for part in pack:
+        rigid(part, armature, 'spine_03')
 
     matte = material('matte')
     gloss = material('gloss', alpha=0.6, roughness=0.2)
-    for part in [body] + head_parts + hair + clothes + pack:
+    everything = [body, eyes, brows, hair] + tufts + clothes + pack
+    for part in everything:
         part.data.materials.clear()
         part.data.materials.append(matte)
     for part in glasses:
         part.data.materials.clear()
         part.data.materials.append(gloss)
-    for label, group in (('body', [body]), ('head', head_parts), ('hair', hair),
-                         ('glasses', glasses), ('clothes', clothes), ('pack', pack)):
+    for label, group in (('body', [body]), ('face', [eyes, brows]), ('hair', [hair] + tufts),
+                         ('clothes', clothes), ('glasses', glasses), ('pack', pack)):
         count = sum(len(p.vertices) - 2 for part in group for p in part.data.polygons)
         print(f'ME: {label} {count} triangles')
-    # Every closed part faces outwards, as three.js only draws front faces.
-    for part in [body] + head_parts + hair + clothes + pack + glasses:
-        if part.get('unshaded') and part.name.startswith('grin'):
-            continue
+    # What I made faces outwards, as three.js only draws front faces. (The
+    # base's own meshes already do: recalculating them, cut open where my
+    # clothes are, would turn some inside out.)
+    for part in tufts + clothes[2:] + pack + glasses:
         select_only(part)
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.select_all(action='SELECT')
         bpy.ops.mesh.normals_make_consistent(inside=False)
         bpy.ops.object.mode_set(mode='OBJECT')
-    me = join([body] + head_parts + hair + clothes + pack + glasses, 'me')
-
-    bake_shading(me)
-    me.vertex_groups.remove(me.vertex_groups['unshaded'])
-
-    # Blinking squashes my eyes down to a line, about their middles.
-    select_only(me)
-    me.shape_key_add(name='Basis')
-    blink = me.shape_key_add(name='blink')
-    eye_group = me.vertex_groups['eyes'].index
-    centres = eye_centres
-    for vertex in me.data.vertices:
-        if any(g.group == eye_group for g in vertex.groups):
-            centre = centres[1 if vertex.co.x > 0 else -1]
-            co = vertex.co.copy()
-            co.z = centre.z + (co.z - centre.z) * 0.15
-            blink.data[vertex.index].co = co
-    me.vertex_groups.remove(me.vertex_groups['eyes'])
-
+    me = join(everything + glasses, 'me')
+    for modifier in list(me.modifiers):
+        me.modifiers.remove(modifier)
     modifier = me.modifiers.new('skeleton', 'ARMATURE')
     modifier.object = armature
     me.parent = armature
+
+    bake_shading(me)
+    me.vertex_groups.remove(me.vertex_groups['unshaded'])
+    add_blink(me, eye_centres)
+    for name in ('eyes', 'lids'):
+        me.vertex_groups.remove(me.vertex_groups[name])
 
     triangles = sum(len(p.vertices) - 2 for p in me.data.polygons)
     print(f'ME: {triangles} triangles')

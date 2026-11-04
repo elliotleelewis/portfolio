@@ -22,14 +22,14 @@ const notice = (name: string, licence: string, text: string): string =>
 	`${'-'.repeat(72)}\n${name} (${licence})\n\n${text.trim()}\n`;
 
 /**
- * /licenses.txt: the notices that the open-source code, fonts and sounds the
- * site sends to browsers ask to go with them.
+ * /licenses.txt: the notices that the open-source code, fonts, sounds and
+ * models the site sends to browsers ask to go with them.
  * @param dependencies - The packages bundled into the page's JavaScript.
  * @returns The file.
  */
 const licensesTxt = (dependencies: Dependency[]): string =>
 	[
-		'Open-source software in elliotleelewis.com\n\nThe site itself is (c) Elliot Lewis, all rights reserved. It sends your\nbrowser the open-source software, fonts and sounds below, whose licences\nask for these notices to go with them (or, for the sounds, credit them).\n',
+		'Open-source software in elliotleelewis.com\n\nThe site itself is (c) Elliot Lewis, all rights reserved. It sends your\nbrowser the open-source software, fonts, sounds and models below, whose\nlicences ask for these notices to go with them (or, for the sounds and\nmodels, credit them).\n',
 		// Astro writes its own script for the hero straight into the page,
 		// and Paraglide copies its runtime into src/paraglide/, so the bundle
 		// doesn't see that either comes from a package.
@@ -67,6 +67,11 @@ const licensesTxt = (dependencies: Dependency[]): string =>
 			'Sounds',
 			'CC0-1.0',
 			readFileSync('licenses/sounds.txt', 'utf8'),
+		),
+		notice(
+			'Models',
+			'CC0-1.0',
+			readFileSync('licenses/models.txt', 'utf8'),
 		),
 	].join('\n');
 

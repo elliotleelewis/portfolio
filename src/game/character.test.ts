@@ -1,13 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
-import {
-	Box3,
-	type Object3D,
-	PropertyBinding,
-	SkinnedMesh,
-	Vector3,
-} from 'three';
+import { Box3, type Object3D, SkinnedMesh, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -47,6 +41,12 @@ const pose = (c: Character): void => {
 	c.rightArm.rotation.z = -1.7;
 	c.leftLeg.rotation.z = 0.4;
 	c.rightLeg.rotation.set(0.3, 0, -0.5);
+	// Bent at the elbows and knees, and twisted at the chest.
+	c.chest.rotation.set(0.2, 0.3, -0.1);
+	c.leftForearm.rotation.x = -0.9;
+	c.rightForearm.rotation.set(-0.4, 0.2, 0);
+	c.leftShin.rotation.x = 0.7;
+	c.rightShin.rotation.x = 0.3;
 };
 
 /**
@@ -56,7 +56,7 @@ const pose = (c: Character): void => {
  * @returns Where it is in the world.
  */
 const boneAt = (c: Character, name: string): Vector3 => {
-	const bone = c.root.getObjectByName(PropertyBinding.sanitizeNodeName(name));
+	const bone = c.root.getObjectByName(name);
 	if (!bone) {
 		throw new Error(`No ${name} bone`);
 	}
@@ -100,10 +100,10 @@ describe('createCharacter', () => {
 		c.keepUp();
 		c.root.updateMatrixWorld(true);
 		for (const [i, name] of [
-			'hand.L',
-			'hand.R',
-			'foot.L',
-			'foot.R',
+			'palm_l',
+			'palm_r',
+			'sole_l',
+			'sole_r',
 		].entries()) {
 			const marked = c.extremities[i].getWorldPosition(new Vector3());
 			expect(marked.distanceTo(boneAt(c, name))).toBeLessThan(1e-4);
@@ -144,7 +144,7 @@ describe('readCharacterModel', () => {
 	it("turns down a model that's missing a bone the game turns", async () => {
 		// The bone renamed, in the model's JSON, without touching the rest.
 		const broken = Buffer.from(model);
-		broken.write('"arm.X"', broken.indexOf('"arm.L"'));
+		broken.write('"upperarm_x"', broken.indexOf('"upperarm_l"'));
 		await expect(
 			readCharacterModel(
 				broken.buffer.slice(
@@ -152,6 +152,6 @@ describe('readCharacterModel', () => {
 					broken.byteOffset + broken.byteLength,
 				),
 			),
-		).rejects.toThrow('no "arm.L" bone');
+		).rejects.toThrow('no "upperarm_l" bone');
 	});
 });

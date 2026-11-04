@@ -160,17 +160,34 @@ test('a run', async ({ page }, { project }) => {
 	}
 });
 
-test('me, up close', async ({ page }, { project }) => {
+/**
+ * Takes my portrait from the run's start: posed as I am that far in, then
+ * everything held still, so the camera stays where it's put.
+ * @param page - The page.
+ * @param project - The browser and time of day it's in.
+ * @param seconds - How far into the run.
+ * @param views - Where the camera stands for each.
+ */
+const portray = async (
+	page: Page,
+	project: string,
+	seconds: number,
+	views: readonly {
+		name: string;
+		turn: number;
+		distance: number;
+		height: number;
+	}[],
+): Promise<void> => {
 	await page.goto('/game');
 	await page.locator('#hero-start').click();
-	// In my star pose, then everything held still, so the camera stays where
-	// it's put. Where my feet are, and which way the camera was looking at me.
-	const [feet, away] = await page.evaluate(() => {
+	// Where my feet are, and which way the camera was looking at me.
+	const [feet, away] = await page.evaluate((s) => {
 		const { game, stage } = (globalThis as unknown as HeroHandle).hero;
 		if (!game || !stage) {
 			throw new Error('No run to take my portrait in');
 		}
-		game.advance(2.4);
+		game.advance(s);
 		stage.step = () => {
 			// Held still.
 		};
@@ -183,8 +200,8 @@ test('me, up close', async ({ page }, { project }) => {
 			.setY(0)
 			.normalize();
 		return [at.toArray(), towards.toArray()];
-	});
-	for (const { name, turn, distance, height } of portraits) {
+	}, seconds);
+	for (const { name, turn, distance, height } of views) {
 		await page.evaluate(
 			({ from, facing, ...portrait }) => {
 				const { stage } = (globalThis as unknown as HeroHandle).hero;
@@ -209,8 +226,16 @@ test('me, up close', async ({ page }, { project }) => {
 			},
 			{ from: feet, facing: away, turn, distance, height },
 		);
-		await shoot(page, name, project.name);
+		await shoot(page, name, project);
 	}
+};
+
+test('me, up close', async ({ page }, { project }) => {
+	// Standing at the start, relaxed, then in my star pose.
+	await portray(page, project.name, 0.3, [
+		{ name: 'me-standing', turn: 0, distance: 2.8, height: 1 },
+	]);
+	await portray(page, project.name, 2.4, portraits);
 });
 
 test.afterAll(() => {

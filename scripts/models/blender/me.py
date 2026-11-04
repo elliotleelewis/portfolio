@@ -346,43 +346,24 @@ def rest_as_posed(armature, meshes):
     bpy.ops.object.mode_set(mode='OBJECT')
 
 
-# The game's names for the bones it turns (models/README.md), from the
-# base's (Unreal's) names.
-RENAMES = {
-    'pelvis': 'body',
-    'Head': 'head',
-    'upperarm_l': 'arm.L',
-    'upperarm_r': 'arm.R',
-    'thigh_l': 'leg.L',
-    'thigh_r': 'leg.R',
-}
-
-
-def rename_bones(armature, meshes):
-    for old, new in RENAMES.items():
-        armature.data.bones[old].name = new
-        for mesh in meshes:
-            group = mesh.vertex_groups.get(old)
-            if group:
-                group.name = new
-
-
 def add_contacts(armature):
     """Where my hands and feet touch the ground mid-cartwheel: my palms and
-    soles, as bones that move with them but skin nothing."""
+    soles, as bones that move with them but skin nothing. They're part of the
+    game's humanoid skeleton (models/README.md), which is otherwise the
+    base's own."""
     select_only(armature)
     bpy.ops.object.mode_set(mode='EDIT')
     bones = armature.data.edit_bones
-    for side, limb in (('l', 'L'), ('r', 'R')):
+    for side in ('l', 'r'):
         hand = bones[f'hand_{side}']
         along = (hand.tail - hand.head).normalized()
-        palm = bones.new(f'hand.{limb}')
+        palm = bones.new(f'palm_{side}')
         palm.head = hand.head + along * 0.075
         palm.tail = palm.head + along * 0.04
         palm.parent = hand
         palm.use_deform = False
         foot = bones[f'foot_{side}']
-        sole = bones.new(f'foot.{limb}')
+        sole = bones.new(f'sole_{side}')
         sole.head = Vector((foot.head.x, foot.head.y - 0.035, 0.02))
         sole.tail = sole.head + Vector((0, -0.08, 0))
         sole.parent = foot
@@ -395,11 +376,11 @@ def add_contacts(armature):
 
 # How far in toward each bone the flesh round it comes.
 SLIM = {
-    'arm.L': 0.8, 'arm.R': 0.8,
+    'upperarm_l': 0.8, 'upperarm_r': 0.8,
     'lowerarm_l': 0.86, 'lowerarm_r': 0.86,
     'neck_01': 0.86,
     'spine_02': 0.9, 'spine_03': 0.86,
-    'leg.L': 0.92, 'leg.R': 0.92,
+    'thigh_l': 0.92, 'thigh_r': 0.92,
     'calf_l': 0.94, 'calf_r': 0.94,
 }
 
@@ -504,14 +485,14 @@ def paint_eyes(eyes):
 
 # How much looser than me each piece of clothing hangs, round each bone.
 LOOSE = {
-    'body': 1.1, 'spine_01': 1.1, 'spine_02': 1.08, 'spine_03': 1.05,
-    'arm.L': 1.2, 'arm.R': 1.2,
-    'leg.L': 1.16, 'leg.R': 1.16, 'calf_l': 1.24, 'calf_r': 1.24,
+    'pelvis': 1.1, 'spine_01': 1.1, 'spine_02': 1.08, 'spine_03': 1.05,
+    'upperarm_l': 1.2, 'upperarm_r': 1.2,
+    'thigh_l': 1.16, 'thigh_r': 1.16, 'calf_l': 1.24, 'calf_r': 1.24,
 }
 
 
-TORSO = {'body', 'spine_01', 'spine_02', 'spine_03'}
-LEGS = {'leg.L', 'leg.R'}
+TORSO = {'pelvis', 'spine_01', 'spine_02', 'spine_03'}
+LEGS = {'thigh_l', 'thigh_r'}
 
 
 def loosen(armature, obj, is_tee=False):
@@ -536,7 +517,7 @@ def loosen(armature, obj, is_tee=False):
                     centre.z = at.z
                 if name in LEGS and is_tee:
                     # My tee hangs round my hips as it does round my middle.
-                    factor = LOOSE['body']
+                    factor = LOOSE['pelvis']
                     centre.z = at.z
                 elif name in LEGS:
                     # Loose down my legs, but snug at my hips, under my tee.
@@ -594,7 +575,7 @@ def follow_arms(obj):
     """My sleeves move with my arms, all of them: what my arm moves most, it
     moves alone, so the hem doesn't trail behind as I raise my arm. Nearer
     my shoulder, they still blend into my body."""
-    for name in ('arm.L', 'arm.R'):
+    for name in ('upperarm_l', 'upperarm_r'):
         arm = obj.vertex_groups[name].index
         for vertex in obj.data.vertices:
             weight = next((g.weight for g in vertex.groups if g.group == arm), 0.0)
@@ -644,15 +625,15 @@ def build_shoes(armature):
 def dress(armature, body):
     """A grey tee with short sleeves, walking trousers and trail shoes."""
     hem = 0.93
-    torso = {'body', 'spine_01', 'spine_02', 'spine_03', 'clavicle_l', 'clavicle_r'}
-    arms = {'arm.L', 'arm.R'}
+    torso = {'pelvis', 'spine_01', 'spine_02', 'spine_03', 'clavicle_l', 'clavicle_r'}
+    arms = {'upperarm_l', 'upperarm_r'}
 
     def tee(at, bone):
         # Down over my hips (moved mostly by my legs) to the hem.
         return (bone in arms and at.z > 1.1) or (bone in torso | LEGS and hem - 0.04 < at.z)
 
     def trousers(at, bone):
-        return bone in {'body', 'leg.L', 'leg.R', 'calf_l', 'calf_r'} and 0.1 < at.z < 1.06
+        return bone in {'pelvis', 'thigh_l', 'thigh_r', 'calf_l', 'calf_r'} and 0.1 < at.z < 1.06
 
     sleeve_cuts = []
     for name in arms:
@@ -899,7 +880,6 @@ def build():
     # out from my sides.
     turn_about_forward(armature, {'upperarm_l': math.radians(85), 'upperarm_r': math.radians(-85)})
     rest_as_posed(armature, meshes)
-    rename_bones(armature, meshes)
     add_contacts(armature)
     slim(armature, body)
 
@@ -929,9 +909,9 @@ def build():
         part.vertex_groups.new(name='unshaded').add(
             [v.index for v in part.data.vertices], 1.0, 'REPLACE')
     for part in tufts:
-        rigid(part, armature, 'head')
+        rigid(part, armature, 'Head')
     for part in glasses:
-        rigid(part, armature, 'head')
+        rigid(part, armature, 'Head')
         part.vertex_groups.new(name='unshaded').add(
             [v.index for v in part.data.vertices], 1.0, 'REPLACE')
     for part in pack:
@@ -1043,7 +1023,7 @@ def pose_star(armature):
     head and my legs out, each turned about my body's forward axis."""
     select_only(armature)
     bpy.ops.object.mode_set(mode='POSE')
-    for name, angle in (('arm.L', -2.27), ('arm.R', 2.27), ('leg.L', -0.5), ('leg.R', 0.5)):
+    for name, angle in (('upperarm_l', -2.27), ('upperarm_r', 2.27), ('thigh_l', -0.5), ('thigh_r', 0.5)):
         bone = armature.pose.bones[name]
         head = bone.head.copy()
         bone.matrix = (

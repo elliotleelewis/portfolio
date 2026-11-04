@@ -20,7 +20,7 @@
     "e2e": "playwright test",
     "shots": "playwright test --config playwright.shots.config.ts",
     "models": "jiti scripts/models/build.ts",
-    "models:template": "jiti scripts/models/template.ts",
+    "models:me": "${BLENDER:-blender} --background --factory-startup --python scripts/models/blender/me.py",
     "db:generate": "drizzle-kit generate && oxfmt migrations"
   },
   "dependencies": {

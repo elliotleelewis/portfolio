@@ -4,18 +4,29 @@ The game's characters, as modelled in Blender. Each `.glb` here is the source: `
 
 So far it's only me: `me.glb`.
 
-## Modelling me
+## How I'm made
 
-1. **Open the template.** In Blender, File › Import › glTF 2.0, and pick `models/me.glb`. It's me as the game draws me now, already skinned to the skeleton the game turns. Model over it, or replace the mesh altogether.
-2. **Keep the skeleton.** Keep the armature, its bones and their names (below). Move a bone if its joint should be somewhere else. Extra bones are fine (a spine, elbows, fingers), but the game only turns the ones below for now.
-3. **Skin to it.** Parent the mesh to the armature (Ctrl+P › With Automatic Weights), then paint the weights so my shoulders, hips and neck bend smoothly. Up to four bones per vertex.
-4. **Colour it.** Paint colours on the vertices (a Color Attribute), or give each material a Base Color, or both (they multiply). No textures yet.
-5. **Name each material for its finish:** `matte` (cloth, skin, hair, wood), `satin` (leather, plastic, paint), `gloss` (glass, lenses, car paint), `metal` or `cast` (iron). The game remakes each material in its finish, like the rest of the world, so roughness and metalness set in Blender are only for the preview. A see-through material sets its Base Color's alpha below 1. Each material is a draw call (two, with shadows), so use as few as you can: three at most.
-6. **Make a `blink` shape key** that shuts my eyes, from the Basis with them open.
-7. **Export:** File › Export › glTF 2.0, as `models/me.glb` (replacing the template). See the settings below.
-8. **Get it ready:** `pnpm models`. Then `pnpm test`, which checks it (below), and `pnpm shots --grep "me, up close"` for my portrait, to compare with `main`'s in `shots/out/compare.html`.
+I'm modelled by a script, in Blender (`scripts/models/blender/me.py`), so I can be changed and made again: run `pnpm models:me` with [Blender](https://www.blender.org/download/) 4.2 on the PATH (or `BLENDER` set to it), which writes `models/me.glb`. Then `pnpm models` gets me ready for the game.
 
-To start again from the template, `pnpm models:template` writes it back to `models/me.glb`, from the procedural version of me in `scripts/models/me.ts`.
+The script builds me from scratch:
+
+- **My body** is one continuous skin over a stick skeleton (Blender's Skin modifier, then smoothed), from my neck down to my ankles and fingertips, coloured by what I'm wearing.
+- **My head** is shaped from a sphere: a jaw narrowing to my chin, a brow and full cheeks. My eyes, brows, nose, grin and glasses are placed on it by casting rays at its surface.
+- **My hair** is a close crop and tufts swept up and back, with a quiff, darker at the roots.
+- **My clothes:** the tee's collar and hem, trail shoes on darker soles, and a daypack with a lid, a pocket and straps that follow my shoulders.
+- **Light and shade** are baked into my colours: Cycles' ambient occlusion darkens where parts of me shade each other (under my arms and chin, where my clothes meet), so the game gets the depth for nothing. What's painted on my face is left unshaded, so it stays clear.
+- **Skinning:** my body bends where Blender's heat weighting says, smoothly from bone to bone at my shoulders, hips and neck. Everything else moves with one bone, as one.
+- **Previews:** `pnpm models:me -- --preview DIR` renders me from the front, the side, the back, up close and in my star pose into `DIR`, to look at before trying me in the game.
+
+To change me, change the script (its colours are at the top) and run it again. Whatever made me, the game only needs what's below.
+
+## Modelling me by hand
+
+I can also be modelled by hand, in Blender, over the script's version: File › Import › glTF 2.0, `models/me.glb`. Keep the armature and its bones (below), skin the mesh to it (Ctrl+P › With Automatic Weights, then paint the weights), colour it on its vertices (a Color Attribute) or in its materials, name each material for its finish, make a `blink` shape key, and export over `models/me.glb` with the settings below. Then `pnpm models`, `pnpm test` and `pnpm shots --grep "me, up close"`.
+
+### Materials
+
+Each material is named for its finish: `matte` (cloth, skin, hair, wood), `satin` (leather, plastic, paint), `gloss` (glass, lenses, car paint), `metal` or `cast` (iron). The game remakes each one in its finish, like the rest of the world, so roughness and metalness set in Blender are only for the preview. Colours on the vertices and in the material multiply. A see-through material sets its Base Color's alpha below 1. Each material is a draw call (two, with shadows), so use as few as you can: three at most. No textures yet.
 
 ### The rest pose
 
@@ -54,4 +65,4 @@ The game turns me from my rest pose, so model me in it:
 The game won't load a model without everything it turns: every bone above, the `blink` shape key, and every material named for its finish. The tests load it the same way, and also check that:
 
 - my hands and feet are where the cartwheel needs them, and my joints turn my bones however I'm posed (`src/game/character.test.ts`)
-- I fit inside my drawing budget, 22,000 triangles counting my shadow (`src/game/draw-budget.test.ts`), so about 10,000 triangles in Blender
+- I fit inside my drawing budget, 16,000 triangles counting my shadow (`src/game/draw-budget.test.ts`), so about 8,000 triangles in Blender

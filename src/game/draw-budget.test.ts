@@ -7,6 +7,7 @@ import {
 	Color,
 	Group,
 	InstancedMesh,
+	InterleavedBufferAttribute,
 	Mesh,
 	MeshLambertMaterial,
 	Object3D,
@@ -50,9 +51,9 @@ interface Cost {
 // drawn without one. Raising a budget is fine, but do it on purpose: see
 // "The drawing budget" in the README.
 const budgets: Record<DrawBudget, Cost> = {
-	// Sculpted rather than built from primitives (src/game/character.ts):
-	// smooth, so more triangles, in the same draw calls.
-	me: { draws: 8, triangles: 22_000 },
+	// Modelled in Blender (models/README.md): smooth, so more triangles
+	// than primitives, but in fewer draw calls.
+	me: { draws: 8, triangles: 16_000 },
 	// However many bears are out.
 	bears: { draws: 12, triangles: 125_000 },
 	// Two for each bear after me, its "!" and the one pinned to the edge of
@@ -116,7 +117,11 @@ const costOf = (root: Object3D, budget: DrawBudget): Cost => {
 			return;
 		}
 		const position: unknown = geometry.getAttribute('position');
-		if (!(position instanceof BufferAttribute)) {
+		// Loaded models' vertices can be interleaved, but count the same.
+		if (
+			!(position instanceof BufferAttribute) &&
+			!(position instanceof InterleavedBufferAttribute)
+		) {
 			return;
 		}
 		const material: unknown = child.material;

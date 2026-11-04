@@ -1,5 +1,5 @@
 // Gets the models ready for the game (`pnpm models`): each one in models/,
-// as exported from Blender, is tidied, compressed and written to
+// however it was made, is tidied, compressed and written to
 // src/game/models/, which the game loads. See models/README.md.
 import { readdirSync } from 'node:fs';
 import path from 'node:path';

@@ -1,14 +1,14 @@
 # Models
 
-The game's characters, modelled in Blender. Each `.glb` here is the source: `pnpm models` gets it ready for the game (compressed, in `src/game/models/`), which loads it before a run. Never edit `src/game/models/` by hand.
+The game's characters. Each `.glb` here is the source: `pnpm models` gets it ready for the game (compressed, in `src/game/models/`), which loads it before a run. Never edit `src/game/models/` by hand.
 
-So far it's only me: `me.glb`, made by `scripts/models/blender/me.py`.
+So far it's only me: `me.glb`, made by `scripts/models/me.ts`.
 
 ## The style: folded paper
 
 Everything in the 3D world (me, the bears, the trees, the easter eggs, the landscape) is made as if folded from coloured paper, to match the site's trail map. Build new things to these rules, and check them against what's there in `pnpm shots`, not against "is this better".
 
-- **Facets, not curves.** Hard, flat facets, as folded paper has. Round things are low-poly: balls are icospheres of 1 subdivision (2 for a head), limbs and trunks are prisms of 5 to 7 sides, boxes are bevelled at most once. No smooth shading, no subdivision.
+- **Facets, not curves.** Hard, flat facets, as folded paper has. Round things are low-poly: balls are icosahedra of 20 faces (80 for a head), limbs and trunks are prisms of 5 to 7 sides, boxes have their edges folded at most once. No smooth shading, no subdivision.
 - **Flat colour per fold.** Each face is one colour, a little lighter or darker (up to 7%) than its paper's, as folds catch the light differently. That variation is painted into the vertex colours, so it costs nothing to draw. No textures.
 - **Few papers.** Each thing is made of a handful of colours, each a flat paper: skin, hair, tee, trousers, shoes. Colours come from the world's palette (the site's in `src/styles/global.css` for the scene's light, and each model's own, in its script), and have to read at night under the moon and my lantern.
 - **Matte.** Paper is matte: everything is in the `matte` finish, except the odd thing that has to shine (the stove's iron, the Tahoe's paint, glass).
@@ -21,9 +21,11 @@ Everything in the 3D world (me, the bears, the trees, the easter eggs, the lands
 
 ## How I'm made
 
-`pnpm models:me`, with [Blender](https://www.blender.org/download/) 4.2 on the PATH (or `BLENDER` set to it), runs the script, which writes `models/me.glb`. Then `pnpm models` gets me ready for the game. `pnpm models:me -- --preview DIR` also renders me from the front, the side, the back, up close and in my star pose into `DIR`, to look at before trying me in the game.
+I'm modelled in TypeScript, with nothing to install: `pnpm models:me` runs `scripts/models/me.ts`, which builds me from three.js shapes and writes `models/me.glb` with [glTF Transform](https://gltf-transform.dev). Then `pnpm models` gets me ready for the game, and `pnpm shots --grep "me, up close"` takes my portrait, standing and in my star pose, to compare with `main`'s.
 
-The script builds every part of me from paper shapes (faceted balls, prisms, blocks, four-sided spikes of hair, and flat cut-outs for my face), colours them fold by fold from the colours at its top, puts each on the bone it moves with, joins them, and makes my `blink` shape key. To change me, change the script and run it again.
+The script builds every part of me from paper shapes (faceted balls, prisms, blocks with folded edges, four-sided spikes of hair, and flat cut-outs for my face), in a modeller's axes (Z up, facing −Y), colours them fold by fold from the colours at its top, puts each on the bone it moves with, joins them, and makes my `blink` shape key. To change me, change the script and run it again.
+
+A model that needs more than code can build (sculpting, say) can be made in any 3D program, such as [Blender](https://www.blender.org), and exported to the spec below: the game doesn't care what made it.
 
 ## What the game needs of a person
 
@@ -33,7 +35,7 @@ These hold for anyone rigged to the game's humanoid skeleton, however they're ma
 
 The game turns people from their rest pose, so model them in it:
 
-- Standing on the ground, feet at the origin, facing front (Blender's −Y), about 1.9 m tall with hair.
+- Standing on the ground, feet at the origin, facing front (+Z in glTF, −Y in Blender), about 1.9 m tall with hair.
 - Arms hanging a little out from the sides, legs straight down.
 - In metres, with the scale applied.
 
@@ -53,15 +55,15 @@ Every person in the game is rigged to the same humanoid skeleton, so the game po
 | `palm_l`, `palm_r`         | The palms, under the forearms.             | Where the hands touch the ground mid-cartwheel. Skins nothing. |
 | `sole_l`, `sole_r`         | The soles, under the shins, on the ground. | Where the feet touch the ground. Skins nothing.                |
 
-`_l` is the person's left (screen-right, facing them). Other bones (`spine_01`, `neck_01`, hands, feet, fingers) can be there too, and follow as they're weighted. The bones can lie and roll whichever way Blender likes: the game turns each joint about the body's own axes, and works out each bone's turn from where its parent now is (`keepUp`). Don't animate them in Blender: the game poses people as it plays.
+`_l` is the person's left (screen-right, facing them). Other bones (`spine_01`, `neck_01`, hands, feet, fingers) can be there too, and follow as they're weighted. The bones can lie and roll whichever way the modeller likes: the game turns each joint about the body's own axes, and works out each bone's turn from where its parent now is (`keepUp`). Don't animate them: the game poses people as it plays.
 
 ### Materials
 
-Each material is named for its finish: `matte`, `satin`, `gloss`, `metal` or `cast`. The game remakes each one in its finish, like the rest of the world, so roughness and metalness set in Blender are only for the preview. Colours on the vertices and in the material multiply. Each material is a draw call (two, with shadows): in the folded-paper style, one is enough.
+Each material is named for its finish: `matte`, `satin`, `gloss`, `metal` or `cast`. The game remakes each one in its finish, like the rest of the world, so roughness and metalness set in a model are ignored. Colours on the vertices and in the material multiply. Each material is a draw call (two, with shadows): in the folded-paper style, one is enough.
 
 ### Exporting by hand
 
-The script exports for itself. Exporting by hand from Blender (File › Export › glTF 2.0):
+The script writes its glTF itself. Exporting a hand-made person from Blender (File › Export › glTF 2.0):
 
 - glTF Binary (`.glb`), the armature and the mesh only, +Y up.
 - Data › Mesh: Apply Modifiers, Normals and Vertex Color (Active) on, UVs off.

@@ -51,7 +51,7 @@ interface Cost {
 // drawn without one. Raising a budget is fine, but do it on purpose: see
 // "The drawing budget" in the README.
 const budgets: Record<DrawBudget, Cost> = {
-	// Modelled in Blender, in folded paper (models/README.md).
+	// Folded from paper (models/README.md).
 	me: { draws: 8, triangles: 6000 },
 	// However many bears are out.
 	bears: { draws: 12, triangles: 125_000 },

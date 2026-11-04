@@ -15,6 +15,7 @@ The script starts from a game-ready base, not from scratch: the Superhero male f
 - **Slimmer than a superhero:** the flesh round my arms, neck, chest and legs drawn in toward each bone.
 - **Colour:** my skin in the game's skin tone, keeping the painted detail of his face (lips, cheeks, shading) from his texture as lighter and darker. His eyes from theirs, and everything else from the palette at the top of the script.
 - **Clothes from my own surface:** a tee and walking trousers made from copies of my skin, cut clean along planes (hem, sleeves, cuffs), smoothed of muscle and loosened round each bone, so they hang rather than cling. They keep my weights, so they bend just as I do. The skin under them is taken away, so it can't poke through.
+- **Likeness, from the hero photo** (`src/media/hero.webp`): a rounder, softer face than the base's chiselled one (wider cheeks and jaw, a shorter chin, a broader nose tip), ears that stand out a little, eyes narrowed by a smile with my cheeks pushed up under them, grey-blue eyes, a big toothy grin, rosy cheeks and ears, the mole on my cheek, lighter brows, a higher hairline under short, tousled strawberry-blond hair, and rectangular glasses with clear grey frames.
 - **The rest of me:** a collar, trail shoes on darker soles (with my feet), spiky tufts on top of his buzzed hair, clear-framed glasses placed from my eyes, and a daypack whose straps follow my shoulders.
 - **Light and shade** baked into my colours (Cycles' ambient occlusion), except on my eyes, brows and glasses, which stay clear.
 - **Blinking:** a `blink` shape key squashes my eyes and brings my lids down.
@@ -72,4 +73,4 @@ Every person in the game is rigged to the same humanoid skeleton, so the game po
 The game won't load a model without everything it turns: every bone in the table above, the `blink` shape key, and every material named for its finish. The tests load it the same way, and also check that:
 
 - my hands and feet are where the cartwheel needs them, and my joints turn my bones however I'm posed (`src/game/character.test.ts`)
-- I fit inside my drawing budget, 36,000 triangles counting my shadow (`src/game/draw-budget.test.ts`), so about 18,000 triangles in Blender, in at most three materials (draw calls are what a phone runs short of)
+- I fit inside my drawing budget, 42,000 triangles counting my shadow (`src/game/draw-budget.test.ts`), so about 21,000 triangles in Blender, in at most three materials (draw calls are what a phone runs short of)

@@ -54,7 +54,7 @@ const budgets: Record<DrawBudget, Cost> = {
 	// Modelled in Blender from a game-ready base (models/README.md): a real
 	// body and face, so many more triangles than primitives, but in fewer
 	// draw calls, which are what a phone runs short of.
-	me: { draws: 8, triangles: 36_000 },
+	me: { draws: 8, triangles: 42_000 },
 	// However many bears are out.
 	bears: { draws: 12, triangles: 125_000 },
 	// Two for each bear after me, its "!" and the one pinned to the edge of

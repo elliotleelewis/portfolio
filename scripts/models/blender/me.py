@@ -23,7 +23,7 @@ import sys
 import bmesh
 import bpy
 import numpy as np
-from mathutils import Matrix, Vector
+from mathutils import Matrix, Vector, noise
 from mathutils.bvhtree import BVHTree
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..')
@@ -34,9 +34,13 @@ BASE = os.path.join(ROOT, 'models', 'base', 'quaternius')
 # Colours, as the game's palette would pick them (sRGB hex), and helpers.
 
 COLOURS = {
-    'skin': '#efc3a4',
-    'hair': '#c9a46c',
-    'hair_root': '#9c7a48',
+    'skin': '#efc1a6',
+    # Where I'm rosier: my cheeks and ears.
+    'blush': '#e8a28e',
+    'mole': '#5b3b2d',
+    # Light strawberry blond, darker at the roots.
+    'hair': '#c49a71',
+    'hair_root': '#987049',
     'shirt': '#868b84',
     'trousers': '#3e434a',
     'shoes': '#5b4a3a',
@@ -44,11 +48,12 @@ COLOURS = {
     'pack': '#4e5452',
     'pack_trim': '#3a3f3d',
     'eye': '#2a211c',
-    'brow': '#9c7a48',
-    'mouth': '#6e3432',
+    'brow': '#b98e67',
+    'mouth': '#5e2a28',
     'teeth': '#f7f3e8',
     'lips': '#d99b86',
-    'frames': '#b9bcbd',
+    # Clear grey frames.
+    'frames': '#aeaaa3',
 }
 
 
@@ -378,7 +383,7 @@ def add_contacts(armature):
 SLIM = {
     'upperarm_l': 0.8, 'upperarm_r': 0.8,
     'lowerarm_l': 0.86, 'lowerarm_r': 0.86,
-    'neck_01': 0.86,
+    'neck_01': 0.97,
     'spine_02': 0.9, 'spine_03': 0.86,
     'thigh_l': 0.92, 'thigh_r': 0.92,
     'calf_l': 0.94, 'calf_r': 0.94,
@@ -476,7 +481,13 @@ def paint_eyes(eyes):
     attribute = eyes.data.color_attributes.new('Col', 'FLOAT_COLOR', 'POINT')
     for i, uv in enumerate(uvs):
         srgb = sample(texture, uv) if uv else (1, 1, 1)
-        attribute.data[i].color = (*[c ** 2.2 for c in srgb], 1.0)
+        # Grey-blue, as in the photo, where the base's are brown: the iris is
+        # what's coloured, darker and redder than the white round it.
+        r, g, b = srgb
+        if r - b > 0.12 and r < 0.75:
+            shade = (r + g + b) / 3 / 0.45
+            r, g, b = (0.42 * shade, 0.52 * shade, 0.58 * shade)
+        attribute.data[i].color = (*[max(c, 0) ** 2.2 for c in (r, g, b)], 1.0)
     eyes.data.color_attributes.active_color = attribute
 
 
@@ -704,6 +715,37 @@ def centres_of(eyes):
     }
 
 
+def tousle(hair, centre):
+    """Fuller on top, as my hair is: the top of the buzzed hair, lifted off my
+    head (most at the front), and tousled."""
+    top = hair.copy()
+    top.data = hair.data.copy()
+    top.name = 'tousled'
+    link(top)
+    matrix = top.matrix_world
+    bm = bmesh.new()
+    bm.from_mesh(top.data)
+    low = [f for f in bm.faces if (matrix @ f.calc_center_median()).z < centre.z + 0.075]
+    bmesh.ops.delete(bm, geom=low, context='FACES')
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context='VERTS')
+    bmesh.ops.subdivide_edges(bm, edges=bm.edges[:], cuts=1, use_grid_fill=True)
+    bm.normal_update()
+    for v in bm.verts:
+        at = matrix @ v.co
+        rel = at - centre
+        height = smoothstep(0.08, 0.13, rel.z)
+        front = smoothstep(0.0, -0.08, rel.y)
+        texture = noise.noise(at * 70.0)
+        lift = 0.003 + height * (0.008 + 0.009 * front + 0.006 * texture)
+        if v.is_boundary:
+            lift = 0.002
+        v.co += v.normal * lift
+    bm.to_mesh(top.data)
+    bm.free()
+    smooth(top)
+    return top
+
+
 def style_hair(hair):
     """Short sandy hair, darker at the roots, spiked up on top."""
     tree = BVHTree.FromObject(hair, bpy.context.evaluated_depsgraph_get())
@@ -713,10 +755,27 @@ def style_hair(hair):
     points = [to_world @ v.co for v in hair.data.vertices]
     centre = sum(points, Vector()) / len(points)
     centre.z = top - 0.12
+    # A higher hairline at the front, showing more of my forehead.
+    bm = bmesh.new()
+    bm.from_mesh(hair.data)
+    forehead = [
+        f for f in bm.faces
+        if (lambda at: at.y - centre.y < -0.045 and at.z - centre.z < 0.06 - 0.25 * (at.y - centre.y + 0.1))(to_world @ f.calc_center_median())
+    ]
+    bmesh.ops.delete(bm, geom=forehead, context='FACES')
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context='VERTS')
+    bm.to_mesh(hair.data)
+    bm.free()
     paint(hair, lambda at: mix(
         COLOURS['hair_root'], COLOURS['hair'], smoothstep(-0.02, 0.08, at.z - centre.z),
     ))
-    tufts = []
+    volume = tousle(hair, centre)
+    paint(volume, lambda at: mix(
+        COLOURS['hair_root'], COLOURS['hair'], smoothstep(0.0, 0.1, at.z - centre.z),
+    ))
+    tufts = [volume]
+    # Spikes cast from the top of it.
+    tree = BVHTree.FromObject(volume, bpy.context.evaluated_depsgraph_get())
     seed = 11
 
     def random():
@@ -726,10 +785,10 @@ def style_hair(hair):
 
     up = Vector((0, 0, 1))
     back = Vector((0, 1, 0))
-    for i in range(44):
-        ring = i // 11
-        reach = 0.085 - ring * 0.022 + random() * 0.012
-        angle = (i / 11) * 2 * math.pi + ring * 0.5 + random() * 0.35
+    for i in range(40):
+        ring = 2 + i // 20
+        reach = 0.09 - ring * 0.017 + random() * 0.01
+        angle = (i / 20) * 2 * math.pi + ring * 0.5 + random() * 0.35
         x = centre.x + math.cos(angle) * reach * 0.9
         y = centre.y + math.sin(angle) * reach - 0.005
         origin = to_local @ Vector((x, y, top + 0.2))
@@ -738,12 +797,14 @@ def style_hair(hair):
             continue
         base = to_world @ hit - Vector((0, 0, 0.004))
         normal = (to_world.to_3x3() @ normal).normalized()
-        lean = (normal * 0.7 + up * 0.6 + back * 0.4).normalized()
+        # Up and back, but up and forward at the front: a quiff.
+        front = smoothstep(-0.02, -0.07, base.y - centre.y)
+        lean = (normal * 0.55 + up * (0.7 + 0.4 * front) + back * (0.35 - 0.6 * front)).normalized()
         across = up.cross(normal) if abs(normal.z) < 0.95 else Vector((1, 0, 0))
         lock = tuft(
             base, lean, across,
-            length=0.028 + random() * 0.022,
-            width=0.022 + random() * 0.008,
+            length=0.013 + random() * 0.014 + 0.012 * front,
+            width=0.012 + random() * 0.006,
             bend=0.008,
         )
         smooth(lock)
@@ -752,50 +813,6 @@ def style_hair(hair):
         ))
         tufts.append(lock)
     return tufts
-
-
-def build_glasses(eye_centres, ear_x):
-    """Clear-framed glasses, their arms back over my ears."""
-    parts = []
-    front = min(c.y for c in eye_centres.values())
-    lens_y = front - 0.016
-    for side in (1, -1):
-        centre = eye_centres[side]
-        frame = primitive(
-            'torus', 'frame', major_radius=1, minor_radius=0.11,
-            major_segments=16, minor_segments=3,
-            location=Vector((centre.x + side * 0.003, lens_y, centre.z + 0.002)),
-            rotation=(math.pi / 2, 0, side * -0.15),
-        )
-        frame.scale = (0.025, 0.019, 0.025)
-        select_only(frame)
-        bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
-        smooth(frame)
-        parts.append(frame)
-        temple = tube(
-            'temple',
-            [Vector((side * (abs(centre.x) + 0.027), lens_y + 0.006, centre.z + 0.008)),
-             Vector((side * (ear_x + 0.006), lens_y + 0.04, centre.z + 0.01)),
-             Vector((side * (ear_x + 0.006), centre.y + 0.07, centre.z)),
-             Vector((side * (ear_x - 0.004), centre.y + 0.095, centre.z - 0.025))],
-            [0.0024] * 4,
-            sides=4,
-        )
-        smooth(temple)
-        parts.append(temple)
-    gap = abs(eye_centres[1].x) - 0.022
-    bridge = tube(
-        'bridge',
-        [Vector((x, lens_y - 0.002, eye_centres[1].z + 0.008 + 0.004 * (1 - abs(x) / gap)))
-         for x in (-gap, 0.0, gap)],
-        [0.0024] * 3,
-        sides=4,
-    )
-    smooth(bridge)
-    parts.append(bridge)
-    for part in parts:
-        paint(part, COLOURS['frames'])
-    return parts
 
 
 def build_pack(armature, tee):
@@ -869,6 +886,208 @@ def add_blink(me, eye_centres):
         blink.data[vertex.index].co = co
 
 
+
+# ---------------------------------------------------------------------------
+# Likeness: from the hero photo (src/media/hero.webp). A rounder, softer
+# face than the base's, ears that stand out a little, smiling eyes, a big
+# grin, rosy cheeks, a mole on my left cheek, and rectangular glasses.
+
+def reshape(at, middle):
+    """Where a point on my head goes: a rounder, wider, softer face, with a
+    broader nose and fuller cheeks than the base's chiselled one."""
+    x, y, z = at - middle
+    below = smoothstep(0.0, -0.1, z)
+    cheeks = math.exp(-((z + 0.04) / 0.045) ** 2)
+    # Wider, fullest at my cheeks; my jaw rounds off rather than tapering.
+    x *= 1.1 + 0.1 * cheeks + 0.2 * smoothstep(-0.05, -0.13, z)
+    # A shorter, rounder chin, less out in front.
+    z *= 1 - 0.14 * below
+    if y < 0:
+        y *= 1 - 0.16 * smoothstep(-0.05, -0.12, z)
+        # Fuller cheeks, forward under my eyes.
+        y -= 0.008 * cheeks * math.exp(-((abs(x) - 0.045) / 0.025) ** 2)
+        # A broader, rounder nose tip.
+        nose = math.exp(-(x / 0.012) ** 2) * math.exp(-((z + 0.035) / 0.014) ** 2)
+        x *= 1 + 0.25 * nose
+        y -= 0.003 * nose
+        # A softer brow.
+        y += 0.004 * math.exp(-((z - 0.02) / 0.012) ** 2)
+    # My ears stand out a little.
+    if abs(x) > 0.06 and y > 0.02 and -0.05 < z < 0.03:
+        x *= 1 + 0.2 * smoothstep(0.06, 0.08, abs(x))
+    return middle + Vector((x, y, z))
+
+
+def reshape_head(body, others, eye_centres):
+    middle = (eye_centres[1] + eye_centres[-1]) / 2
+    for obj in [body, *others]:
+        matrix = obj.matrix_world
+        inverse = matrix.inverted()
+        for vertex in obj.data.vertices:
+            at = matrix @ vertex.co
+            # All of my head, down to under my chin, fading out down my neck
+            # (my jaw is weighted to my neck as much as my head).
+            weight = smoothstep(middle.z - 0.165, middle.z - 0.125, at.z)
+            if weight > 0:
+                vertex.co = inverse @ at.lerp(reshape(at, middle), weight)
+
+
+def smiling_eyes(eyes, body, eye_centres):
+    """Eyes narrowed by a smile, my cheeks pushed up under them."""
+    matrix = eyes.matrix_world
+    inverse = matrix.inverted()
+    for vertex in eyes.data.vertices:
+        at = matrix @ vertex.co
+        centre = eye_centres[1 if at.x > 0 else -1]
+        at.z = centre.z + (at.z - centre.z) * 0.72
+        vertex.co = inverse @ at
+    matrix = body.matrix_world
+    inverse = matrix.inverted()
+    for vertex in body.data.vertices:
+        at = matrix @ vertex.co
+        for centre in eye_centres.values():
+            offset = at - centre
+            under = math.exp(-((offset.z + 0.016) / 0.009) ** 2)
+            near = math.exp(-(offset.x / 0.02) ** 2)
+            if offset.y < 0.01:
+                at.z += 0.0035 * under * near
+        vertex.co = inverse @ at
+
+
+def landmarks(body, eye_centres):
+    """Where the tip of my nose is, below my eyes."""
+    middle = (eye_centres[1] + eye_centres[-1]) / 2
+    points = [body.matrix_world @ v.co for v in body.data.vertices]
+    nose = min(
+        (p for p in points if abs(p.x) < 0.008 and middle.z - 0.07 < p.z < middle.z - 0.015),
+        key=lambda p: p.y,
+    )
+    return middle, nose
+
+
+def grin(body, eye_centres):
+    """A big grin: my mouth corners up, and a row of teeth showing."""
+    middle, nose = landmarks(body, eye_centres)
+    mouth_z = nose.z - 0.03
+    # The corners of my mouth lift into my cheeks.
+    matrix = body.matrix_world
+    inverse = matrix.inverted()
+    for vertex in body.data.vertices:
+        at = matrix @ vertex.co
+        if at.y > nose.y + 0.04:
+            continue
+        for side in (1, -1):
+            corner = Vector((side * 0.026, at.y, mouth_z))
+            lift = math.exp(-((at - corner).length / 0.012) ** 2)
+            at.z += 0.004 * lift
+            at.x += side * 0.002 * lift
+        vertex.co = inverse @ at
+    find = surface_of(body)
+    columns, rows = 13, 5
+    verts = []
+    faces = []
+    for j in range(rows + 1):
+        for i in range(columns + 1):
+            u = i / columns * 2 - 1
+            v = j / rows
+            x = u * 0.035
+            z = mouth_z + 0.007 * u * u - v * 0.016 * (1 - u * u) ** 0.8
+            verts.append(tuple(find(x, z, out=0.0012)[0]))
+    for j in range(rows):
+        for i in range(columns):
+            a = j * (columns + 1) + i
+            faces.append((a, a + columns + 1, a + columns + 2, a + 1))
+    mouth = mesh_object('grin', verts, faces)
+    smooth(mouth)
+    paint(mouth, lambda at: (
+        COLOURS['teeth'] if at.z > mouth_z - 0.0095 + 0.007 * (at.x / 0.035) ** 2
+        else COLOURS['mouth']
+    ))
+    return mouth
+
+
+def mole(body, eye_centres):
+    """The mole on my left cheek."""
+    middle, nose = landmarks(body, eye_centres)
+    at, normal = surface_of(body)(0.034, nose.z + 0.004, out=0.0006)
+    spot = primitive('uv_sphere', 'mole', segments=8, ring_count=5, radius=0.0022, location=at)
+    spot.scale = (1, 0.4, 1)
+    select_only(spot)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    paint(spot, COLOURS['mole'])
+    return spot
+
+
+def blush(body, eye_centres):
+    """Rosier on my cheeks and ears."""
+    middle = (eye_centres[1] + eye_centres[-1]) / 2
+    colours = body.data.color_attributes['Col']
+    rose = linear(COLOURS['blush'])
+    matrix = body.matrix_world
+    for i, vertex in enumerate(body.data.vertices):
+        at = matrix @ vertex.co - middle
+        cheek = math.exp(-((abs(at.x) - 0.045) / 0.02) ** 2) * math.exp(-((at.z + 0.035) / 0.02) ** 2)
+        ear = smoothstep(0.075, 0.09, abs(at.x)) * math.exp(-((at.z + 0.01) / 0.03) ** 2) * (1 if at.y > 0.0 else 0)
+        amount = min(1.0, 0.45 * cheek + 0.5 * ear) if at.y < 0.12 else 0.0
+        c = colours.data[i].color
+        colours.data[i].color = tuple(c[k] + (rose[k] - c[k]) * amount for k in range(3)) + (1.0,)
+
+
+def build_glasses(eye_centres, ear_x):
+    """Rectangular glasses with clear grey frames, their arms back over my
+    ears."""
+    parts = []
+    front = min(c.y for c in eye_centres.values())
+    lens_y = front - 0.015
+    half_width, half_height, corner = 0.0245, 0.016, 0.005
+    for side in (1, -1):
+        centre = eye_centres[side] + Vector((side * 0.002, 0, 0.001))
+        outline = []
+        for cx, cz, start in (
+            (half_width - corner, half_height - corner, 0),
+            (-half_width + corner, half_height - corner, 90),
+            (-half_width + corner, -half_height + corner, 180),
+            (half_width - corner, -half_height + corner, 270),
+        ):
+            for k in range(4):
+                angle = math.radians(start + k * 30)
+                outline.append((cx + math.cos(angle) * corner, cz + math.sin(angle) * corner))
+        # Wrapped a little round my face.
+        turn = Matrix.Rotation(side * -0.14, 3, 'Z')
+        points = [
+            Vector((centre.x, lens_y, centre.z)) + turn @ Vector((x, 0, z))
+            for x, z in outline
+        ]
+        frame = tube('frame', points, [0.002] * len(points), sides=5, closed=True)
+        smooth(frame)
+        parts.append(frame)
+        hinge = Vector((centre.x, lens_y, centre.z)) + turn @ Vector((side * half_width, 0, half_height - 0.006))
+        temple = tube(
+            'temple',
+            [hinge,
+             Vector((side * (ear_x + 0.006), lens_y + 0.04, hinge.z + 0.002)),
+             Vector((side * (ear_x + 0.006), centre.y + 0.07, hinge.z - 0.006)),
+             Vector((side * (ear_x - 0.004), centre.y + 0.095, hinge.z - 0.03))],
+            [0.0026] * 4,
+            sides=4,
+        )
+        smooth(temple)
+        parts.append(temple)
+    inner = abs(eye_centres[1].x) + 0.003 - half_width
+    bridge = tube(
+        'bridge',
+        [Vector((x, lens_y - 0.001, eye_centres[1].z + 0.012 + 0.003 * (1 - abs(x) / inner)))
+         for x in (-inner, 0.0, inner)],
+        [0.0026] * 3,
+        sides=4,
+    )
+    smooth(bridge)
+    parts.append(bridge)
+    for part in parts:
+        paint(part, COLOURS['frames'])
+    return parts
+
+
 # ---------------------------------------------------------------------------
 # Everything together.
 
@@ -882,8 +1101,17 @@ def build():
     rest_as_posed(armature, meshes)
     add_contacts(armature)
     slim(armature, body)
+    reshape_head(body, [eyes, brows, hair], centres_of(eyes))
+    smiling_eyes(eyes, body, centres_of(eyes))
+    # Lighter, finer brows.
+    brow_middle = sum((brows.matrix_world @ v.co for v in brows.data.vertices), Vector()) / len(brows.data.vertices)
+    for vertex in brows.data.vertices:
+        at = brows.matrix_world @ vertex.co
+        at.z = brow_middle.z + (at.z - brow_middle.z) * 0.7
+        vertex.co = brows.matrix_world.inverted() @ at
 
     paint_skin(body)
+    blush(body, centres_of(eyes))
     paint_eyes(eyes)
     paint(brows, COLOURS['brow'])
     tufts = style_hair(hair)
@@ -894,6 +1122,7 @@ def build():
                 if abs((body.matrix_world @ v.co).z - eye_centres[1].z) < 0.03
                 and (body.matrix_world @ v.co).y > eye_centres[1].y)
     glasses = build_glasses(eye_centres, ear_x)
+    face = [grin(body, eye_centres), mole(body, eye_centres)]
     pack = build_pack(armature, clothes[0])
 
     # My eyelids: the skin just round my eyes, which blinking brings down.
@@ -910,6 +1139,10 @@ def build():
             [v.index for v in part.data.vertices], 1.0, 'REPLACE')
     for part in tufts:
         rigid(part, armature, 'Head')
+    for part in face:
+        rigid(part, armature, 'Head')
+        part.vertex_groups.new(name='unshaded').add(
+            [v.index for v in part.data.vertices], 1.0, 'REPLACE')
     for part in glasses:
         rigid(part, armature, 'Head')
         part.vertex_groups.new(name='unshaded').add(
@@ -919,7 +1152,7 @@ def build():
 
     matte = material('matte')
     gloss = material('gloss', alpha=0.6, roughness=0.2)
-    everything = [body, eyes, brows, hair] + tufts + clothes + pack
+    everything = [body, eyes, brows, hair] + tufts + face + clothes + pack
     for part in everything:
         part.data.materials.clear()
         part.data.materials.append(matte)
@@ -1008,6 +1241,7 @@ def preview(directory):
         ('three-quarter', (2.4, -2.6, 1.3), (0, 0, 0.95), 50),
         ('back', (-1.2, 3.2, 1.4), (0, 0, 0.95), 50),
         ('face', (0.25, -0.75, 1.75), (0, 0, 1.69), 60),
+        ('face-front', (0.0, -0.62, 1.69), (0, 0, 1.68), 70),
     ]
     for pose, extra in ((None, views), ('star', views[:2])):
         if pose:

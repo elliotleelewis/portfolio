@@ -19,8 +19,8 @@ import { isFinish, surface } from './look/surfaces';
 const blinkShut = 0.15;
 
 /**
- * The humanoid skeleton every person in the game is rigged to: Unreal's
- * (and Quaternius's), with a palm and a sole where each hand and foot
+ * The humanoid skeleton every person in the game is rigged to: Unreal's bone
+ * names, with a palm and a sole where each hand and foot
  * touches the ground. These are the bones the game turns or reads; a model
  * can have more (fingers, twist bones), which follow as they're weighted.
  * See models/README.md.

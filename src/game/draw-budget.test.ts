@@ -51,10 +51,8 @@ interface Cost {
 // drawn without one. Raising a budget is fine, but do it on purpose: see
 // "The drawing budget" in the README.
 const budgets: Record<DrawBudget, Cost> = {
-	// Modelled in Blender from a game-ready base (models/README.md): a real
-	// body and face, so many more triangles than primitives, but in fewer
-	// draw calls, which are what a phone runs short of.
-	me: { draws: 8, triangles: 36_000 },
+	// Modelled in Blender, in folded paper (models/README.md).
+	me: { draws: 8, triangles: 6000 },
 	// However many bears are out.
 	bears: { draws: 12, triangles: 125_000 },
 	// Two for each bear after me, its "!" and the one pinned to the edge of

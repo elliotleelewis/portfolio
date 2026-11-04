@@ -60,6 +60,7 @@ The site and the game share one look: a trail map on a misty mountain. Keep new 
 - **Focus:** anything pressable has `focus-visible:ring-4`, `ring-accent/50` on the page and `ring-accent/70` over the game.
 - **Motion:** gentle fades and rises (`duration-500` to `700`). Decorative motion goes behind `motion-safe:`.
 - **Hidden panels** fade rather than leave the page, so each is `inert` while hidden. `e2e/keyboard.spec.ts` checks Tab only lands on what's visible.
+- **The 3D world is folded paper**, like the site's trail map: hard facets, flat colour per fold (a little lighter or darker, painted into vertex colours), matte, no outlines, chunky people about four heads tall with faces cut from paper, and a likeness only from what's recognisable from afar (hair, glasses, expression, clothes). The full rules are in `models/README.md` ("The style"): build to them, and check against them in `pnpm shots`.
 - **Models** share one look, from `src/game/look/` (ESLint enforces it):
   - Materials are `surface(colour, finish)`, in one of `FINISHES`: `matte` (cloth, skin, fur, wood, hair), `satin` (leather, plastic, paint), `gloss` (glass, lenses, car paint), `metal` and `cast` (iron). Pick the nearest one rather than adding a finish: each finish merges into its own draw call. Mouths, teeth and pupils use `TONES`.
   - Boxes are `roundedBox`. Keep spheres and cylinders' segments to what shows at the size they're seen.

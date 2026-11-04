@@ -26,11 +26,9 @@ test('fades from the photo into a run down the mountain', async ({ page }) => {
 
 // What a frame can cost to draw, shadows included. The run is random, so
 // this leaves room for an unlucky one: a run now peaks at about 90 calls
-// (as a smashed easter egg's pieces fly) and 200k triangles. Draw calls are
-// what a phone runs short of; triangles have room to spare, and I'm
-// modelled with them (models/README.md). Each part's own budget is in
-// src/game/draw-budget.test.ts.
-const budget = { calls: 120, triangles: 220_000 };
+// (as a smashed easter egg's pieces fly) and 140k triangles. Each part's own
+// budget is in src/game/draw-budget.test.ts.
+const budget = { calls: 120, triangles: 175_000 };
 
 // What a frame of the gallery can cost, from any easter egg along it.
 const galleryBudget = { calls: 60, triangles: 150_000 };

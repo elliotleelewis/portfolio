@@ -38,3 +38,29 @@ export const STOKER: PersonSpec = {
 	pack: { colour: '#26272b', dark: '#1c1d20' },
 	mouths: ['smile', 'shout'],
 };
+
+// The outhouse's occupant: slicked-back dark hair down to his collar, thick
+// brows, stubble and a huge grin, a navy half-zip windbreaker with white
+// piping and a teal collar, open over a grey tee and a silver chain, dark
+// trousers and white trainers. And white gloves, their fingertips brown.
+export const OCCUPANT: PersonSpec = {
+	seed: 23,
+	skin: '#d7a17c',
+	hair: { colour: '#2a1c15', under: '#211611', style: 'slicked' },
+	brows: '#211611',
+	stubble: '#b7876a',
+	top: {
+		colour: '#1e2a4c',
+		sleeves: 'long',
+		zip: '#e9ecef',
+		collar: '#3f6d77',
+		piping: '#e9ecef',
+		under: '#8b8e8d',
+	},
+	gloves: { colour: '#f6f6f3', tips: '#5b3a1d' },
+	chain: '#d9dcdf',
+	trousers: '#34373d',
+	shoes: '#eeeeec',
+	soles: '#bdbdb8',
+	mouths: ['grin'],
+};

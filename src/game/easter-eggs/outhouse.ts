@@ -1,5 +1,4 @@
 import {
-	CapsuleGeometry,
 	CircleGeometry,
 	CylinderGeometry,
 	Group,
@@ -7,13 +6,13 @@ import {
 	type Object3D,
 	Shape,
 	ShapeGeometry,
-	SphereGeometry,
-	TorusGeometry,
 } from 'three';
 
 import { m } from '../../paraglide/messages';
 import { roundedBox } from '../look/shapes';
-import { TONES, surface } from '../look/surfaces';
+import { surface } from '../look/surfaces';
+import { OCCUPANT } from '../people/cast';
+import { type Person, createPerson, personMaterial } from '../people/person';
 
 import { joint, part } from './parts';
 import type { EasterEgg, EasterEggFrame } from './types';
@@ -30,11 +29,10 @@ const triggerDistance = 55;
 const insideZ = -0.2;
 const outsideZ = 1.25;
 
+// The occupant, and his arms and legs, his right (-x) first.
 interface Occupant {
-	root: Group;
-	body: Group;
-	head: Group;
-	arms: { shoulder: Group; elbow: Group; wrist: Group }[];
+	person: Person;
+	arms: { shoulder: Group; elbow: Group }[];
 	legs: Group[];
 }
 
@@ -184,223 +182,19 @@ const buildOuthouse = (parent: Object3D): Group => {
 	return hinge;
 };
 
-// A white glove with brown fingertips. The fingers point down -y, the palm
-// faces +z.
-const buildGlove = (parent: Object3D): void => {
-	const glove = surface('#f6f6f3');
-	const tip = surface('#5b3a1d');
-	part(parent, roundedBox(0.085, 0.09, 0.04), glove, [0, -0.045, 0]);
-	part(
-		parent,
-		new CylinderGeometry(0.052, 0.045, 0.05, 10),
-		glove,
-		[0, 0.02, 0],
-	);
-	const fingerGeometry = new CapsuleGeometry(0.0115, 0.05, 3, 6);
-	const tipGeometry = new SphereGeometry(0.0135, 8, 6);
-	for (let i = 0; i < 4; i++) {
-		const x = -0.03 + i * 0.02;
-		const length = i === 0 || i === 3 ? 0.055 : 0.065;
-		part(parent, fingerGeometry, glove, [
-			x,
-			-0.09 - length / 2,
-			0,
-		]).scale.y = length / 0.07;
-		part(parent, tipGeometry, tip, [x, -0.095 - length, 0]);
-	}
-	const thumb = joint(parent, [-0.045, -0.035, 0.012]);
-	thumb.rotation.z = -0.7;
-	part(thumb, fingerGeometry, glove, [0, -0.035, 0]);
-	part(thumb, tipGeometry, tip, [0, -0.07, 0]);
-};
-
-// The occupant: slicked-back dark hair down to his collar, a huge grin, stubble,
-// a navy half-zip windbreaker with white piping over a grey tee and a
-// silver chain.
+// The occupant, stepping out to look at his gloves.
 const buildOccupant = (parent: Object3D): Occupant => {
-	const skin = surface('#d7a17c');
-	const hair = surface('#211611');
-	const stubble = surface('#2a1c14', 'matte', {
-		transparent: true,
-		opacity: 0.35,
-	});
-	const jacket = surface('#1e2a4c', 'satin');
-	const piping = surface('#e9ecef');
-	const collar = surface('#3f6d77');
-	const tee = surface('#8b8e8d');
-	const chain = surface('#d9dcdf', 'metal');
-	const trousers = surface('#34373d');
-	const trainers = surface('#eeeeec');
-	const dark = surface(TONES.pupil);
-	const teeth = surface(TONES.teeth);
-	const mouth = surface(TONES.mouth);
-
-	const root = joint(parent, [0, 0, insideZ]);
-	const body = joint(root, [0, 0, 0]);
-
-	const legs = [-1, 1].map((side) => {
-		const hip = joint(body, [side * 0.1, 0.92, 0]);
-		part(
-			hip,
-			new CapsuleGeometry(0.078, 0.74, 4, 10),
-			trousers,
-			[0, -0.44, 0],
-		);
-		part(hip, roundedBox(0.12, 0.09, 0.27), trainers, [0, -0.88, 0.04]);
-		return hip;
-	});
-
-	// Windbreaker.
-	part(
-		body,
-		new CylinderGeometry(0.19, 0.19, 0.18, 16),
-		jacket,
-		[0, 0.95, 0],
-	);
-	const torso = part(
-		body,
-		new CylinderGeometry(0.22, 0.19, 0.58, 16),
-		jacket,
-		[0, 1.2, 0],
-	);
-	torso.scale.z = 0.64;
-	part(body, new SphereGeometry(0.22, 16, 8), jacket, [0, 1.46, 0]).scale.set(
-		1,
-		0.35,
-		0.64,
-	);
-	// Half-zip, open at the neck: teal collar, grey tee, chain.
-	part(body, roundedBox(0.012, 0.3, 0.012), piping, [0, 1.25, 0.14]);
-	part(body, roundedBox(0.09, 0.06, 0.015), tee, [0, 1.49, 0.115]);
-	const neckband = part(
-		body,
-		new TorusGeometry(0.075, 0.025, 8, 16),
-		collar,
-		[0, 1.5, 0.01],
-	);
-	neckband.rotation.x = Math.PI / 2 - 0.2;
-	neckband.scale.set(1.1, 1, 1);
-	const necklace = part(
-		body,
-		new TorusGeometry(0.06, 0.004, 6, 18),
-		chain,
-		[0, 1.47, 0.07],
-	);
-	necklace.rotation.x = Math.PI / 2 - 0.9;
-
-	// Arms, with white piping down the sleeves.
-	const arms = [-1, 1].map((side) => {
-		const shoulder = joint(body, [side * 0.245, 1.45, 0]);
-		part(
-			shoulder,
-			new CapsuleGeometry(0.068, 0.22, 4, 10),
-			jacket,
-			[0, -0.15, 0],
-		);
-		part(shoulder, roundedBox(0.01, 0.28, 0.01), piping, [
-			side * 0.066,
-			-0.15,
-			0,
-		]);
-		const elbow = joint(shoulder, [0, -0.3, 0]);
-		part(
-			elbow,
-			new CapsuleGeometry(0.058, 0.2, 4, 10),
-			jacket,
-			[0, -0.13, 0],
-		);
-		const wrist = joint(elbow, [0, -0.28, 0]);
-		buildGlove(wrist);
-		return { shoulder, elbow, wrist };
-	});
-
-	// Neck & head.
-	part(body, new CylinderGeometry(0.052, 0.058, 0.1, 12), skin, [0, 1.55, 0]);
-	const head = joint(body, [0, 1.58, 0]);
-	part(head, new SphereGeometry(0.12, 22, 16), skin, [0, 0.13, 0]).scale.set(
-		0.93,
-		1.13,
-		1,
-	);
-	for (const side of [-1, 1]) {
-		part(head, new SphereGeometry(0.028, 10, 8), skin, [
-			side * 0.112,
-			0.13,
-			0,
-		]).scale.set(0.5, 1, 0.8);
-		// Grinning, crinkled eyes and thick dark brows.
-		part(head, new SphereGeometry(0.012, 8, 6), dark, [
-			side * 0.043,
-			0.148,
-			0.106,
-		]).scale.y = 0.55;
-		part(head, roundedBox(0.055, 0.014, 0.012), hair, [
-			side * 0.043,
-			0.183,
-			0.108,
-		]).rotation.z = side * -0.1;
-	}
-	part(head, new SphereGeometry(0.019, 8, 6), skin, [0, 0.12, 0.124]);
-	// A big, toothy smile.
-	const grin = part(
-		head,
-		new CircleGeometry(0.042, 16, Math.PI, Math.PI),
-		mouth,
-		[0, 0.087, 0.109],
-	);
-	grin.scale.y = 0.7;
-	grin.rotation.x = -0.25;
-	const smile = part(
-		head,
-		new CircleGeometry(0.039, 16, Math.PI, Math.PI),
-		teeth,
-		[0, 0.087, 0.1105],
-	);
-	smile.scale.y = 0.42;
-	smile.rotation.x = -0.25;
-	// Stubble and a light moustache.
-	const jaw = part(
-		head,
-		new SphereGeometry(
-			0.114,
-			18,
-			10,
-			-Math.PI * 0.1,
-			Math.PI * 1.2,
-			Math.PI * 0.55,
-			Math.PI * 0.4,
-		),
-		stubble,
-		[0, 0.13, 0.004],
-	);
-	jaw.scale.set(0.95, 1.13, 1);
-	jaw.castShadow = false;
-	part(head, roundedBox(0.07, 0.012, 0.01), stubble, [0, 0.1, 0.113]);
-
-	// Slicked-back hair, long at the back and over the ears.
-	const crown = part(
-		head,
-		new SphereGeometry(0.13, 20, 10, 0, Math.PI * 2, 0, Math.PI * 0.52),
-		hair,
-		[0, 0.15, -0.01],
-	);
-	crown.scale.set(1, 1.05, 1.05);
-	// Tipped back, so it's swept off his forehead.
-	crown.rotation.x = -0.6;
-	const back = part(
-		head,
-		new CapsuleGeometry(0.11, 0.16, 6, 12),
-		hair,
-		[0, 0.03, -0.065],
-	);
-	back.scale.set(1.15, 1, 0.6);
-	const lockGeometry = new CapsuleGeometry(0.035, 0.16, 4, 8);
-	for (const side of [-1, 1]) {
-		const lock = part(head, lockGeometry, hair, [side * 0.112, 0.1, -0.02]);
-		lock.rotation.z = side * 0.12;
-	}
-
-	return { root, body, head, arms, legs };
+	const person = createPerson(OCCUPANT, personMaterial());
+	person.root.position.z = insideZ;
+	parent.add(person.root);
+	return {
+		person,
+		arms: [
+			{ shoulder: person.rightArm, elbow: person.rightForearm },
+			{ shoulder: person.leftArm, elbow: person.leftForearm },
+		],
+		legs: [person.rightLeg, person.leftLeg],
+	};
 };
 
 export const OUTHOUSE: EasterEgg = {
@@ -448,54 +242,40 @@ export const OUTHOUSE: EasterEgg = {
 
 			// Step out...
 			const step = MathUtils.smootherstep(t, 0.35, 1.15);
-			occupant.root.position.z = MathUtils.lerp(insideZ, outsideZ, step);
+			const { person } = occupant;
+			person.root.position.z = MathUtils.lerp(insideZ, outsideZ, step);
 			const isWalking = step > 0 && step < 1;
 			const stride = isWalking ? Math.sin(t * 13) : 0;
 			for (const [i, leg] of occupant.legs.entries()) {
 				leg.rotation.x = stride * (i === 0 ? 0.45 : -0.45);
 			}
-			occupant.body.position.y = isWalking ? -Math.abs(stride) * 0.03 : 0;
+			person.body.position.y = isWalking ? -Math.abs(stride) * 0.03 : 0;
 
 			// ...then stop, bring both hands up and take a good look at them.
 			const inspect = MathUtils.smootherstep(t, 1.15, 1.65);
 			const turn = Math.sin(t * 2.6);
-			for (const [
-				i,
-				{ shoulder, elbow, wrist },
-			] of occupant.arms.entries()) {
+			for (const [i, { shoulder, elbow }] of occupant.arms.entries()) {
 				const side = i === 0 ? -1 : 1;
+				// Up in front of his face, which his short arms only reach across.
 				shoulder.rotation.set(
-					MathUtils.lerp(stride * -0.4 * side, -0.55, inspect),
+					MathUtils.lerp(stride * -0.4 * side, -1.3, inspect),
 					0,
-					side * MathUtils.lerp(0.08, -0.12, inspect),
+					side * MathUtils.lerp(0.08, -0.7, inspect),
 				);
-				elbow.rotation.x = MathUtils.lerp(-0.1, -1.75, inspect);
-				// Palms up to the face, then flipped over to check the backs.
-				wrist.rotation.set(
-					inspect * -0.4,
+				// Palms up, then twisted over to check the backs.
+				elbow.rotation.set(
+					MathUtils.lerp(-0.1, -0.9, inspect),
 					inspect * side * (0.6 + turn * 0.9),
 					0,
 				);
 			}
-			occupant.head.rotation.set(
-				MathUtils.lerp(0, 0.4, inspect),
+			person.head.rotation.set(
+				MathUtils.lerp(0, 0.25, inspect),
 				inspect * turn * 0.15,
 				inspect * Math.sin(t * 1.3) * 0.12,
 			);
 		};
-		const { arms, legs } = occupant;
-		const moving = [
-			hinge,
-			occupant.root,
-			occupant.body,
-			occupant.head,
-			...legs,
-			...arms.flatMap(({ shoulder, elbow, wrist }) => [
-				shoulder,
-				elbow,
-				wrist,
-			]),
-		];
+		const moving = [hinge, ...occupant.person.joints];
 		return { object: root, update, moving };
 	},
 };

@@ -45,7 +45,7 @@ export interface PersonSpec {
 		colour: string;
 		// Underneath and at the roots.
 		under: string;
-		style: 'spiky' | 'wavy';
+		style: 'spiky' | 'wavy' | 'slicked';
 	};
 	beanie?: { colour: string; cuff: string };
 	brows?: string;
@@ -57,7 +57,15 @@ export interface PersonSpec {
 		// quarter-zip.
 		sleeves: 'short' | 'long';
 		zip?: string;
+		// The zip's collar, if it's not the top's own colour.
+		collar?: string;
+		// A stripe down the outside of each sleeve.
+		piping?: string;
+		// What shows at the neck, under the zip.
+		under?: string;
 	};
+	// Gloves over their hands, and the colour of their fingertips.
+	gloves?: { colour: string; tips: string };
 	chain?: string;
 	trousers: string;
 	shoes: string;
@@ -315,8 +323,44 @@ export const personParts = (spec: PersonSpec): PersonPart[] => {
 				forearm,
 			);
 		}
+		if (spec.top.piping) {
+			// Down the outside of the sleeve, from the shoulder.
+			const [from, to] = [
+				near(shoulder, 0.075, 0, 0.01),
+				near(shoulder.clone().lerp(elbow, 0.95), 0.08, 0, 0),
+			];
+			add(
+				`upperarm_${side}`,
+				prism(flip(from), flip(to), 0.012, 0.012, 4),
+				spec.top.piping,
+				{ shade: 0 },
+			);
+		}
 		const hand = flip(near(wrist, 0, 0, -0.05));
-		add(`lowerarm_${side}`, ball(hand, 0.068, [0.8, 0.9, 1.1]), spec.skin);
+		const { gloves } = spec;
+		add(
+			`lowerarm_${side}`,
+			ball(hand, 0.068, [0.8, 0.9, 1.1]),
+			gloves?.colour ?? spec.skin,
+		);
+		if (gloves) {
+			// A cuff at the wrist, and fingertips dipped in something.
+			const [cuffTop, cuffBottom, tips] = [
+				near(wrist, 0, 0, 0.02),
+				near(wrist, 0, 0, -0.03),
+				near(wrist, 0, 0, -0.105),
+			];
+			add(
+				`lowerarm_${side}`,
+				prism(flip(cuffTop), flip(cuffBottom), 0.062, 0.062, 6),
+				gloves.colour,
+			);
+			add(
+				`lowerarm_${side}`,
+				ball(flip(tips), 0.05, [0.9, 0.95, 0.55]),
+				gloves.tips,
+			);
+		}
 		// Ears, sticking out a little.
 		const ear = near(head, s * 0.235, 0.02, -0.02);
 		add('Head', ball(ear, 0.065, [0.45, 0.8, 1]), spec.skin);
@@ -348,8 +392,15 @@ export const personParts = (spec: PersonSpec): PersonPart[] => {
 		add(
 			'spine_03',
 			prism(at(0, 0, 1.22), at(0, 0, 1.31), 0.1, 0.09, 7),
-			spec.top.colour,
+			spec.top.collar ?? spec.top.colour,
 		);
+		if (spec.top.under) {
+			add(
+				'spine_03',
+				block(at(0, -0.095, 1.255), [0.08, 0.02, 0.06]),
+				spec.top.under,
+			);
+		}
 		add(
 			'spine_03',
 			block(at(0, -0.215, 1.1), [0.012, 0.012, 0.2]),
@@ -420,6 +471,51 @@ export const personParts = (spec: PersonSpec): PersonPart[] => {
 			add('Head', spike(base, lean, width, length), spec.hair.colour, {
 				shade: 0.1,
 			});
+		}
+	} else if (spec.hair.style === 'slicked') {
+		// Slicked back: a cap swept off the forehead, long at the back down
+		// to the collar and over the ears, with combed ridges along the top.
+		const cap = near(head, 0, 0.05, 0.07);
+		add('Head', ball(cap, 0.272, [0.99, 1, 0.82]), spec.hair.under);
+		add(
+			'Head',
+			prism(
+				near(head, 0, 0.1, 0.02),
+				near(head, 0, 0.13, -0.24),
+				0.21,
+				0.16,
+				7,
+			),
+			spec.hair.under,
+		);
+		for (const x of [-0.13, -0.045, 0.045, 0.13]) {
+			add(
+				'Head',
+				prism(
+					near(head, x, -0.13, 0.185),
+					near(head, x * 1.15, 0.2, 0.17),
+					0.035,
+					0.02,
+					4,
+					random(),
+				),
+				spec.hair.colour,
+				{ shade: 0.1 },
+			);
+		}
+		for (const s of [1, -1]) {
+			add(
+				'Head',
+				prism(
+					near(head, s * 0.215, 0.03, 0.09),
+					near(head, s * 0.235, 0.1, -0.18),
+					0.055,
+					0.045,
+					5,
+				),
+				spec.hair.colour,
+				{ shade: 0.1 },
+			);
 		}
 	} else {
 		// Wavy: a cap that shows round the sides and back of the head, below

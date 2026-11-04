@@ -2,7 +2,7 @@
 
 The game's characters. Each `.glb` here is the source: `pnpm models` gets it ready for the game (compressed, in `src/game/models/`), which loads it before a run. Never edit `src/game/models/` by hand.
 
-So far it's only me: `me.glb`, made by `scripts/models/me.ts`.
+So far it's only me: `me.glb`, made by `scripts/models/me.ts`. Everyone else is built as the game starts ("How people are made").
 
 ## The style: folded paper
 
@@ -19,11 +19,11 @@ Everything in the 3D world (me, the bears, the trees, the easter eggs, the lands
 - **Stiff paper parts.** Each part moves with one bone, as one: people bend at the joints like paper figures, between separate pieces (an upper arm, an elbow, a forearm), not by stretching.
 - **Cheap.** About a thousand triangles a person, in one material: one draw call, two with its shadow. Draw calls are what a phone runs short of.
 
-## How I'm made
+## How people are made
 
-I'm modelled in TypeScript, with nothing to install: `pnpm models:me` runs `scripts/models/me.ts`, which builds me from three.js shapes and writes `models/me.glb` with [glTF Transform](https://gltf-transform.dev). Then `pnpm models` gets me ready for the game, and `pnpm shots --grep "me, up close"` takes my portrait, standing and in my star pose, to compare with `main`'s.
+Everyone in the game is built by one person builder, in TypeScript, with nothing to install: `src/game/people/person.ts`. Each person is a `PersonSpec` in `src/game/people/cast.ts`, how they look: skin, hair (colour and cut), a beanie, brows, stubble, glasses, top, trousers, shoes, a pack, and the faces they pull. The builder makes their paper parts (`src/game/look/paper.ts`) and puts each on the bone it moves with. The people in the easter eggs are built as the game starts (`createPerson`), so they merge with the rest of their egg. I'm a glTF, so the game can load me like any model: `pnpm models:me` runs `scripts/models/me.ts`, which writes what the builder makes of me into `models/me.glb` with [glTF Transform](https://gltf-transform.dev). Then `pnpm models` gets me ready for the game, and `pnpm shots --grep "me, up close"` takes my portrait, standing and in my star pose, to compare with `main`'s.
 
-The script builds every part of me from paper shapes (faceted balls, prisms, blocks with folded edges, four-sided spikes of hair, and flat cut-outs for my face), in a modeller's axes (Z up, facing −Y), colours them fold by fold from the colours at its top, puts each on the bone it moves with, joins them, and makes my shape keys: `blink`, and `knockedOut`, which folds my face away and unfolds the one I wear once a bear gets me (crossed eyes and a wobbly mouth). To change me, change the script and run it again.
+The builder makes every part from paper shapes (faceted balls, prisms, blocks with folded edges, four-sided spikes of hair, and flat cut-outs for faces) and colours them fold by fold. The script joins mine, skins each to its bone, and makes my shape keys: `blink`, and `knockedOut`, which folds my face away and unfolds the one I wear once a bear gets me (crossed eyes and a wobbly mouth). To change how I look, change `ME` in `cast.ts` and run the script again.
 
 A model that needs more than code can build (sculpting, say) can be made in any 3D program, such as [Blender](https://www.blender.org), and exported to the spec below: the game doesn't care what made it.
 

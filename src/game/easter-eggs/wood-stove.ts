@@ -1,6 +1,5 @@
 import {
 	BackSide,
-	CapsuleGeometry,
 	CircleGeometry,
 	ConeGeometry,
 	CylinderGeometry,
@@ -13,15 +12,16 @@ import {
 	type Object3D,
 	Quaternion,
 	SphereGeometry,
-	TorusGeometry,
 	Vector3,
 } from 'three';
 
 import { m } from '../../paraglide/messages';
 import { roundedBox } from '../look/shapes';
-import { TONES, surface } from '../look/surfaces';
+import { surface } from '../look/surfaces';
+import { STOKER } from '../people/cast';
+import { type Person, createPerson, personMaterial } from '../people/person';
 
-import { canvasTexture, joint, part } from './parts';
+import { joint, part } from './parts';
 import type { EasterEgg, EasterEggFrame } from './types';
 
 // How close I get before he goes into overdrive and lights it.
@@ -42,252 +42,46 @@ const catchAt = 1.9;
 const emberCount = 18;
 const smokeCount = 6;
 
+// The stoker, on the game's humanoid rig: his joints, as his animation
+// knows them.
 interface Stoker {
-	root: Group;
-	body: Group;
-	upper: Group;
-	head: Group;
-	arms: { shoulder: Group; elbow: Group; wrist: Group }[];
+	person: Person;
+	// His arms, at the shoulder and elbow: the one on his right (-x), then his
+	// left (+x).
+	arms: { shoulder: Group; elbow: Group }[];
 	legs: { hip: Group; knee: Group }[];
-	smile: Mesh;
-	shout: Mesh;
+	// The stick he's carrying to the stove.
 	stick: Mesh;
 }
 
-// The stoker: a heathered oatmeal beanie over wavy dark hair, light stubble, a
-// black quarter-zip, a silver chain and a black backpack.
+/**
+ * Builds the stoker (STOKER in people/cast.ts), in folded paper, carrying a
+ * stick in his left hand.
+ * @param parent - Where he stands.
+ * @returns The stoker.
+ */
 const buildStoker = (parent: Object3D): Stoker => {
-	const skin = surface('#f0c9ae');
-	const hair = surface('#2e1e15');
-	const stubble = surface('#3a281c', 'matte', {
-		transparent: true,
-		opacity: 0.3,
-	});
-	const fleece = surface('#17181a');
-	const joggers = surface('#2b2d31');
-	const boots = surface('#4b3a2c');
-	const strap = surface('#26272b');
-	const chain = surface('#d9dcdf', 'metal');
-	const eye = surface('#2f4f6f');
-	const brow = surface('#2e1e15');
-	const mouth = surface(TONES.mouth);
-	const beanie = surface('#ffffff', 'matte', {
-		map: canvasTexture(128, 64, (context) => {
-			// Heathered knit: oatmeal flecked with light and dark.
-			context.fillStyle = '#c9b6a2';
-			context.fillRect(0, 0, 128, 64);
-			for (let i = 0; i < 700; i++) {
-				context.fillStyle = i % 3 === 0 ? '#e8ddd0' : '#a8927d';
-				context.fillRect((i * 37) % 128, (i * 23) % 64, 2, 3);
-			}
-			// Ribbing.
-			context.fillStyle = 'rgba(0, 0, 0, 0.06)';
-			for (let x = 0; x < 128; x += 4) {
-				context.fillRect(x, 0, 1, 64);
-			}
-		}),
-	});
-
-	const root = joint(parent, [0, 0, 0]);
-	const body = joint(root, [0, 0, 0]);
-	const legs = [-1, 1].map((side) => {
-		const hip = joint(body, [side * 0.11, 0.92, 0]);
-		part(hip, new CapsuleGeometry(0.08, 0.3, 4, 10), joggers, [0, -0.2, 0]);
-		const knee = joint(hip, [0, -0.42, 0]);
-		part(
-			knee,
-			new CapsuleGeometry(0.07, 0.32, 4, 10),
-			joggers,
-			[0, -0.2, 0],
-		);
-		part(knee, roundedBox(0.12, 0.1, 0.27), boots, [0, -0.44, 0.04]);
-		return { hip, knee };
-	});
-	part(
-		body,
-		new CylinderGeometry(0.2, 0.19, 0.16, 16),
-		joggers,
-		[0, 0.94, 0],
-	);
-
-	const upper = joint(body, [0, 0.95, 0]);
-	const torso = part(
-		upper,
-		new CylinderGeometry(0.22, 0.2, 0.56, 16),
-		fleece,
-		[0, 0.26, 0],
-	);
-	torso.scale.z = 0.66;
-	part(
-		upper,
-		new SphereGeometry(0.22, 16, 8),
-		fleece,
-		[0, 0.51, 0],
-	).scale.set(1, 0.35, 0.66);
-	// Quarter-zip collar, zip, chain.
-	const collar = part(
-		upper,
-		new CylinderGeometry(0.075, 0.09, 0.08, 14, 1, true),
-		fleece,
-		[0, 0.57, 0],
-	);
-	collar.scale.z = 0.9;
-	part(
-		upper,
-		roundedBox(0.008, 0.2, 0.008),
-		surface('#56585c'),
-		[0, 0.44, 0.148],
-	);
-	const necklace = part(
-		upper,
-		new TorusGeometry(0.07, 0.004, 6, 18),
-		chain,
-		[0, 0.54, 0.05],
-	);
-	necklace.rotation.x = Math.PI / 2 - 0.9;
-	// Backpack and straps.
-	part(upper, roundedBox(0.34, 0.42, 0.15), strap, [0, 0.28, -0.22]);
-	for (const side of [-1, 1]) {
-		part(upper, roundedBox(0.05, 0.44, 0.02), strap, [
-			side * 0.13,
-			0.3,
-			0.146,
-		]);
-	}
-
-	const arms = [-1, 1].map((side) => {
-		const shoulder = joint(upper, [side * 0.245, 0.5, 0]);
-		part(
-			shoulder,
-			new CapsuleGeometry(0.068, 0.2, 4, 10),
-			fleece,
-			[0, -0.14, 0],
-		);
-		const elbow = joint(shoulder, [0, -0.29, 0]);
-		part(
-			elbow,
-			new CapsuleGeometry(0.058, 0.18, 4, 10),
-			fleece,
-			[0, -0.12, 0],
-		);
-		const wrist = joint(elbow, [0, -0.26, 0]);
-		part(
-			wrist,
-			new SphereGeometry(0.052, 10, 8),
-			skin,
-			[0, -0.04, 0],
-		).scale.set(0.85, 1.1, 0.6);
-		return { shoulder, elbow, wrist };
-	});
-	// The stick he's carrying to the pile.
+	const person = createPerson(STOKER, personMaterial());
+	parent.add(person.root);
 	const stick = part(
-		arms[1]?.wrist ?? upper,
+		person.leftHand,
 		new CylinderGeometry(0.022, 0.026, stickLength, 6),
 		surface('#6a4b2f'),
-		[0, -0.06, 0],
+		[0, 0.01, 0],
 	);
 	stick.rotation.x = Math.PI / 2;
-
-	part(upper, new CylinderGeometry(0.052, 0.058, 0.1, 12), skin, [0, 0.6, 0]);
-	const head = joint(upper, [0, 0.63, 0]);
-	part(head, new SphereGeometry(0.118, 22, 16), skin, [0, 0.13, 0]).scale.set(
-		0.9,
-		1.14,
-		1,
-	);
-	for (const side of [-1, 1]) {
-		part(head, new SphereGeometry(0.027, 10, 8), skin, [
-			side * 0.106,
-			0.13,
-			0,
-		]).scale.set(0.5, 1, 0.8);
-		part(head, new SphereGeometry(0.012, 8, 6), eye, [
-			side * 0.042,
-			0.145,
-			0.105,
-		]).scale.y = 0.75;
-		part(head, roundedBox(0.05, 0.011, 0.012), brow, [
-			side * 0.043,
-			0.178,
-			0.107,
-		]).rotation.z = side * -0.06;
-	}
-	part(head, new SphereGeometry(0.019, 8, 6), skin, [0, 0.12, 0.121]);
-	// A calm, closed smile; swapped for a shout when it catches.
-	const smile = part(
-		head,
-		roundedBox(0.05, 0.008, 0.008),
-		mouth,
-		[0, 0.083, 0.112],
-	);
-	const shout = part(
-		head,
-		new CircleGeometry(0.026, 14),
-		mouth,
-		[0, 0.078, 0.114],
-	);
-	shout.scale.y = 1.2;
-	shout.visible = false;
-	const jaw = part(
-		head,
-		new SphereGeometry(
-			0.112,
-			18,
-			10,
-			-Math.PI * 0.1,
-			Math.PI * 1.2,
-			Math.PI * 0.55,
-			Math.PI * 0.4,
-		),
-		stubble,
-		[0, 0.13, 0.004],
-	);
-	jaw.scale.set(0.93, 1.14, 1);
-	jaw.castShadow = false;
-
-	// Wavy dark hair escaping the beanie: a fringe, the sides, the nape.
-	const lock = new CapsuleGeometry(0.013, 0.1, 3, 6);
-	for (const [x, y, z, pitch, tilt] of [
-		// Fringe, falling over his forehead from under the cuff.
-		[-0.06, 0.165, 0.103, -0.35, 0.45],
-		[-0.03, 0.16, 0.112, -0.3, 0.2],
-		[0.005, 0.162, 0.113, -0.3, -0.15],
-		[0.04, 0.165, 0.106, -0.35, -0.4],
-		// Over the ears.
-		[-0.106, 0.12, 0.02, 0, 0.12],
-		[0.106, 0.12, 0.02, 0, -0.12],
-		// Curling out at the nape.
-		[-0.08, 0.08, -0.085, 0.4, 0.35],
-		[0, 0.07, -0.105, 0.45, 0],
-		[0.08, 0.08, -0.085, 0.4, -0.35],
-	] as const) {
-		const piece = part(head, lock, hair, [x, y, z]);
-		piece.rotation.set(pitch, 0, tilt);
-	}
-	// The beanie, with a folded cuff and a little tag.
-	const crown = part(
-		head,
-		new SphereGeometry(0.132, 20, 12, 0, Math.PI * 2, 0, Math.PI * 0.5),
-		beanie,
-		[0, 0.19, -0.005],
-	);
-	crown.scale.set(0.97, 1.05, 1.03);
-	const cuff = part(
-		head,
-		new CylinderGeometry(0.133, 0.135, 0.07, 22),
-		beanie,
-		[0, 0.195, -0.005],
-	);
-	cuff.scale.set(0.98, 1, 1.04);
-	cuff.rotation.x = -0.08;
-	part(
-		head,
-		roundedBox(0.004, 0.025, 0.02),
-		surface('#141414'),
-		[0.131, 0.2, -0.02],
-	);
-
-	return { root, body, upper, head, arms, legs, smile, shout, stick };
+	return {
+		person,
+		arms: [
+			{ shoulder: person.rightArm, elbow: person.rightForearm },
+			{ shoulder: person.leftArm, elbow: person.leftForearm },
+		],
+		legs: [
+			{ hip: person.rightLeg, knee: person.rightShin },
+			{ hip: person.leftLeg, knee: person.leftShin },
+		],
+		stick,
+	};
 };
 
 // One tongue of flame, drawn in its colour's batch.
@@ -655,8 +449,8 @@ const crouch = (stoker: Stoker, amount: number): void => {
 		hip.rotation.x = -1.3 * amount;
 		knee.rotation.x = 1.9 * amount;
 	}
-	stoker.body.position.y = -0.4 * amount;
-	stoker.upper.rotation.x = 0.55 * amount;
+	stoker.person.body.position.y = -0.27 * amount;
+	stoker.person.chest.rotation.x = 0.55 * amount;
 };
 
 export const WOOD_STOVE: EasterEgg = {
@@ -672,8 +466,10 @@ export const WOOD_STOVE: EasterEgg = {
 		const root = new Group();
 		const fire = buildStove(root);
 		const stoker = buildStoker(root);
-		stoker.root.position.set(stokerX, 0, stokerZ);
-		stoker.root.rotation.y = stokerFacing;
+		const { person } = stoker;
+		person.root.position.set(stokerX, 0, stokerZ);
+		person.root.rotation.y = stokerFacing;
+		const { smile = [], shout = [] } = person.mouths;
 		const [leftArm, rightArm] = stoker.arms;
 
 		const emberAt = new Vector3();
@@ -723,7 +519,7 @@ export const WOOD_STOVE: EasterEgg = {
 				leftArm.shoulder.rotation.set(-0.9 + reach * 0.2, 0, -0.2);
 				leftArm.elbow.rotation.set(-0.7, 0, 0);
 				stoker.stick.visible = !isDone && progress < 0.85;
-				stoker.head.rotation.set(
+				person.head.rotation.set(
 					0.35,
 					MathUtils.lerp(-0.5, 0, progress),
 					0,
@@ -737,7 +533,7 @@ export const WOOD_STOVE: EasterEgg = {
 				rightArm.elbow.rotation.set(-0.3 + strike * 0.2, 0, 0);
 				leftArm.shoulder.rotation.set(-1.2, 0, -0.15);
 				leftArm.elbow.rotation.set(-0.35, 0, 0);
-				stoker.head.rotation.set(0.6, 0, 0);
+				person.head.rotation.set(0.6, 0, 0);
 				fire.spark.visible = strike > 0.3;
 			} else {
 				// It's lit! Leap up, arms in the air, and shout about it, turning
@@ -746,17 +542,21 @@ export const WOOD_STOVE: EasterEgg = {
 				const up = MathUtils.smootherstep(t, catchAt, catchAt + 0.35);
 				crouch(stoker, 1 - up);
 				const c = t - catchAt;
-				stoker.root.position.y = up * Math.abs(Math.sin(c * 6)) * 0.28;
-				stoker.root.rotation.y = MathUtils.lerp(stokerFacing, 0.5, up);
+				person.root.position.y = up * Math.abs(Math.sin(c * 6)) * 0.28;
+				person.root.rotation.y = MathUtils.lerp(stokerFacing, 0.5, up);
 				for (const [i, arm] of stoker.arms.entries()) {
 					const side = i === 0 ? -1 : 1;
 					const pump = Math.sin(c * 12 + i * Math.PI) * 0.25;
 					arm.shoulder.rotation.set(0, 0, side * (2.6 + pump) * up);
 					arm.elbow.rotation.set(0, 0, side * 0.5 * up);
 				}
-				stoker.head.rotation.set(-0.35 * up, Math.sin(c * 3) * 0.3, 0);
-				stoker.smile.visible = false;
-				stoker.shout.visible = true;
+				person.head.rotation.set(-0.35 * up, Math.sin(c * 3) * 0.3, 0);
+				for (const piece of smile) {
+					piece.visible = false;
+				}
+				for (const piece of shout) {
+					piece.visible = true;
+				}
 			}
 			for (const [i, stick] of fire.sticks.entries()) {
 				stick.visible = i < placed;
@@ -817,15 +617,10 @@ export const WOOD_STOVE: EasterEgg = {
 			}
 		};
 		const moving = [
-			stoker.root,
-			stoker.body,
-			stoker.upper,
-			stoker.head,
-			...stoker.arms.flatMap(({ shoulder, elbow }) => [shoulder, elbow]),
-			...stoker.legs.flatMap(({ hip, knee }) => [hip, knee]),
+			...person.joints,
 			stoker.stick,
-			stoker.smile,
-			stoker.shout,
+			...smile,
+			...shout,
 			fire.spark,
 			fire.door,
 			fire.flameGroup,

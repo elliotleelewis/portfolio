@@ -1,34 +1,32 @@
-import {
-	Box3,
-	BufferAttribute,
-	BufferGeometry,
-	Color,
-	Mesh,
-	type Object3D,
-	SkinnedMesh,
-	Vector3,
-} from 'three';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+
+import { Box3, type Object3D, SkinnedMesh, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 
-import { type Character, createCharacter } from './character';
+import {
+	type Character,
+	createCharacter,
+	readCharacterModel,
+} from './character';
 
 /**
- * Every mesh under an object.
+ * How many skinned meshes there are under an object.
  * @param object - The object.
- * @returns Its meshes.
+ * @returns How many.
  */
-const meshesOf = (object: Object3D): Object3D[] => {
-	const meshes: Object3D[] = [];
+const skinnedCount = (object: Object3D): number => {
+	let count = 0;
 	object.traverse((child) => {
-		if (child instanceof Mesh) {
-			meshes.push(child);
+		if (child instanceof SkinnedMesh) {
+			count++;
 		}
 	});
-	return meshes;
+	return count;
 };
 
 /**
- * Strikes a pose: mid-cartwheel, leaning, looking round, blinking.
+ * Strikes a pose: mid-cartwheel, leaning, looking round, arms and legs out.
  * @param c - Me.
  */
 const pose = (c: Character): void => {
@@ -43,151 +41,139 @@ const pose = (c: Character): void => {
 	c.rightArm.rotation.z = -1.7;
 	c.leftLeg.rotation.z = 0.4;
 	c.rightLeg.rotation.set(0.3, 0, -0.5);
-	for (const eye of c.eyes) {
-		eye.scale.y = 0.15;
-	}
+	// Bent at the elbows and knees, and twisted at the chest.
+	c.chest.rotation.set(0.2, 0.3, -0.1);
+	c.leftForearm.rotation.x = -0.9;
+	c.rightForearm.rotation.set(-0.4, 0.2, 0);
+	c.leftShin.rotation.x = 0.7;
+	c.rightShin.rotation.x = 0.3;
 };
+
 /**
- * Every vertex I draw, wherever it is in the world, summed up.
+ * Where one of my model's bones is.
  * @param c - Me.
- * @returns How many there are, their total, and their squares'.
+ * @param name - The bone.
+ * @returns Where it is in the world.
  */
-const drawn = (c: Character): number[] => {
-	c.root.updateMatrixWorld(true);
-	let count = 0;
-	let squares = 0;
-	const sum = new Vector3();
-	const vertex = new Vector3();
-	c.root.traverseVisible((child) => {
-		if (!(child instanceof Mesh)) {
-			return;
-		}
-		const geometry: unknown = child.geometry;
-		if (!(geometry instanceof BufferGeometry)) {
-			return;
-		}
-		const position: unknown = geometry.getAttribute('position');
-		if (!(position instanceof BufferAttribute)) {
-			return;
-		}
-		for (let i = 0; i < position.count; i++) {
-			child.getVertexPosition(i, vertex).applyMatrix4(child.matrixWorld);
-			count++;
-			sum.add(vertex);
-			squares += vertex.lengthSq();
-		}
-	});
-	return [count, sum.x, sum.y, sum.z, squares];
+const boneAt = (c: Character, name: string): Vector3 => {
+	const bone = c.root.getObjectByName(name);
+	if (!bone) {
+		throw new Error(`No ${name} bone`);
+	}
+	return bone.getWorldPosition(new Vector3());
 };
 
 describe('createCharacter', () => {
-	it('draws me in a handful of meshes, each on the joints it moves with', () => {
-		const c = createCharacter();
-		const meshes = meshesOf(c.root);
-		expect(meshes.length).toBeLessThanOrEqual(5);
-		// Skinned to my joints, or (my glasses) all on the one joint.
-		for (const mesh of meshes) {
-			expect(mesh instanceof SkinnedMesh || mesh.parent === c.head).toBe(
-				true,
-			);
-		}
+	it('draws me in a few skinned meshes, one for each finish', () => {
+		const count = skinnedCount(createCharacter().root);
+		expect(count).toBeGreaterThan(0);
+		expect(count).toBeLessThanOrEqual(3);
 	});
 
-	it('still blinks', () => {
+	it('blinks', () => {
 		const c = createCharacter();
-		const eye = new Color('#3a2e28');
-		/**
-		 * How tall my eyes are drawn, from top to bottom.
-		 * @returns Their height.
-		 */
-		const eyeHeight = (): number => {
-			c.root.updateMatrixWorld(true);
-			let lowest = Infinity;
-			let highest = -Infinity;
-			const vertex = new Vector3();
-			for (const mesh of meshesOf(c.root)) {
-				if (!(mesh instanceof SkinnedMesh)) {
-					continue;
-				}
-				const geometry: unknown = mesh.geometry;
-				const color: unknown =
-					geometry instanceof BufferGeometry
-						? geometry.getAttribute('color')
+		const blinks = (): number[] => {
+			const shut: number[] = [];
+			c.root.traverse((child) => {
+				const index =
+					child instanceof SkinnedMesh
+						? child.morphTargetDictionary?.blink
 						: undefined;
-				if (!(color instanceof BufferAttribute)) {
-					continue;
+				if (index !== undefined && child instanceof SkinnedMesh) {
+					shut.push(child.morphTargetInfluences?.[index] ?? 0);
 				}
-				for (let i = 0; i < color.count; i++) {
-					const isEye =
-						Math.abs(color.getX(i) - eye.r) < 1e-4 &&
-						Math.abs(color.getY(i) - eye.g) < 1e-4 &&
-						Math.abs(color.getZ(i) - eye.b) < 1e-4;
-					if (!isEye) {
-						continue;
-					}
-					mesh.getVertexPosition(i, vertex).applyMatrix4(
-						mesh.matrixWorld,
-					);
-					lowest = Math.min(lowest, vertex.y);
-					highest = Math.max(highest, vertex.y);
-				}
-			}
-			return highest - lowest;
+			});
+			return shut;
 		};
-		const open = eyeHeight();
-		expect(open).toBeGreaterThan(0.02);
+		c.keepUp();
+		expect(blinks().every((shut) => shut === 0)).toBe(true);
 		for (const eye of c.eyes) {
 			eye.scale.y = 0.15;
 		}
 		c.keepUp();
-		expect(eyeHeight()).toBeCloseTo(open * 0.15, 4);
+		expect(blinks().every((shut) => shut === 1)).toBe(true);
 	});
 
-	it("draws me just as I am unmerged, however I'm posed", () => {
-		const merged = createCharacter();
-		const plain = createCharacter();
-		plain.unmerge();
-		pose(merged);
-		pose(plain);
-		merged.keepUp();
-		const [count, ...rest] = drawn(plain);
-		const [mergedCount, ...mergedRest] = drawn(merged);
-		expect(mergedCount).toBe(count);
-		for (const [i, value] of rest.entries()) {
-			expect(mergedRest[i]).toBeCloseTo(value, 2);
+	it('looks knocked out when I am', () => {
+		const c = createCharacter();
+		const knockedOut = (): number[] => {
+			const out: number[] = [];
+			c.root.traverse((child) => {
+				const index =
+					child instanceof SkinnedMesh
+						? child.morphTargetDictionary?.knockedOut
+						: undefined;
+				if (index !== undefined && child instanceof SkinnedMesh) {
+					out.push(child.morphTargetInfluences?.[index] ?? 0);
+				}
+			});
+			return out;
+		};
+		c.keepUp();
+		expect(knockedOut()).toEqual([0]);
+		c.face.knockedOut = 1;
+		c.keepUp();
+		expect(knockedOut()).toEqual([1]);
+	});
+
+	it("turns my model's bones with my joints, however I'm posed", () => {
+		const c = createCharacter();
+		pose(c);
+		c.keepUp();
+		c.root.updateMatrixWorld(true);
+		for (const [i, name] of [
+			'palm_l',
+			'palm_r',
+			'sole_l',
+			'sole_r',
+		].entries()) {
+			const marked = c.extremities[i].getWorldPosition(new Vector3());
+			expect(marked.distanceTo(boneAt(c, name))).toBeLessThan(1e-4);
 		}
 	});
 
-	it('still knows where my hands and feet are', () => {
+	it('has my hands at my sides, and my feet on the ground', () => {
 		const c = createCharacter();
 		c.root.updateMatrixWorld(true);
 		const [leftHand, rightHand, leftFoot, rightFoot] = c.extremities.map(
 			(extremity) => extremity.getWorldPosition(new Vector3()),
 		);
-		expect(leftHand.x).toBeCloseTo(0.29, 2);
-		expect(rightHand.x).toBeCloseTo(-0.29, 2);
-		expect(leftHand.y).toBeCloseTo(0.772, 3);
-		expect(leftFoot.toArray()).toEqual([
-			expect.closeTo(0.1, 3),
-			expect.closeTo(0.05, 3),
-			expect.closeTo(0.04, 3),
-		]);
-		expect(rightFoot.x).toBeCloseTo(-0.1, 3);
+		// Out past my hips, and below them, as I stand at rest.
+		expect(leftHand.x).toBeGreaterThan(0.2);
+		expect(rightHand.x).toBeLessThan(-0.2);
+		expect(leftHand.y).toBeLessThan(1);
+		for (const foot of [leftFoot, rightFoot]) {
+			expect(foot.y).toBeGreaterThanOrEqual(0);
+			expect(foot.y).toBeLessThan(0.1);
+		}
+		expect(leftFoot.x).toBeGreaterThan(0);
+		expect(rightFoot.x).toBeLessThan(0);
 	});
 
-	it('is still my size and shape', () => {
+	it('is my height, standing on the ground', () => {
 		const c = createCharacter();
 		c.root.updateMatrixWorld(true);
 		const box = new Box3().setFromObject(c.root, true);
-		expect(box.min.toArray()).toEqual([
-			expect.closeTo(-0.338, 3),
-			expect.closeTo(0.005, 3),
-			expect.closeTo(-0.24, 3),
-		]);
-		expect(box.max.toArray()).toEqual([
-			expect.closeTo(0.338, 3),
-			expect.closeTo(1.889, 3),
-			expect.closeTo(0.17, 3),
-		]);
+		expect(box.min.y).toBeCloseTo(0, 1);
+		expect(box.max.y).toBeGreaterThan(1.75);
+		expect(box.max.y).toBeLessThan(2.05);
+	});
+});
+
+describe('readCharacterModel', () => {
+	const model = readFileSync(path.join(import.meta.dirname, 'models/me.glb'));
+
+	it("turns down a model that's missing a bone the game turns", async () => {
+		// The bone renamed, in the model's JSON, without touching the rest.
+		const broken = Buffer.from(model);
+		broken.write('"upperarm_x"', broken.indexOf('"upperarm_l"'));
+		await expect(
+			readCharacterModel(
+				broken.buffer.slice(
+					broken.byteOffset,
+					broken.byteOffset + broken.byteLength,
+				),
+			),
+		).rejects.toThrow('no "upperarm_l" bone');
 	});
 });

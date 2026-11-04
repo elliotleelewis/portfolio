@@ -19,6 +19,8 @@
     "test": "vitest run src functions",
     "e2e": "playwright test",
     "shots": "playwright test --config playwright.shots.config.ts",
+    "models": "jiti scripts/models/build.ts",
+    "models:me": "jiti scripts/models/me.ts",
     "db:generate": "drizzle-kit generate && oxfmt migrations"
   },
   "dependencies": {
@@ -50,6 +52,9 @@
     "@commitlint/types": "^21.0.0",
     "@eslint-community/eslint-plugin-eslint-comments": "^4.0.0",
     "@eslint/js": "^10.0.0",
+    "@gltf-transform/core": "^4.0.0",
+    "@gltf-transform/extensions": "^4.0.0",
+    "@gltf-transform/functions": "^4.0.0",
     "@inlang/paraglide-js": "^2.0.0",
     "@inlang/paraglide-js-react": "^1.0.0",
     "@inlang/plugin-message-format": "^4.0.0",
@@ -77,6 +82,7 @@
     "husky": "^9.0.0",
     "jiti": "~2.7.0",
     "knip": "^6.0.0",
+    "meshoptimizer": "^1.0.0",
     "oxc-transform-react": "^0.156.0",
     "oxfmt": "^0.75.0",
     "rollup-plugin-license": "^3.0.0",

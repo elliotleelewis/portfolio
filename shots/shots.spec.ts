@@ -2,14 +2,27 @@ import { mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { type Page, expect, test } from '@playwright/test';
+import type { Object3D } from 'three';
 
 // What the site exposes on `globalThis.hero` that the screenshots use.
 interface HeroHandle {
 	hero: {
-		game?: { advance: (seconds: number) => void };
-		stage?: { step: (dt: number) => void };
+		game?: {
+			advance: (seconds: number) => void;
+			character: Object3D;
+		};
+		stage?: { step: (dt: number) => void; camera: Object3D };
 	};
 }
+
+// Where the camera stands for each portrait of me: how far round from in
+// front of me, how far away, and how high it looks (above my feet).
+const portraits = [
+	{ name: 'me', turn: 0, distance: 2.8, height: 1 },
+	{ name: 'me-left', turn: 0.75, distance: 2.8, height: 1 },
+	{ name: 'me-right', turn: -0.75, distance: 2.8, height: 1 },
+	{ name: 'me-face', turn: 0, distance: 0.85, height: 1.7 },
+] as const;
 
 const out = path.join(import.meta.dirname, 'out');
 const easterEggs = [
@@ -145,6 +158,84 @@ test('a run', async ({ page }, { project }) => {
 		}, seconds);
 		await shoot(page, name, project.name);
 	}
+});
+
+/**
+ * Takes my portrait from the run's start: posed as I am that far in, then
+ * everything held still, so the camera stays where it's put.
+ * @param page - The page.
+ * @param project - The browser and time of day it's in.
+ * @param seconds - How far into the run.
+ * @param views - Where the camera stands for each.
+ */
+const portray = async (
+	page: Page,
+	project: string,
+	seconds: number,
+	views: readonly {
+		name: string;
+		turn: number;
+		distance: number;
+		height: number;
+	}[],
+): Promise<void> => {
+	await page.goto('/game');
+	await page.locator('#hero-start').click();
+	// Where my feet are, and which way the camera was looking at me.
+	const [feet, away] = await page.evaluate((s) => {
+		const { game, stage } = (globalThis as unknown as HeroHandle).hero;
+		if (!game || !stage) {
+			throw new Error('No run to take my portrait in');
+		}
+		game.advance(s);
+		stage.step = () => {
+			// Held still.
+		};
+		const at = game.character.getWorldPosition(
+			stage.camera.position.clone(),
+		);
+		const towards = stage.camera.position
+			.clone()
+			.sub(at)
+			.setY(0)
+			.normalize();
+		return [at.toArray(), towards.toArray()];
+	}, seconds);
+	for (const { name, turn, distance, height } of views) {
+		await page.evaluate(
+			({ from, facing, ...portrait }) => {
+				const { stage } = (globalThis as unknown as HeroHandle).hero;
+				if (!stage) {
+					throw new Error('No run to take my portrait in');
+				}
+				const { camera } = stage;
+				const [x, , z] = facing;
+				const { cos, sin } = Math;
+				const target = camera.position.clone().fromArray(from);
+				target.y += portrait.height;
+				camera.position.set(
+					target.x +
+						(x * cos(portrait.turn) - z * sin(portrait.turn)) *
+							portrait.distance,
+					target.y + portrait.distance * 0.12,
+					target.z +
+						(x * sin(portrait.turn) + z * cos(portrait.turn)) *
+							portrait.distance,
+				);
+				camera.lookAt(target);
+			},
+			{ from: feet, facing: away, turn, distance, height },
+		);
+		await shoot(page, name, project);
+	}
+};
+
+test('me, up close', async ({ page }, { project }) => {
+	// Standing at the start, relaxed, then in my star pose.
+	await portray(page, project.name, 0.3, [
+		{ name: 'me-standing', turn: 0, distance: 2.8, height: 1 },
+	]);
+	await portray(page, project.name, 2.4, portraits);
 });
 
 test.afterAll(() => {

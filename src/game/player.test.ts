@@ -1,3 +1,4 @@
+import { SkinnedMesh } from 'three';
 import { describe, expect, it } from 'vitest';
 
 import { Player, type PlayerControls, TURN_END } from './player';
@@ -94,5 +95,37 @@ describe('Player', () => {
 		const rollingSpeed = player.speed;
 		run(player, time, 3, coast, true);
 		expect(player.speed).toBeLessThan(rollingSpeed * 0.01);
+	});
+
+	it('is knocked out once caught, and stops blinking', () => {
+		const player = new Player(noHooks);
+		/**
+		 * How far one of my shape keys is on.
+		 * @param name - The shape key.
+		 * @returns How far, from 0 to 1.
+		 */
+		const key = (name: string): number => {
+			let amount = 0;
+			player.root.traverse((child) => {
+				const index =
+					child instanceof SkinnedMesh
+						? child.morphTargetDictionary?.[name]
+						: undefined;
+				if (index !== undefined && child instanceof SkinnedMesh) {
+					amount = child.morphTargetInfluences?.[index] ?? 0;
+				}
+			});
+			return amount;
+		};
+		let time = run(player, TURN_END, 2);
+		expect(key('knockedOut')).toBe(0);
+		// Through a few of the moments I'd otherwise blink.
+		const blinks: number[] = [];
+		for (let i = 0; i < 600; i++) {
+			time = run(player, time, dt, coast, true);
+			blinks.push(key('blink'));
+		}
+		expect(key('knockedOut')).toBe(1);
+		expect(Math.max(...blinks)).toBe(0);
 	});
 });

@@ -70,6 +70,8 @@ export class Player {
 	private _lateral = 0;
 	private _distance = 0;
 	private _isRolling = false;
+	// How far I've flopped, once caught, from 0 to 1.
+	private _flop = 0;
 
 	public constructor(hooks: PlayerHooks) {
 		this._hooks = hooks;
@@ -131,6 +133,17 @@ export class Player {
 			damp(3, dt),
 		);
 		c.head.rotation.set(0, -0.6, 0);
+		// Flopped: bent at the chest, elbows and knees, and out cold.
+		this._flop = MathUtils.lerp(this._flop, 1, damp(3, dt));
+		c.face.knockedOut = 1;
+		for (const eye of c.eyes) {
+			eye.scale.y = 1;
+		}
+		c.chest.rotation.x = 0.25 * this._flop;
+		c.leftForearm.rotation.x = -0.9 * this._flop;
+		c.rightForearm.rotation.x = c.leftForearm.rotation.x;
+		c.leftShin.rotation.x = 0.6 * this._flop;
+		c.rightShin.rotation.x = c.leftShin.rotation.x;
 	}
 
 	// My rig, to add to the slope.
@@ -187,15 +200,21 @@ export class Player {
 
 		// Look at the camera, then look around.
 		const [yaw, pitch] = lookAround(t);
-		c.head.rotation.set(-pitch, yaw, 0);
-		c.body.rotation.y = yaw * 0.15;
+		c.head.rotation.set(-pitch, yaw * 0.75, 0);
+		c.chest.rotation.y = yaw * 0.25;
 
-		// Hands up in the air, legs out: a star.
+		// Hands up in the air, legs out: a star. Standing, my elbows and knees
+		// are relaxed; in the star, they straighten.
 		const star = MathUtils.smootherstep(t, STAR_START, STAR_END);
 		c.leftArm.rotation.z = MathUtils.lerp(0.08, 2.35, star);
 		c.rightArm.rotation.z = -c.leftArm.rotation.z;
 		c.leftLeg.rotation.z = MathUtils.lerp(0, 0.5, star);
 		c.rightLeg.rotation.z = -c.leftLeg.rotation.z;
+		const relaxed = 1 - star;
+		c.leftForearm.rotation.x = -0.25 * relaxed;
+		c.rightForearm.rotation.x = c.leftForearm.rotation.x;
+		c.leftShin.rotation.x = 0.08 * relaxed;
+		c.rightShin.rotation.x = c.leftShin.rotation.x;
 
 		// Turn side-on, ready to cartwheel.
 		c.facing.rotation.y =
@@ -228,7 +247,6 @@ export class Player {
 	}
 
 	public dispose(): void {
-		this._character.unmerge();
 		disposeObject(this._character.root);
 	}
 }

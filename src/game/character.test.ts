@@ -94,6 +94,28 @@ describe('createCharacter', () => {
 		expect(blinks().every((shut) => shut === 1)).toBe(true);
 	});
 
+	it('looks knocked out when I am', () => {
+		const c = createCharacter();
+		const knockedOut = (): number[] => {
+			const out: number[] = [];
+			c.root.traverse((child) => {
+				const index =
+					child instanceof SkinnedMesh
+						? child.morphTargetDictionary?.knockedOut
+						: undefined;
+				if (index !== undefined && child instanceof SkinnedMesh) {
+					out.push(child.morphTargetInfluences?.[index] ?? 0);
+				}
+			});
+			return out;
+		};
+		c.keepUp();
+		expect(knockedOut()).toEqual([0]);
+		c.face.knockedOut = 1;
+		c.keepUp();
+		expect(knockedOut()).toEqual([1]);
+	});
+
 	it("turns my model's bones with my joints, however I'm posed", () => {
 		const c = createCharacter();
 		pose(c);

@@ -133,8 +133,12 @@ export class Player {
 			damp(3, dt),
 		);
 		c.head.rotation.set(0, -0.6, 0);
-		// Flopped: bent at the chest, elbows and knees.
+		// Flopped: bent at the chest, elbows and knees, and out cold.
 		this._flop = MathUtils.lerp(this._flop, 1, damp(3, dt));
+		c.face.knockedOut = 1;
+		for (const eye of c.eyes) {
+			eye.scale.y = 1;
+		}
 		c.chest.rotation.x = 0.25 * this._flop;
 		c.leftForearm.rotation.x = -0.9 * this._flop;
 		c.rightForearm.rotation.x = c.leftForearm.rotation.x;

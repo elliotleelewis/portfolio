@@ -153,6 +153,10 @@ interface Part {
 	// How much lighter or darker its folds are.
 	fold: number;
 	isEye?: boolean;
+	// Which face it's part of: my everyday one, or the one I wear once a bear
+	// has knocked me out. Each folds away as the other unfolds
+	// (`knockedOut`).
+	face?: 'awake' | 'out';
 }
 const parts: Part[] = [];
 
@@ -161,18 +165,30 @@ const parts: Part[] = [];
  * @param bone - The bone it moves with.
  * @param geometry - Its shape, in Blender's axes.
  * @param colour - Its paper.
- * @param options - How it folds, and whether it's an eye.
+ * @param options - How it folds, whether it's an eye, and which face it's in.
  * @param options.fold - How much lighter or darker its folds are.
  * @param options.isEye - Whether it's an eye, which blinks.
+ * @param options.face - Which face it's part of, if it's part of one.
  */
 const add = (
 	bone: string,
 	geometry: BufferGeometry,
 	colour: string,
-	{ fold: folds = fold, isEye = false } = {},
+	{
+		fold: folds = fold,
+		isEye = false,
+		face: which,
+	}: { fold?: number; isEye?: boolean; face?: 'awake' | 'out' } = {},
 ): void => {
 	const flat = geometry.index ? geometry.toNonIndexed() : geometry;
-	parts.push({ geometry: flat, colour, bone, fold: folds, isEye });
+	parts.push({
+		geometry: flat,
+		colour,
+		bone,
+		fold: folds,
+		isEye,
+		face: which,
+	});
 	if (flat !== geometry) {
 		geometry.dispose();
 	}
@@ -347,6 +363,7 @@ const spike = (
  * @param where - Where it's stuck.
  * @param lift - How far in front of my face it stands.
  * @param holes - Shapes cut out of it.
+ * @param turn - How far it's turned, on my face.
  * @returns The shape.
  */
 const cutOut = (
@@ -354,6 +371,7 @@ const cutOut = (
 	where: Vector3,
 	lift = 0,
 	holes: [number, number][][] = [],
+	turn = 0,
 ): BufferGeometry => {
 	const shape = new Shape(outline.map(([x, z]) => new Vector2(x, z)));
 	for (const hole of holes) {
@@ -361,6 +379,7 @@ const cutOut = (
 	}
 	// three.js's shapes lie flat, facing +Z: stood up to face -Y.
 	return new ShapeGeometry(shape)
+		.rotateZ(turn)
 		.rotateX(Math.PI / 2)
 		.translate(where.x, where.y - lift, where.z);
 };
@@ -501,7 +520,13 @@ for (const s of [1, -1]) {
 	add('Head', cutOut(oval(0.022, 0.026), eye), c.eye, {
 		fold: 0,
 		isEye: true,
+		face: 'awake',
 	});
+	// Knocked out: crosses for eyes.
+	for (const turn of [Math.PI / 4, -Math.PI / 4]) {
+		const stroke = cutOut(rectangle(0.026, 0.0065), eye, 0, [], turn);
+		add('Head', stroke, c.eye, { fold: 0, face: 'out' });
+	}
 	add('Head', cutOut(oval(0.034, 0.025), cheek), c.blush, flat);
 	add(
 		'Head',
@@ -520,11 +545,24 @@ const teeth: [number, number][] = grin.map(([x, z]) => [
 	x * 0.86,
 	Math.max(z, -0.016) * 0.86,
 ]);
-add('Head', cutOut(grin, offset(onFace, 0, 0, -0.07), 0.002), c.mouth, flat);
-add('Head', cutOut(teeth, offset(onFace, 0, 0, -0.072), 0.004), c.teeth, flat);
+const awake = { fold: 0, face: 'awake' } as const;
+add('Head', cutOut(grin, offset(onFace, 0, 0, -0.07), 0.002), c.mouth, awake);
+add('Head', cutOut(teeth, offset(onFace, 0, 0, -0.072), 0.004), c.teeth, awake);
+// Knocked out: a small, wobbly line of a mouth.
+const wobble: [number, number][] = Array.from({ length: 13 }, (_value, k) => {
+	const x = -0.04 + (k / 12) * 0.08;
+	return [x, Math.sin(k * 1.1) * 0.005];
+});
+const line: [number, number][] = [
+	...wobble.map(([x, z]): [number, number] => [x, z + 0.0055]),
+	...wobble.toReversed().map(([x, z]): [number, number] => [x, z - 0.0055]),
+];
+const mouthOut = cutOut(line, offset(onFace, 0, 0, -0.085), 0.002);
+add('Head', mouthOut, c.mouth, { fold: 0, face: 'out' });
 
 // ---------------------------------------------------------------------------
-// Into one mesh: folds coloured, each part on its bone, my eyes blinking.
+// Into one mesh: folds coloured, each part on its bone, my eyes blinking,
+// and my knocked-out face.
 
 const positions: number[] = [];
 const normals: number[] = [];
@@ -532,6 +570,7 @@ const vertexColours: number[] = [];
 const joints: number[] = [];
 const weights: number[] = [];
 const blink: number[] = [];
+const knockedOut: number[] = [];
 const boneIndex = new Map(bones.map(({ name }, i) => [name, i]));
 // Blinking squashes my eyes to a line, about their middles.
 const eyeMiddle = head.z + 0.035;
@@ -544,8 +583,12 @@ const [p, q, r, normal] = [
 	new Vector3(),
 	new Vector3(),
 ];
+const middle = new Vector3();
 for (const part of parts) {
 	const position = part.geometry.getAttribute('position');
+	// Faces fold away to nothing, into their middles.
+	part.geometry.computeBoundingBox();
+	part.geometry.boundingBox?.getCenter(middle);
 	// In linear RGB, as glTF's vertex colours are (three.js converts hex).
 	const paper = new Color(part.colour);
 	// Each flat fold (the triangles in one plane) one colour.
@@ -570,7 +613,17 @@ for (const part of parts) {
 		folds.set(plane, shade);
 		folded.copy(paper).multiplyScalar(shade);
 		for (const v of [p, q, r]) {
-			positions.push(v.x, v.z, -v.y);
+			// My knocked-out face is folded away, until it unfolds.
+			const where = part.face === 'out' ? middle : v;
+			positions.push(where.x, where.z, -where.y);
+			const unfold = v.clone().sub(middle);
+			const out =
+				part.face === 'out'
+					? unfold
+					: part.face === 'awake'
+						? unfold.negate()
+						: new Vector3();
+			knockedOut.push(out.x, out.z, -out.y);
 			normals.push(normal.x, normal.z, -normal.y);
 			vertexColours.push(
 				Math.min(1, folded.r),
@@ -622,6 +675,7 @@ for (const { name } of bones) {
 
 const { roughness, metalness } = FINISHES.matte;
 const blinkPositions = accessor(new Float32Array(blink), 'VEC3');
+const knockedOutPositions = accessor(new Float32Array(knockedOut), 'VEC3');
 const primitive = document
 	.createPrimitive()
 	.setMaterial(
@@ -639,12 +693,17 @@ const primitive = document
 		document
 			.createPrimitiveTarget('blink')
 			.setAttribute('POSITION', blinkPositions),
+	)
+	.addTarget(
+		document
+			.createPrimitiveTarget('knockedOut')
+			.setAttribute('POSITION', knockedOutPositions),
 	);
 const mesh = document
 	.createMesh('me')
 	.addPrimitive(primitive)
-	.setWeights([0])
-	.setExtras({ targetNames: ['blink'] });
+	.setWeights([0, 0])
+	.setExtras({ targetNames: ['blink', 'knockedOut'] });
 const scene = document
 	.createScene('me')
 	.addChild(document.createNode('me').setMesh(mesh).setSkin(skin));

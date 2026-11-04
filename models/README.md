@@ -23,7 +23,7 @@ Everything in the 3D world (me, the bears, the trees, the easter eggs, the lands
 
 I'm modelled in TypeScript, with nothing to install: `pnpm models:me` runs `scripts/models/me.ts`, which builds me from three.js shapes and writes `models/me.glb` with [glTF Transform](https://gltf-transform.dev). Then `pnpm models` gets me ready for the game, and `pnpm shots --grep "me, up close"` takes my portrait, standing and in my star pose, to compare with `main`'s.
 
-The script builds every part of me from paper shapes (faceted balls, prisms, blocks with folded edges, four-sided spikes of hair, and flat cut-outs for my face), in a modeller's axes (Z up, facing −Y), colours them fold by fold from the colours at its top, puts each on the bone it moves with, joins them, and makes my `blink` shape key. To change me, change the script and run it again.
+The script builds every part of me from paper shapes (faceted balls, prisms, blocks with folded edges, four-sided spikes of hair, and flat cut-outs for my face), in a modeller's axes (Z up, facing −Y), colours them fold by fold from the colours at its top, puts each on the bone it moves with, joins them, and makes my shape keys: `blink`, and `knockedOut`, which folds my face away and unfolds the one I wear once a bear gets me (crossed eyes and a wobbly mouth). To change me, change the script and run it again.
 
 A model that needs more than code can build (sculpting, say) can be made in any 3D program, such as [Blender](https://www.blender.org), and exported to the spec below: the game doesn't care what made it.
 
@@ -72,7 +72,7 @@ The script writes its glTF itself. Exporting a hand-made person from Blender (Fi
 
 ### What the game checks
 
-The game won't load a person without every bone in the table above, a `blink` shape key, and every material named for its finish. The tests load me the same way, and also check that:
+The game won't load a person without every bone in the table above, a `blink` shape key, and every material named for its finish. A `knockedOut` shape key is optional: the game turns it on when the person's knocked out (`face.knockedOut`). The tests load me the same way, and also check that:
 
 - my hands and feet are where the cartwheel needs them, and my joints turn my bones however I'm posed (`src/game/character.test.ts`)
 - I fit inside my drawing budget (`src/game/draw-budget.test.ts`)

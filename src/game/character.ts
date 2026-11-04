@@ -28,6 +28,8 @@ export interface Character {
 	head: Group;
 	// Shut as they're squashed (scale.y), from 1 (open) to 0.15 (shut).
 	eyes: Object3D[];
+	// How I look: knocked out (crossed eyes and a wobbly mouth), from 0 to 1.
+	face: { knockedOut: number };
 	leftArm: Group;
 	rightArm: Group;
 	leftForearm: Group;

@@ -66,10 +66,13 @@ export interface Humanoid {
 	rightShin: Group;
 	// Shut as they're squashed (scale.y), from 1 (open) to 0.15 (shut).
 	eyes: Object3D[];
+	// How they look: knocked out (crossed eyes and a wobbly mouth, if the
+	// model has a `knockedOut` shape key), from 0 to 1.
+	face: { knockedOut: number };
 	// Where the palms and soles are (left palm, right palm, left sole, right
 	// sole), moving with the joints, for what has to touch the ground.
 	contacts: Object3D[];
-	// Turns the model's bones to match the joints, and blinks.
+	// Turns the model's bones to match the joints, blinks, and sets the face.
 	keepUp: () => void;
 }
 
@@ -248,21 +251,25 @@ export const createHumanoid = (model: Object3D): Humanoid => {
 		boneRest: turnWithin(body, bone(name), new Quaternion()),
 	}));
 
-	// Each mesh's `blink` shape key, and how far it's on.
-	const blinking: { index: number; influences: number[] }[] = [];
+	// Each mesh's shape keys (`blink`, and `knockedOut` if it has one), and
+	// how far each is on.
+	const keys: { name: string; index: number; influences: number[] }[] = [];
 	copy.traverse((part) => {
-		const index =
-			part instanceof SkinnedMesh
-				? part.morphTargetDictionary?.blink
-				: undefined;
-		if (
-			index !== undefined &&
-			part instanceof SkinnedMesh &&
-			part.morphTargetInfluences
-		) {
-			blinking.push({ index, influences: part.morphTargetInfluences });
+		if (!(part instanceof SkinnedMesh) || !part.morphTargetInfluences) {
+			return;
+		}
+		for (const name of ['blink', 'knockedOut']) {
+			const index = part.morphTargetDictionary?.[name];
+			if (index !== undefined) {
+				keys.push({
+					name,
+					index,
+					influences: part.morphTargetInfluences,
+				});
+			}
 		}
 	});
+	const face = { knockedOut: 0 };
 
 	const now = new Quaternion();
 	const rest = new Quaternion();
@@ -280,6 +287,7 @@ export const createHumanoid = (model: Object3D): Humanoid => {
 		leftShin,
 		rightShin,
 		eyes,
+		face,
 		contacts,
 		keepUp: () => {
 			// Each joint's turn since rest, about the body's own axes, given to its
@@ -303,8 +311,8 @@ export const createHumanoid = (model: Object3D): Humanoid => {
 				0,
 				1,
 			);
-			for (const { index, influences } of blinking) {
-				influences[index] = shut;
+			for (const { name, index, influences } of keys) {
+				influences[index] = name === 'blink' ? shut : face.knockedOut;
 			}
 		},
 	};

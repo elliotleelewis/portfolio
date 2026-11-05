@@ -1,8 +1,6 @@
 # Models
 
-The game's characters. Each `.glb` here is the source: `pnpm models` gets it ready for the game (compressed, in `src/game/models/`), which loads it before a run. Never edit `src/game/models/` by hand.
-
-So far it's only me: `me.glb`, made by `scripts/models/me.ts`. Everyone else is built as the game starts ("How people are made").
+How the game's world is modelled: its art style, and how people are made. Everything is built in TypeScript as the game starts, with nothing to load or install: people by the person builder (`src/game/people/`), and everything else from the shapes and finishes in `src/game/look/`.
 
 ## The style: folded paper
 
@@ -21,23 +19,24 @@ Everything in the 3D world (me, the bears, the trees, the easter eggs, the lands
 
 ## How people are made
 
-Everyone in the game is built by one person builder, in TypeScript, with nothing to install: `src/game/people/person.ts`. Each person is a `PersonSpec` in `src/game/people/cast.ts`, how they look: skin, hair (colour and cut), a beanie or a cap, brows, stubble, a beard, a moustache or a goatee, glasses, top, a vest, a belt, gloves, trousers or shorts, shoes, a pack, and the faces they pull. The builder makes their paper parts (`src/game/look/paper.ts`) and puts each on the bone it moves with. The people in the easter eggs are built as the game starts (`createPerson`), so they merge with the rest of their egg. I'm a glTF, so the game can load me like any model: `pnpm models:me` runs `scripts/models/me.ts`, which writes what the builder makes of me into `models/me.glb` with [glTF Transform](https://gltf-transform.dev). Then `pnpm models` gets me ready for the game, and `pnpm shots --grep "me, up close"` takes my portrait, standing and in my star pose, to compare with `main`'s.
+Everyone in the game, me included, is built by one person builder: `src/game/people/person.ts`. Each person is a `PersonSpec` in `src/game/people/cast.ts`, how they look: skin, hair (colour and cut), a beanie or a cap, brows, stubble, a beard, a moustache or a goatee, glasses, top, a vest, a belt, gloves, trousers or shorts, shoes, a pack, and the faces they pull. The builder makes their paper parts (faceted balls, prisms, blocks with folded edges, four-sided spikes of hair, and flat cut-outs for faces, from `src/game/look/paper.ts`), colours them fold by fold, and puts each on the bone it moves with. To change how someone looks, change their spec.
 
-The builder makes every part from paper shapes (faceted balls, prisms, blocks with folded edges, four-sided spikes of hair, and flat cut-outs for faces) and colours them fold by fold. The script joins mine, skins each to its bone, and makes my shape keys: `blink`, and `knockedOut`, which folds my face away and unfolds the one I wear once a bear gets me (crossed eyes and a wobbly mouth). To change how I look, change `ME` in `cast.ts` and run the script again.
+- **In an easter egg**, a person is `createPerson(spec, personMaterial())`: a joint for each bone, with their parts on it, so they merge and shatter with the rest of their egg.
+- **Me**, I'm `personModel(ME, personMaterial())` (`src/game/people/model.ts`): one skinned mesh, each part skinned to its bone, with two shape keys, `blink`, and `knockedOut`, which folds my face away and unfolds the one I wear once a bear gets me (crossed eyes and a wobbly mouth). `createHumanoid` poses it.
 
-A model that needs more than code can build (sculpting, say) can be made in any 3D program, such as [Blender](https://www.blender.org), and exported to the spec below: the game doesn't care what made it.
+`pnpm shots --grep "me, up close"` takes my portrait, standing and in my star pose, to compare with `main`'s.
 
 ## What the game needs of a person
 
-These hold for anyone rigged to the game's humanoid skeleton, however they're made.
+These hold for anyone rigged to the game's humanoid skeleton. The builder keeps to them (`BONES` in `person.ts`).
 
 ### The rest pose
 
 The game turns people from their rest pose, so model them in it:
 
-- Standing on the ground, feet at the origin, facing front (+Z in glTF, −Y in Blender), about 1.9 m tall with hair.
+- Standing on the ground, feet at the origin, facing front (+Z), about 1.9 m tall with hair.
 - Arms hanging a little out from the sides, legs straight down.
-- In metres, with the scale applied.
+- In metres.
 
 ### The skeleton
 
@@ -55,24 +54,14 @@ Every person in the game is rigged to the same humanoid skeleton, so the game po
 | `palm_l`, `palm_r`         | The palms, under the forearms.             | Where the hands touch the ground mid-cartwheel. Skins nothing. |
 | `sole_l`, `sole_r`         | The soles, under the shins, on the ground. | Where the feet touch the ground. Skins nothing.                |
 
-`_l` is the person's left (screen-right, facing them). Other bones (`spine_01`, `neck_01`, hands, feet, fingers) can be there too, and follow as they're weighted. The bones can lie and roll whichever way the modeller likes: the game turns each joint about the body's own axes, and works out each bone's turn from where its parent now is (`keepUp`). Don't animate them: the game poses people as it plays.
+`_l` is the person's left (screen-right, facing them). The game turns each joint about the body's own axes, and works out each bone's turn from where its parent now is (`keepUp`), so a model's bones could lie and roll whichever way. Don't animate the bones: the game poses people by their joints as it plays.
 
 ### Materials
 
-Each material is named for its finish: `matte`, `satin`, `gloss`, `metal` or `cast`. The game remakes each one in its finish, like the rest of the world, so roughness and metalness set in a model are ignored. Colours on the vertices and in the material multiply. Each material is a draw call (two, with shadows): in the folded-paper style, one is enough.
+A person is one material, `personMaterial()`: matte paper, coloured by the vertex colours their folds are painted in. That's one draw call, two with shadows.
 
-### Exporting by hand
+### What the tests check
 
-The script writes its glTF itself. Exporting a hand-made person from Blender (File › Export › glTF 2.0):
-
-- glTF Binary (`.glb`), the armature and the mesh only, +Y up.
-- Data › Mesh: Apply Modifiers, Normals and Vertex Color (Active) on, UVs off.
-- Data › Shape Keys and Skinning on; Animation off.
-- Data › Armature: Export Deformation Bones Only **off**, or the palms and soles (which skin nothing) are left out.
-
-### What the game checks
-
-The game won't load a person without every bone in the table above, a `blink` shape key, and every material named for its finish. A `knockedOut` shape key is optional: the game turns it on when the person's knocked out (`face.knockedOut`). The tests load me the same way, and also check that:
-
-- my hands and feet are where the cartwheel needs them, and my joints turn my bones however I'm posed (`src/game/character.test.ts`)
+- my hands and feet are where the cartwheel needs them, my joints turn my bones however I'm posed, and I'm my height (`src/game/character.test.ts`)
 - I fit inside my drawing budget (`src/game/draw-budget.test.ts`)
+- every easter egg's people move only by what it lists in `moving`, and its egg fits inside its budget

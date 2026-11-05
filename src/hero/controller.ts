@@ -143,8 +143,6 @@ export class HeroController {
 		isHeld = false,
 	): Promise<void> {
 		const gameModule = await import('../game/game');
-		// My model, fetched once, before the first run.
-		await gameModule.loadModels();
 		const store = this._store;
 		const next = new gameModule.Game(
 			{

@@ -64,3 +64,43 @@ export const OCCUPANT: PersonSpec = {
 	soles: '#bdbdb8',
 	mouths: ['grin'],
 };
+
+// The jailbreak's prisoner: short dark hair, spiky at the front, a full dark
+// beard and a grin, a maroon hooded long-sleeve, khakis and grey trainers.
+// (The officer's taken his backpack.)
+export const PRISONER: PersonSpec = {
+	seed: 31,
+	skin: '#cf9a74',
+	hair: { colour: '#1c1411', under: '#1c1411', style: 'crop' },
+	brows: '#1c1411',
+	beard: '#1f1612',
+	moustache: '#1f1612',
+	top: { colour: '#6b1f2c', sleeves: 'long', hood: true },
+	trousers: '#b8a68b',
+	shoes: '#3b3b3e',
+	soles: '#262629',
+	mouths: ['grin'],
+};
+
+// The police officer after him: a navy uniform, a hi-vis vest, a duty belt,
+// a peaked cap with a chequered band, and a big moustache.
+export const OFFICER: PersonSpec = {
+	seed: 37,
+	skin: '#efc3a2',
+	hair: { colour: '#6b4a33', under: '#5a3d2a', style: 'short' },
+	brows: '#6b4a33',
+	moustache: '#6b4a33',
+	cap: {
+		colour: '#18233b',
+		band: ['#f2f2f2', '#111111'],
+		peak: '#0e0e10',
+		badge: '#d9b84a',
+	},
+	top: { colour: '#1d2a44', sleeves: 'long' },
+	vest: { colour: '#c9e23a', stripes: '#dfe3e6' },
+	belt: '#0e0e10',
+	trousers: '#15181f',
+	shoes: '#0d0d0d',
+	soles: '#050505',
+	mouths: ['smile'],
+};

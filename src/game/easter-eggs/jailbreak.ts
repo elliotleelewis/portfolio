@@ -1,23 +1,24 @@
 import {
-	CapsuleGeometry,
-	CircleGeometry,
-	CylinderGeometry,
 	Group,
 	MathUtils,
 	type Mesh,
-	type MeshStandardMaterial,
 	type Object3D,
 	PlaneGeometry,
-	SphereGeometry,
 	TorusGeometry,
 	Vector3,
 } from 'three';
 
 import { m } from '../../paraglide/messages';
-import { roundedBox } from '../look/shapes';
-import { TONES, surface } from '../look/surfaces';
+import { surface } from '../look/surfaces';
+import { OFFICER, PRISONER } from '../people/cast';
+import {
+	type Person,
+	type PersonSpec,
+	createPerson,
+	personMaterial,
+} from '../people/person';
 
-import { canvasTexture, joint, part } from './parts';
+import { canvasTexture, part } from './parts';
 import type { EasterEgg, EasterEggFrame } from './types';
 
 // How close I get before the prisoner makes his break.
@@ -30,321 +31,41 @@ const chaseGap = 1.3;
 const breakAt = 0.45;
 const runAt = 1.2;
 
+// A runner, and their arms and legs, their right (-x) first.
 interface Runner {
-	root: Group;
-	body: Group;
-	head: Group;
-	arms: { shoulder: Group; elbow: Group; wrist: Group }[];
+	person: Person;
+	arms: { shoulder: Group; elbow: Group; hand: Object3D }[];
 	legs: { hip: Group; knee: Group }[];
 }
 
-interface Outfit {
-	skin: string;
-	top: string;
-	bottoms: string;
-	shoes: string;
-	// Torso radius: the prisoner's a bit stockier.
-	build: number;
-}
-
-// A person, facing +z, with the joints needed to struggle, run and flail.
-const buildRunner = (parent: Object3D, outfit: Outfit): Runner => {
-	const skin = surface(outfit.skin);
-	const top = surface(outfit.top);
-	const bottoms = surface(outfit.bottoms);
-	const shoes = surface(outfit.shoes);
-	const { build } = outfit;
-
-	const root = joint(parent, [0, 0, 0]);
-	const body = joint(root, [0, 0, 0]);
-	const legs = [-1, 1].map((side) => {
-		const hip = joint(body, [side * 0.11, 0.92, 0]);
-		part(
-			hip,
-			new CapsuleGeometry(0.085, 0.3, 4, 10),
-			bottoms,
-			[0, -0.2, 0],
-		);
-		const knee = joint(hip, [0, -0.42, 0]);
-		part(
-			knee,
-			new CapsuleGeometry(0.072, 0.32, 4, 10),
-			bottoms,
-			[0, -0.2, 0],
-		);
-		part(knee, roundedBox(0.12, 0.09, 0.27), shoes, [0, -0.44, 0.04]);
-		return { hip, knee };
-	});
-
-	part(
-		body,
-		new CylinderGeometry(build - 0.02, build - 0.03, 0.18, 16),
-		bottoms,
-		[0, 0.94, 0],
-	);
-	const torso = part(
-		body,
-		new CylinderGeometry(build, build - 0.02, 0.58, 18),
-		top,
-		[0, 1.2, 0],
-	);
-	torso.scale.z = 0.68;
-	part(body, new SphereGeometry(build, 16, 8), top, [0, 1.46, 0]).scale.set(
-		1,
-		0.35,
-		0.68,
-	);
-
-	const arms = [-1, 1].map((side) => {
-		const shoulder = joint(body, [side * (build + 0.03), 1.45, 0]);
-		part(
-			shoulder,
-			new CapsuleGeometry(0.072, 0.2, 4, 10),
-			top,
-			[0, -0.14, 0],
-		);
-		const elbow = joint(shoulder, [0, -0.29, 0]);
-		part(
-			elbow,
-			new CapsuleGeometry(0.062, 0.18, 4, 10),
-			top,
-			[0, -0.12, 0],
-		);
-		const wrist = joint(elbow, [0, -0.26, 0]);
-		part(
-			wrist,
-			new SphereGeometry(0.055, 10, 8),
-			skin,
-			[0, -0.05, 0],
-		).scale.set(0.85, 1.1, 0.6);
-		return { shoulder, elbow, wrist };
-	});
-
-	part(body, new CylinderGeometry(0.058, 0.064, 0.1, 12), skin, [0, 1.55, 0]);
-	const head = joint(body, [0, 1.58, 0]);
-	part(head, new SphereGeometry(0.122, 22, 16), skin, [0, 0.13, 0]).scale.set(
-		0.95,
-		1.1,
-		1,
-	);
-	for (const side of [-1, 1]) {
-		part(head, new SphereGeometry(0.028, 10, 8), skin, [
-			side * 0.114,
-			0.13,
-			0,
-		]).scale.set(0.5, 1, 0.8);
-	}
-	part(head, new SphereGeometry(0.02, 8, 6), skin, [0, 0.12, 0.125]);
-	return { root, body, head, arms, legs };
-};
-
-const face = (
-	head: Object3D,
-	{
-		hair,
-		isGrinning,
-		isBearded = false,
-	}: { hair: MeshStandardMaterial; isGrinning: boolean; isBearded?: boolean },
-): void => {
-	const dark = surface(TONES.pupil);
-	for (const side of [-1, 1]) {
-		part(head, new SphereGeometry(0.012, 8, 6), dark, [
-			side * 0.043,
-			0.148,
-			0.107,
-		]).scale.y = 0.6;
-		part(head, roundedBox(0.052, 0.014, 0.012), hair, [
-			side * 0.043,
-			0.18,
-			0.11,
-		]).rotation.z = side * -0.1;
-	}
-	const mouth = part(
-		head,
-		new CircleGeometry(isGrinning ? 0.034 : 0.026, 14, Math.PI, Math.PI),
-		surface(TONES.mouth),
-		// Out in front of a beard, if there is one.
-		[0, 0.083, isBearded ? 0.127 : 0.113],
-	);
-	mouth.scale.y = isGrinning ? 0.5 : 0.35;
-	mouth.rotation.x = -0.25;
-};
-
-// The prisoner: short dark hair, spiky at the front; a full dark beard; a maroon
-// hooded long-sleeve and khakis. (The officer's taken his backpack.)
-const buildPrisoner = (parent: Object3D): Runner => {
-	const prisoner = buildRunner(parent, {
-		skin: '#cf9a74',
-		top: '#6b1f2c',
-		bottoms: '#b8a68b',
-		shoes: '#3b3b3e',
-		build: 0.25,
-	});
-	const hair = surface('#1c1411');
-	const beard = surface('#1f1612');
-	const { head, body } = prisoner;
-	face(head, { hair, isGrinning: true, isBearded: true });
-
-	// Full, neatly trimmed beard and moustache.
-	const beardShell = part(
-		head,
-		new SphereGeometry(
-			0.122,
-			20,
-			12,
-			-Math.PI * 0.1,
-			Math.PI * 1.2,
-			Math.PI * 0.55,
-			Math.PI * 0.38,
-		),
-		beard,
-		[0, 0.13, 0.004],
-	);
-	beardShell.scale.set(0.97, 1.14, 1.04);
-	part(head, roundedBox(0.085, 0.02, 0.018), beard, [0, 0.1, 0.128]);
-
-	// Short, wet-look hair with a spiky fringe.
-	const crown = part(
-		head,
-		new SphereGeometry(0.128, 20, 12, 0, Math.PI * 2, 0, Math.PI * 0.44),
-		hair,
-		[0, 0.155, -0.006],
-	);
-	crown.scale.set(0.98, 1.08, 1.04);
-	crown.rotation.x = -0.2;
-	const spike = new CylinderGeometry(0, 0.018, 0.06, 5);
-	for (let i = -3; i <= 3; i++) {
-		const piece = part(head, spike, hair, [i * 0.024, 0.235, 0.098]);
-		piece.rotation.set(2.1, 0, i * 0.1);
-	}
-
-	// Maroon hooded top: hood behind the neck, a little white logo.
-	const hood = part(
-		body,
-		new TorusGeometry(0.1, 0.055, 8, 16),
-		surface('#6b1f2c'),
-		[0, 1.52, -0.04],
-	);
-	hood.rotation.x = Math.PI / 2 + 0.3;
-	hood.scale.set(1.2, 1, 1);
-	part(
-		body,
-		roundedBox(0.06, 0.015, 0.006),
-		surface('#e9e6f2'),
-		[0.12, 1.36, 0.172],
-	);
-	return prisoner;
-};
-
-// A police officer: navy uniform, hi-vis vest, peaked cap with a chequered
-// band, and a big moustache.
-const buildOfficer = (parent: Object3D): Runner => {
-	const officer = buildRunner(parent, {
-		skin: '#efc3a2',
-		top: '#1d2a44',
-		bottoms: '#15181f',
-		shoes: '#0d0d0d',
-		build: 0.23,
-	});
-	const hair = surface('#6b4a33');
-	const { head, body } = officer;
-	face(head, { hair, isGrinning: false });
-	part(head, roundedBox(0.1, 0.028, 0.02), hair, [0, 0.1, 0.118]);
-
-	// Peaked cap.
-	const navy = surface('#18233b');
-	const black = surface('#0e0e10', 'gloss');
-	const band = surface('#ffffff', 'matte', {
-		map: canvasTexture(128, 16, (context) => {
-			for (let x = 0; x < 128; x += 8) {
-				for (let y = 0; y < 16; y += 8) {
-					context.fillStyle =
-						(x + y) % 16 === 0 ? '#111111' : '#f2f2f2';
-					context.fillRect(x, y, 8, 8);
-				}
-			}
-		}),
-	});
-	part(
-		head,
-		new CylinderGeometry(0.135, 0.125, 0.07, 20, 1, true),
-		band,
-		[0, 0.24, 0],
-	);
-	part(
-		head,
-		new CylinderGeometry(0.155, 0.135, 0.05, 20),
-		navy,
-		[0, 0.295, 0],
-	);
-	const peak = part(
-		head,
-		new CylinderGeometry(
-			0.11,
-			0.11,
-			0.012,
-			20,
-			1,
-			false,
-			-Math.PI / 2,
-			Math.PI,
-		),
-		black,
-		[0, 0.21, 0.085],
-	);
-	peak.rotation.x = 0.25;
-	part(
-		head,
-		roundedBox(0.03, 0.03, 0.01),
-		surface('#d9b84a', 'metal'),
-		[0, 0.265, 0.14],
-	);
-
-	// Hi-vis vest with POLICE across the back.
-	const vest = surface('#c9e23a', 'satin');
-	const reflective = surface('#dfe3e6', 'metal');
-	const vestBody = part(
-		body,
-		new CylinderGeometry(0.245, 0.225, 0.46, 18, 1, true),
-		vest,
-		[0, 1.22, 0],
-	);
-	vestBody.scale.z = 0.7;
-	for (const y of [1.08, 1.18]) {
-		const stripe = part(
-			body,
-			new CylinderGeometry(0.248, 0.244, 0.035, 18, 1, true),
-			reflective,
-			[0, y, 0],
-		);
-		stripe.scale.z = 0.71;
-	}
-	const label = part(
-		body,
-		new PlaneGeometry(0.3, 0.08),
-		surface('#ffffff', 'matte', {
-			transparent: true,
-			map: canvasTexture(256, 64, (context) => {
-				context.fillStyle = '#10131a';
-				context.font = 'bold 44px system-ui, sans-serif';
-				context.textAlign = 'center';
-				context.textBaseline = 'middle';
-				context.fillText('POLICE', 128, 34);
-			}),
-		}),
-		[0, 1.34, -0.176],
-	);
-	label.rotation.y = Math.PI;
-	label.castShadow = false;
-	// Duty belt.
-	part(
-		body,
-		new CylinderGeometry(0.225, 0.225, 0.06, 18),
-		black,
-		[0, 0.98, 0],
-	);
-	part(body, roundedBox(0.06, 0.12, 0.08), black, [0.24, 0.94, 0.02]);
-	return officer;
+/**
+ * Builds someone to struggle, run and flail.
+ * @param parent - What they stand in.
+ * @param spec - How they look.
+ * @returns Them.
+ */
+const buildRunner = (parent: Object3D, spec: PersonSpec): Runner => {
+	const person = createPerson(spec, personMaterial());
+	parent.add(person.root);
+	return {
+		person,
+		arms: [
+			{
+				shoulder: person.rightArm,
+				elbow: person.rightForearm,
+				hand: person.rightHand,
+			},
+			{
+				shoulder: person.leftArm,
+				elbow: person.leftForearm,
+				hand: person.leftHand,
+			},
+		],
+		legs: [
+			{ hip: person.rightLeg, knee: person.rightShin },
+			{ hip: person.leftLeg, knee: person.leftShin },
+		],
+	};
 };
 
 interface Link {
@@ -361,26 +82,9 @@ const run = (runner: Runner, phase: number, lean: number): void => {
 		hip.rotation.x = -s * 0.8 - 0.1;
 		knee.rotation.x = 0.4 + Math.max(0, s) * 0.9;
 	}
-	runner.body.rotation.x = lean;
-	runner.body.position.y = Math.abs(Math.cos(phase)) * 0.06;
+	runner.person.body.rotation.x = lean;
+	runner.person.body.position.y = Math.abs(Math.cos(phase)) * 0.06;
 };
-
-/**
- * Every joint in a runner, which all move as they run.
- * @param runner - The runner.
- * @returns Their joints.
- */
-const jointsOf = (runner: Runner): Object3D[] => [
-	runner.root,
-	runner.body,
-	runner.head,
-	...runner.arms.flatMap(({ shoulder, elbow, wrist }) => [
-		shoulder,
-		elbow,
-		wrist,
-	]),
-	...runner.legs.flatMap(({ hip, knee }) => [hip, knee]),
-];
 
 export const JAILBREAK: EasterEgg = {
 	id: 'jailbreak',
@@ -393,19 +97,37 @@ export const JAILBREAK: EasterEgg = {
 	},
 	create: () => {
 		const root = new Group();
-		const prisoner = buildPrisoner(root);
-		const officer = buildOfficer(root);
+		const prisoner = buildRunner(root, PRISONER);
+		const officer = buildRunner(root, OFFICER);
+		// POLICE across the officer's back.
+		const label = part(
+			officer.person.chest,
+			new PlaneGeometry(0.3, 0.08),
+			surface('#ffffff', 'matte', {
+				transparent: true,
+				map: canvasTexture(256, 64, (context) => {
+					context.fillStyle = '#10131a';
+					context.font = 'bold 44px system-ui, sans-serif';
+					context.textAlign = 'center';
+					context.textBaseline = 'middle';
+					context.fillText('POLICE', 128, 34);
+				}),
+			}),
+			[0, 0.21, -0.255],
+		);
+		label.rotation.y = Math.PI;
+		label.castShadow = false;
 		const prisonerStart = new Vector3(0.35, 0, 0);
 		const officerStart = new Vector3(-0.45, 0, 0.1);
-		prisoner.root.position.copy(prisonerStart);
-		officer.root.position.copy(officerStart);
-		officer.root.rotation.y = 0.35;
+		prisoner.person.root.position.copy(prisonerStart);
+		officer.person.root.position.copy(officerStart);
+		officer.person.root.rotation.y = 0.35;
 
 		// Handcuffs: a cuff on each wrist, three links between them.
 		const steel = surface('#c5cbd1', 'metal');
-		for (const { wrist } of prisoner.arms) {
+		for (const { hand } of prisoner.arms) {
 			const cuff = part(
-				wrist,
+				hand,
 				new TorusGeometry(0.05, 0.011, 8, 16),
 				steel,
 				[0, -0.02, 0],
@@ -440,7 +162,7 @@ export const JAILBREAK: EasterEgg = {
 					t < 0 ? Math.sin(time * 3) * 0.05 : Math.sin(t * 40) * 0.12;
 				for (const [
 					i,
-					{ shoulder, elbow, wrist },
+					{ shoulder, elbow },
 				] of prisoner.arms.entries()) {
 					const side = i === 0 ? -1 : 1;
 					shoulder.rotation.set(
@@ -450,13 +172,16 @@ export const JAILBREAK: EasterEgg = {
 					);
 					// Forearms folded in behind him, wrists together.
 					elbow.rotation.set(0.35, 0, side * -1.45);
-					wrist.rotation.set(0, 0, 0);
 				}
-				prisoner.head.rotation.set(0.1, Math.sin(time * 0.7) * 0.3, 0);
+				prisoner.person.head.rotation.set(
+					0.1,
+					Math.sin(time * 0.7) * 0.3,
+					0,
+				);
 				// The chain hangs between his wrists.
 				root.updateMatrixWorld(true);
-				const [left, right] = prisoner.arms.map(({ wrist }) =>
-					root.worldToLocal(wrist.getWorldPosition(new Vector3())),
+				const [left, right] = prisoner.arms.map(({ hand }) =>
+					root.worldToLocal(hand.getWorldPosition(new Vector3())),
 				);
 				for (const [i, { mesh }] of links.entries()) {
 					mesh.position.lerpVectors(left, right, (i + 1) / 4);
@@ -521,13 +246,13 @@ export const JAILBREAK: EasterEgg = {
 					);
 					elbow.rotation.set(0, 0, side * 0.3);
 				}
-				prisoner.head.rotation.set(-0.2, 0, 0);
+				prisoner.person.head.rotation.set(-0.2, 0, 0);
 				const startle = MathUtils.smootherstep(
 					t,
 					breakAt,
 					breakAt + 0.2,
 				);
-				officer.body.rotation.x = -0.25 * startle;
+				officer.person.body.rotation.x = -0.25 * startle;
 				for (const [i, { shoulder, elbow }] of officer.arms.entries()) {
 					const side = i === 0 ? -1 : 1;
 					shoulder.rotation.set(
@@ -551,13 +276,13 @@ export const JAILBREAK: EasterEgg = {
 			] as const) {
 				const x = Math.cos(angle) * circleRadius;
 				const z = Math.sin(angle) * circleRadius;
-				runner.root.position.set(
+				runner.person.root.position.set(
 					MathUtils.lerp(start.x, x, ease),
 					0,
 					MathUtils.lerp(start.z, z, ease),
 				);
 				// Facing along the circle.
-				runner.root.rotation.y = Math.atan2(
+				runner.person.root.rotation.y = Math.atan2(
 					-Math.sin(angle),
 					Math.cos(angle),
 				);
@@ -574,12 +299,12 @@ export const JAILBREAK: EasterEgg = {
 				);
 				elbow.rotation.set(-1.3, 0, 0);
 			}
-			prisoner.head.rotation.set(
+			prisoner.person.head.rotation.set(
 				0,
 				Math.sin(time * 2.2) > 0 ? 1.1 : 0.15,
 				0,
 			);
-			prisoner.body.rotation.z = 0.12;
+			prisoner.person.body.rotation.z = 0.12;
 
 			// The officer reaches out for him, hand on his hat.
 			const [officerLeft, officerRight] = officer.arms;
@@ -591,12 +316,12 @@ export const JAILBREAK: EasterEgg = {
 			);
 			officerRight.shoulder.rotation.set(0, 0, 2.3);
 			officerRight.elbow.rotation.set(0, 0, 1.7);
-			officer.body.rotation.z = 0.12;
-			officer.head.rotation.set(-0.1, 0, 0);
+			officer.person.body.rotation.z = 0.12;
+			officer.person.head.rotation.set(-0.1, 0, 0);
 		};
 		const moving = [
-			...jointsOf(prisoner),
-			...jointsOf(officer),
+			...prisoner.person.joints,
+			...officer.person.joints,
 			...links.map(({ mesh }) => mesh),
 		];
 		return { object: root, update, moving };

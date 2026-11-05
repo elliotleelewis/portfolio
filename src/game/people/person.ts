@@ -14,6 +14,7 @@ import {
 	block,
 	cutOut,
 	fold,
+	keep,
 	near,
 	oval,
 	prism,
@@ -45,11 +46,20 @@ export interface PersonSpec {
 		colour: string;
 		// Underneath and at the roots.
 		under: string;
-		style: 'spiky' | 'wavy' | 'slicked';
+		style: 'spiky' | 'wavy' | 'slicked' | 'crop' | 'short';
 	};
 	beanie?: { colour: string; cuff: string };
+	// A peaked cap, its band chequered in two colours, with a badge.
+	cap?: {
+		colour: string;
+		band: readonly [string, string];
+		peak: string;
+		badge: string;
+	};
 	brows?: string;
 	stubble?: string;
+	beard?: string;
+	moustache?: string;
 	glasses?: string;
 	top: {
 		colour: string;
@@ -63,7 +73,12 @@ export interface PersonSpec {
 		piping?: string;
 		// What shows at the neck, under the zip.
 		under?: string;
+		// A hood, down behind the neck.
+		hood?: boolean;
 	};
+	// A hi-vis vest over the top, with reflective stripes round it.
+	vest?: { colour: string; stripes: string };
+	belt?: string;
 	// Gloves over their hands, and the colour of their fingertips.
 	gloves?: { colour: string; tips: string };
 	chain?: string;
@@ -209,10 +224,11 @@ const band = (
 /**
  * A mouth's shapes, cut from paper, and their colours.
  * @param kind - The mouth.
+ * @param lift - How far in front of the face it's stuck.
  * @returns Its shapes.
  */
-const mouthShapes = (kind: Mouth): [BufferGeometry, string][] => {
-	const mouth = near(face, 0, 0, -0.07);
+const mouthShapes = (kind: Mouth, lift: number): [BufferGeometry, string][] => {
+	const mouth = near(face, 0, -lift, -0.07);
 	if (kind === 'grin') {
 		// A big grin, with teeth.
 		const grin = halfOval(0.075, 0.05);
@@ -418,6 +434,60 @@ export const personParts = (spec: PersonSpec): PersonPart[] => {
 		);
 		add('spine_03', link, spec.chain, { shade: 0 });
 	}
+	if (spec.top.hood) {
+		add(
+			'spine_03',
+			ball(at(0, 0.13, 1.25), 0.17, [1, 0.6, 0.5]),
+			spec.top.colour,
+		);
+	}
+	if (spec.vest) {
+		// Over the top, a little bigger, and the stripes a little bigger
+		// again.
+		const { vest } = spec;
+		const around = (up: number): number =>
+			0.222 + ((up - 0.86) / 0.34) * 0.04;
+		add(
+			'spine_03',
+			prism(
+				at(0, 0, 0.86),
+				at(0, 0, 1.2),
+				around(0.86),
+				around(1.2),
+				7,
+				0.3,
+			),
+			vest.colour,
+		);
+		for (const up of [0.95, 1.06]) {
+			const [bottom, top] = [up - 0.018, up + 0.018];
+			add(
+				'spine_03',
+				prism(
+					at(0, 0, bottom),
+					at(0, 0, top),
+					around(bottom) + 0.006,
+					around(top) + 0.006,
+					7,
+					0.3,
+				),
+				vest.stripes,
+				{ shade: 0.03 },
+			);
+		}
+	}
+	if (spec.belt) {
+		add(
+			'pelvis',
+			prism(at(0, 0, 0.79), at(0, 0, 0.85), 0.222, 0.222, 7, 0.3),
+			spec.belt,
+		);
+		add(
+			'pelvis',
+			block(at(0.21, -0.04, 0.77), [0.07, 0.09, 0.11], 0.015),
+			spec.belt,
+		);
+	}
 	if (spec.pack) {
 		// A daypack, with a lid, and its straps over the shoulders.
 		add(
@@ -450,97 +520,151 @@ export const personParts = (spec: PersonSpec): PersonPart[] => {
 	});
 
 	// Hair.
-	if (spec.hair.style === 'spiky') {
-		// A folded cap, darker underneath, and tousled spikes, swept up and
-		// forward at the front.
-		const cap = near(head, 0, 0.05, 0.1);
-		add('Head', ball(cap, 0.25, [0.96, 0.96, 0.72]), spec.hair.under);
-		for (let k = 0; k < 26; k++) {
-			const t = (2 * Math.PI * k) / 26 + (random() - 0.5) * 0.2;
-			const ring = [0.18, 0.12, 0.06][k % 3] ?? 0.1;
-			const [x, y] = [Math.cos(t) * ring, Math.sin(t) * ring + 0.02];
-			const base = near(head, x, y, 0.2 - ring * 0.25);
-			const front = Math.max(0, -Math.sin(t));
-			const lean = at(
-				Math.cos(t) * 0.45,
-				Math.sin(t) * 0.45 - 0.35 * front,
-				1,
-			);
-			const width = 0.065 + random() * 0.015;
-			const length = 0.06 + random() * 0.03 + 0.05 * front;
-			add('Head', spike(base, lean, width, length), spec.hair.colour, {
-				shade: 0.1,
-			});
+	switch (spec.hair.style) {
+		case 'spiky': {
+			// A folded cap, darker underneath, and tousled spikes, swept up and
+			// forward at the front.
+			const cap = near(head, 0, 0.05, 0.1);
+			add('Head', ball(cap, 0.25, [0.96, 0.96, 0.72]), spec.hair.under);
+			for (let k = 0; k < 26; k++) {
+				const t = (2 * Math.PI * k) / 26 + (random() - 0.5) * 0.2;
+				const ring = [0.18, 0.12, 0.06][k % 3] ?? 0.1;
+				const [x, y] = [Math.cos(t) * ring, Math.sin(t) * ring + 0.02];
+				const base = near(head, x, y, 0.2 - ring * 0.25);
+				const front = Math.max(0, -Math.sin(t));
+				const lean = at(
+					Math.cos(t) * 0.45,
+					Math.sin(t) * 0.45 - 0.35 * front,
+					1,
+				);
+				const width = 0.065 + random() * 0.015;
+				const length = 0.06 + random() * 0.03 + 0.05 * front;
+				add(
+					'Head',
+					spike(base, lean, width, length),
+					spec.hair.colour,
+					{
+						shade: 0.1,
+					},
+				);
+			}
+			break;
 		}
-	} else if (spec.hair.style === 'slicked') {
-		// Slicked back: a cap swept off the forehead, long at the back down
-		// to the collar and over the ears, with combed ridges along the top.
-		const cap = near(head, 0, 0.05, 0.07);
-		add('Head', ball(cap, 0.272, [0.99, 1, 0.82]), spec.hair.under);
-		add(
-			'Head',
-			prism(
-				near(head, 0, 0.1, 0.02),
-				near(head, 0, 0.13, -0.24),
-				0.21,
-				0.16,
-				7,
-			),
-			spec.hair.under,
-		);
-		for (const x of [-0.13, -0.045, 0.045, 0.13]) {
+		case 'crop':
+		case 'short': {
+			// Cropped close: a cap hugging the head, and for a crop, a short
+			// spiky fringe, pushed up at the front.
+			const cap = near(head, 0, 0.03, 0.08);
+			// Folded finely: it's close enough to the head for a coarse
+			// ball's flat faces to dip inside it.
+			add(
+				'Head',
+				ball(cap, 0.266, [0.97, 0.97, 0.75], 1),
+				spec.hair.colour,
+				{
+					shade: 0.08,
+				},
+			);
+			if (spec.hair.style === 'crop') {
+				for (let k = -3; k <= 3; k++) {
+					const base = near(
+						head,
+						k * 0.038,
+						-0.165 + Math.abs(k) * 0.012,
+						0.17,
+					);
+					const lean = at(k * 0.1, -0.9, 0.7);
+					add(
+						'Head',
+						spike(base, lean, 0.03, 0.075),
+						spec.hair.colour,
+						{
+							shade: 0.1,
+						},
+					);
+				}
+			}
+			break;
+		}
+		case 'slicked': {
+			// Slicked back: a cap swept off the forehead, long at the back down
+			// to the collar and over the ears, with combed ridges along the top.
+			const cap = near(head, 0, 0.05, 0.07);
+			add('Head', ball(cap, 0.272, [0.99, 1, 0.82]), spec.hair.under);
 			add(
 				'Head',
 				prism(
-					near(head, x, -0.13, 0.185),
-					near(head, x * 1.15, 0.2, 0.17),
-					0.035,
-					0.02,
-					4,
-					random(),
+					near(head, 0, 0.1, 0.02),
+					near(head, 0, 0.13, -0.24),
+					0.21,
+					0.16,
+					7,
 				),
-				spec.hair.colour,
-				{ shade: 0.1 },
+				spec.hair.under,
 			);
+			for (const x of [-0.13, -0.045, 0.045, 0.13]) {
+				add(
+					'Head',
+					prism(
+						near(head, x, -0.13, 0.185),
+						near(head, x * 1.15, 0.2, 0.17),
+						0.035,
+						0.02,
+						4,
+						random(),
+					),
+					spec.hair.colour,
+					{ shade: 0.1 },
+				);
+			}
+			for (const s of [1, -1]) {
+				add(
+					'Head',
+					prism(
+						near(head, s * 0.215, 0.03, 0.09),
+						near(head, s * 0.235, 0.1, -0.18),
+						0.055,
+						0.045,
+						5,
+					),
+					spec.hair.colour,
+					{ shade: 0.1 },
+				);
+			}
+			break;
 		}
-		for (const s of [1, -1]) {
-			add(
-				'Head',
-				prism(
-					near(head, s * 0.215, 0.03, 0.09),
-					near(head, s * 0.235, 0.1, -0.18),
-					0.055,
-					0.045,
-					5,
-				),
-				spec.hair.colour,
-				{ shade: 0.1 },
-			);
-		}
-	} else {
-		// Wavy: a cap that shows round the sides and back of the head, below
-		// a beanie if there is one, and locks curling out from it at the
-		// temples, over the ears and at the nape, clear of the face.
-		const cap = near(head, 0, 0.04, 0.04);
-		add('Head', ball(cap, 0.272, [0.98, 0.98, 0.84]), spec.hair.under);
-		const locks: [number, number, number, number, number, number][] = [
-			// where it grows (across, back, up), then where it falls to
-			[0.2, -0.09, 0.1, 0.035, -0.04, -0.09],
-			[-0.2, -0.09, 0.1, -0.035, -0.04, -0.09],
-			[0.245, 0.03, 0.02, 0.04, 0.02, -0.12],
-			[-0.245, 0.03, 0.02, -0.04, 0.02, -0.12],
-			[0.15, 0.2, -0.02, 0.05, 0.04, -0.12],
-			[0, 0.24, -0.02, 0, 0.05, -0.13],
-			[-0.15, 0.2, -0.02, -0.05, 0.04, -0.12],
-		];
-		for (const [x, y, z, dx, dy, dz] of locks) {
-			const from = near(head, x, y, z);
-			add(
-				'Head',
-				prism(from, near(from, dx, dy, dz), 0.045, 0.014, 5, random()),
-				spec.hair.colour,
-				{ shade: 0.1 },
-			);
+		case 'wavy': {
+			// Wavy: a cap that shows round the sides and back of the head, below
+			// a beanie if there is one, and locks curling out from it at the
+			// temples, over the ears and at the nape, clear of the face.
+			const cap = near(head, 0, 0.04, 0.04);
+			add('Head', ball(cap, 0.272, [0.98, 0.98, 0.84]), spec.hair.under);
+			const locks: [number, number, number, number, number, number][] = [
+				// where it grows (across, back, up), then where it falls to
+				[0.2, -0.09, 0.1, 0.035, -0.04, -0.09],
+				[-0.2, -0.09, 0.1, -0.035, -0.04, -0.09],
+				[0.245, 0.03, 0.02, 0.04, 0.02, -0.12],
+				[-0.245, 0.03, 0.02, -0.04, 0.02, -0.12],
+				[0.15, 0.2, -0.02, 0.05, 0.04, -0.12],
+				[0, 0.24, -0.02, 0, 0.05, -0.13],
+				[-0.15, 0.2, -0.02, -0.05, 0.04, -0.12],
+			];
+			for (const [x, y, z, dx, dy, dz] of locks) {
+				const from = near(head, x, y, z);
+				add(
+					'Head',
+					prism(
+						from,
+						near(from, dx, dy, dz),
+						0.045,
+						0.014,
+						5,
+						random(),
+					),
+					spec.hair.colour,
+					{ shade: 0.1 },
+				);
+			}
 		}
 	}
 	if (spec.beanie) {
@@ -566,6 +690,51 @@ export const personParts = (spec: PersonSpec): PersonPart[] => {
 			'Head',
 			block(near(head, 0.255, 0.02, 0.14), [0.008, 0.04, 0.03]),
 			'#141414',
+			{ shade: 0 },
+		);
+	}
+
+	if (spec.cap) {
+		// A peaked cap: a crown over a chequered band, a badge and a peak.
+		const { cap } = spec;
+		add(
+			'Head',
+			prism(
+				near(head, 0, 0, 0.2),
+				near(head, 0, 0, 0.27),
+				0.262,
+				0.285,
+				12,
+			),
+			cap.colour,
+		);
+		const segments = 12;
+		const width = (2 * Math.PI * 0.256) / segments;
+		for (const [row, up] of [0.1375, 0.1725].entries()) {
+			for (let k = 0; k < segments; k++) {
+				const turn = (2 * Math.PI * k) / segments;
+				const square = block(at(0, 0, 0), [width, 0.012, 0.035])
+					.rotateY(turn)
+					.translate(
+						head.x + Math.sin(turn) * 0.256,
+						head.y + up,
+						head.z + Math.cos(turn) * 0.256,
+					);
+				add('Head', square, cap.band[(k + row) % 2] ?? cap.colour, {
+					shade: 0.02,
+				});
+			}
+		}
+		add(
+			'Head',
+			ball(near(head, 0, -0.2, 0.12), 0.17, [1, 0.6, 0.1]),
+			cap.peak,
+			{ shade: 0.04 },
+		);
+		add(
+			'Head',
+			block(near(head, 0, -0.27, 0.235), [0.05, 0.012, 0.05]),
+			cap.badge,
 			{ shade: 0 },
 		);
 	}
@@ -636,8 +805,36 @@ export const personParts = (spec: PersonSpec): PersonPart[] => {
 			flat,
 		);
 	}
+	if (spec.beard) {
+		// A full beard: the lower front of a shell round the head.
+		const shell = ball(head, headSize * 1.06, [0.92, 0.9, 1], 1);
+		add(
+			'Head',
+			keep(
+				shell,
+				(centre) => centre.y < head.y - 0.035 && centre.z > head.z,
+			),
+			spec.beard,
+			{ shade: 0.08 },
+		);
+	}
+	// Out in front of a beard, if there is one.
+	const lift = spec.beard ? 0.016 : 0;
+	if (spec.moustache) {
+		const moustache = band(
+			0.075,
+			0.016,
+			(u) => 0.012 * (1 - u * u) - 0.004,
+		);
+		add(
+			'Head',
+			cutOut(moustache, near(face, 0, -lift, -0.045), 0.006),
+			spec.moustache,
+			flat,
+		);
+	}
 	for (const kind of spec.mouths) {
-		for (const [shape, colour] of mouthShapes(kind)) {
+		for (const [shape, colour] of mouthShapes(kind, lift)) {
 			add('Head', shape, colour, { ...flat, mouth: kind });
 		}
 	}

@@ -275,6 +275,40 @@ export const steadyRandom = (seed: number): (() => number) => {
 };
 
 /**
+ * Cuts a shape down to the triangles wanted: a beard from a shell round
+ * the head, say.
+ * @param source - The shape. Freed.
+ * @param isWanted - Whether to keep a triangle, from its middle.
+ * @returns What's kept, unindexed.
+ */
+export const keep = (
+	source: BufferGeometry,
+	isWanted: (centre: Vector3) => boolean,
+): BufferGeometry => {
+	const flat = source.index ? source.toNonIndexed() : source;
+	const position = flat.getAttribute('position');
+	const [p, q, r] = [new Vector3(), new Vector3(), new Vector3()];
+	const kept: number[] = [];
+	for (let i = 0; i < position.count; i += 3) {
+		p.fromBufferAttribute(position, i);
+		q.fromBufferAttribute(position, i + 1);
+		r.fromBufferAttribute(position, i + 2);
+		const centre = p.clone().add(q).add(r).divideScalar(3);
+		if (isWanted(centre)) {
+			kept.push(...p, ...q, ...r);
+		}
+	}
+	if (flat !== source) {
+		flat.dispose();
+	}
+	source.dispose();
+	return new BufferGeometry().setAttribute(
+		'position',
+		new Float32BufferAttribute(kept, 3),
+	);
+};
+
+/**
  * Paints a shape as folded paper: each flat fold (the triangles in one
  * plane) one colour, a little lighter or darker than its paper, with flat
  * normals. Leaves out triangles with no area.

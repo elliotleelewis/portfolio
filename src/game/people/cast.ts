@@ -10,7 +10,7 @@ export const ME: PersonSpec = {
 	skin: '#f0c7ad',
 	blush: '#e9a08e',
 	hair: { colour: '#d8b48e', under: '#bf9671', style: 'spiky' },
-	glasses: '#b9b6ae',
+	glasses: { colour: '#b9b6ae', shape: 'rectangle' },
 	top: { colour: '#8c918a', sleeves: 'short' },
 	trousers: '#3f454c',
 	shoes: '#6a5440',
@@ -103,4 +103,24 @@ export const OFFICER: PersonSpec = {
 	shoes: '#0d0d0d',
 	soles: '#050505',
 	mouths: ['smile'],
+};
+
+// The reader in the Tahoe's boot: long wavy brown hair from a centre
+// parting, round gold glasses, stubble and a grin, a stonewashed denim
+// jacket open over a white band tee, dark jeans and black shoes.
+export const READER: PersonSpec = {
+	seed: 41,
+	skin: '#e9c1a4',
+	hair: { colour: '#4e3120', under: '#41291b', style: 'long' },
+	glasses: { colour: '#cbb893', shape: 'round' },
+	stubble: '#c99f84',
+	top: {
+		colour: '#91abc9',
+		sleeves: 'long',
+		open: { tee: '#f1eee8', print: '#b3262e', edge: '#6f8db0' },
+	},
+	trousers: '#2b2e35',
+	shoes: '#1c1c1e',
+	soles: '#111113',
+	mouths: ['grin'],
 };

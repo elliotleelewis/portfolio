@@ -1,6 +1,4 @@
 import {
-	CapsuleGeometry,
-	CircleGeometry,
 	CylinderGeometry,
 	DoubleSide,
 	Group,
@@ -8,106 +6,53 @@ import {
 	type Object3D,
 	Shape,
 	ShapeGeometry,
-	SphereGeometry,
-	TorusGeometry,
 } from 'three';
 
 import { m } from '../../paraglide/messages';
 import { roundedBox } from '../look/shapes';
-import { TONES, surface } from '../look/surfaces';
+import { surface } from '../look/surfaces';
+import { READER } from '../people/cast';
+import { type Person, createPerson, personMaterial } from '../people/person';
 
 import { joint, part } from './parts';
 import type { EasterEgg, EasterEggFrame } from './types';
 
-// The reader: long wavy brown hair, round glasses, stubble, a stonewashed denim
-// jacket over a white band tee, and his nose in a book.
-const buildReader = (
-	parent: Object3D,
-): { head: Group; page: Group; upper: Group; knees: Group[] } => {
-	const skin = surface('#e9c1a4');
-	const hair = surface('#4e3120');
-	const stubble = surface('#5a3d29', 'matte', {
-		transparent: true,
-		opacity: 0.55,
-	});
-	const mouth = surface(TONES.mouth);
-	const denim = surface('#91abc9');
-	const denimDark = surface('#6f8db0');
-	const jeans = surface('#2b2e35');
-	const tee = surface('#f1eee8');
-	const print = surface('#b3262e');
-	const printDark = surface('#1d1b1c');
-	const frames = surface('#cbb893', 'satin');
-	const dark = surface('#2a211c');
-	const shoes = surface('#1c1c1e');
-	const cover = surface('#2f5d8a');
-	const paper = surface('#faf6ea', 'matte', { side: DoubleSide });
+// How high the boot's floor is, which the reader sits on the edge of.
+const bootHeight = 1.06;
+// How far up his hips are as he stands (`BONES` in people/person.ts).
+const hipHeight = 0.72;
+const readerZ = 2.45;
 
-	// Hips, sitting on the edge of the boot.
-	const hips = joint(parent, [0, 0, 0]);
-	part(hips, roundedBox(0.34, 0.14, 0.26), jeans, [0, 0.02, 0]);
-	const thighGeometry = new CapsuleGeometry(0.075, 0.32, 4, 10);
-	const shinGeometry = new CapsuleGeometry(0.066, 0.34, 4, 10);
-	const shoeGeometry = roundedBox(0.11, 0.08, 0.25);
-	const knees = [-1, 1].map((side) => {
-		const thigh = joint(hips, [side * 0.1, 0, 0.02]);
-		part(thigh, thighGeometry, jeans, [0, 0, 0.2]).rotation.x = Math.PI / 2;
-		// Legs dangle over the bumper, swinging a little.
-		const knee = joint(thigh, [0, 0, 0.42]);
-		part(knee, shinGeometry, jeans, [0, -0.22, 0]);
-		part(knee, shoeGeometry, shoes, [0, -0.45, 0.05]);
-		return knee;
-	});
-
-	// Upper body leans in towards the book.
-	const upper = joint(hips, [0, 0.06, 0]);
-	upper.rotation.x = 0.14;
-	const jacket = part(
-		upper,
-		new CylinderGeometry(0.21, 0.18, 0.5, 14),
-		denim,
-		[0, 0.27, 0],
-	);
-	jacket.scale.z = 0.66;
-	part(upper, new SphereGeometry(0.21, 14, 8), denim, [0, 0.5, 0]).scale.set(
-		1,
-		0.35,
-		0.66,
-	);
-	// Open jacket: the tee (and its print) shows down the front.
-	part(upper, roundedBox(0.15, 0.44, 0.02), tee, [0, 0.3, 0.125]);
-	part(upper, roundedBox(0.11, 0.13, 0.01), print, [0, 0.33, 0.137]);
-	part(upper, roundedBox(0.11, 0.03, 0.012), printDark, [0, 0.41, 0.137]);
-	for (const side of [-1, 1]) {
-		part(upper, roundedBox(0.035, 0.4, 0.02), denimDark, [
-			side * 0.09,
-			0.3,
-			0.128,
-		]);
-		part(upper, roundedBox(0.08, 0.07, 0.015), denimDark, [
-			side * 0.13,
-			0.36,
-			0.12,
-		]);
+/**
+ * The reader, sitting on the edge of the boot with his nose in a book.
+ * @param parent - What he sits in.
+ * @returns Him, and the page he turns.
+ */
+const buildReader = (parent: Object3D): { person: Person; page: Group } => {
+	const person = createPerson(READER, personMaterial());
+	// Right on the edge, so his short legs clear the bumper.
+	person.root.position.set(0, bootHeight - hipHeight, readerZ);
+	parent.add(person.root);
+	// Sitting: thighs out over the bumper, shins hanging down.
+	for (const leg of [person.leftLeg, person.rightLeg]) {
+		leg.rotation.x = -Math.PI / 2;
 	}
-
-	// Arms, bent to hold the book up.
-	const upperArmGeometry = new CapsuleGeometry(0.06, 0.2, 4, 10);
-	const forearmGeometry = new CapsuleGeometry(0.052, 0.18, 4, 10);
-	const handGeometry = new SphereGeometry(0.045, 10, 8);
-	for (const side of [-1, 1]) {
-		const shoulder = joint(upper, [side * 0.23, 0.49, 0]);
-		shoulder.rotation.set(-0.45, 0, side * -0.28);
-		part(shoulder, upperArmGeometry, denim, [0, -0.14, 0]);
-		const elbow = joint(shoulder, [0, -0.28, 0]);
-		elbow.rotation.x = -1.35;
-		part(elbow, forearmGeometry, denim, [0, -0.11, 0]);
-		part(elbow, handGeometry, skin, [0, -0.25, 0]);
+	// Arms bent to hold the book up by its edges, under his chin.
+	for (const [arm, forearm, side] of [
+		[person.rightArm, person.rightForearm, -1],
+		[person.leftArm, person.leftForearm, 1],
+	] as const) {
+		arm.rotation.set(-0.65, 0, side * -0.9);
+		forearm.rotation.x = -1.45;
 	}
 
 	// The book: two covers open in a V, with a page that turns.
-	const book = joint(upper, [0, 0.3, 0.33]);
+	const cover = surface('#2f5d8a');
+	const paper = surface('#faf6ea', 'matte', { side: DoubleSide });
+	const book = joint(person.chest, [0, 0.22, 0.4]);
 	book.rotation.x = -0.75;
+	// Big enough for his big paper hands.
+	book.scale.setScalar(1.3);
 	const coverGeometry = roundedBox(0.14, 0.2, 0.01);
 	const pageGeometry = roundedBox(0.13, 0.19, 0.012);
 	for (const side of [-1, 1]) {
@@ -124,100 +69,7 @@ const buildReader = (
 		[0.063, 0, 0],
 	);
 	leaf.castShadow = false;
-
-	// Neck & head.
-	part(upper, new CylinderGeometry(0.05, 0.056, 0.1, 10), skin, [0, 0.58, 0]);
-	const head = joint(upper, [0, 0.61, 0]);
-	part(head, new SphereGeometry(0.115, 20, 16), skin, [0, 0.13, 0]).scale.set(
-		0.92,
-		1.12,
-		1,
-	);
-	// Stubbly beard.
-	const beard = part(
-		head,
-		new SphereGeometry(
-			0.108,
-			18,
-			10,
-			-Math.PI * 0.1,
-			Math.PI * 1.2,
-			Math.PI * 0.55,
-			Math.PI * 0.4,
-		),
-		stubble,
-		[0, 0.125, 0.008],
-	);
-	beard.scale.set(0.95, 1.12, 1);
-	beard.castShadow = false;
-	part(head, roundedBox(0.06, 0.01, 0.01), stubble, [0, 0.1, 0.11]);
-	// Big open grin & eyes.
-	const grin = part(
-		head,
-		new CircleGeometry(0.03, 14, Math.PI, Math.PI),
-		mouth,
-		[0, 0.085, 0.109],
-	);
-	grin.scale.y = 0.7;
-	grin.rotation.x = -0.25;
-	const teeth = part(
-		head,
-		new CircleGeometry(0.027, 14, Math.PI, Math.PI),
-		tee,
-		[0, 0.085, 0.1105],
-	);
-	teeth.scale.y = 0.3;
-	teeth.rotation.x = -0.25;
-	const eyeGeometry = new SphereGeometry(0.011, 8, 6);
-	for (const side of [-1, 1]) {
-		part(head, eyeGeometry, dark, [side * 0.04, 0.14, 0.104]);
-		// Round glasses.
-		part(head, new TorusGeometry(0.031, 0.005, 6, 18), frames, [
-			side * 0.043,
-			0.14,
-			0.114,
-		]);
-		part(head, roundedBox(0.005, 0.005, 0.11), frames, [
-			side * 0.085,
-			0.15,
-			0.06,
-		]);
-	}
-	part(head, roundedBox(0.024, 0.005, 0.005), frames, [0, 0.145, 0.116]);
-
-	// Long, wavy hair: a centre parting, down past the shoulders.
-	const crown = part(
-		head,
-		new SphereGeometry(0.125, 18, 10, 0, Math.PI * 2, 0, Math.PI * 0.5),
-		hair,
-		[0, 0.15, -0.008],
-	);
-	crown.scale.set(0.98, 1.1, 1.05);
-	const back = part(
-		head,
-		new CapsuleGeometry(0.12, 0.32, 6, 12),
-		hair,
-		[0, -0.02, -0.07],
-	);
-	back.scale.set(1.25, 1, 0.55);
-	const strandGeometry = new CapsuleGeometry(0.042, 0.34, 4, 8);
-	for (const side of [-1, 1]) {
-		// Strands fall either side of the face and down over the shoulders.
-		for (const [i, [x, z, tilt]] of [
-			[0.125, -0.01, 0.06],
-			[0.135, -0.05, 0.12],
-			[0.15, 0.02, 0.22],
-		].entries()) {
-			const strand = part(head, strandGeometry, hair, [
-				side * x,
-				-0.04 - i * 0.04,
-				z,
-			]);
-			strand.rotation.set((i - 1) * 0.12, 0, side * tilt);
-		}
-	}
-
-	return { head, page, upper, knees };
+	return { person, page };
 };
 
 // A black Chevy Tahoe with the liftgate up, parked with its boot facing +z.
@@ -356,7 +208,8 @@ export const TAHOE_READER: EasterEgg = {
 	create: () => {
 		const root = new Group();
 		buildTahoe(root);
-		const reader = buildReader(joint(root, [0, 1.06, 2.25]));
+		const reader = buildReader(root);
+		const { person } = reader;
 
 		let lookUp = 0;
 		const update = ({ time, dt, player }: EasterEggFrame): void => {
@@ -364,29 +217,28 @@ export const TAHOE_READER: EasterEgg = {
 			const distance = Math.hypot(player.x, player.z);
 			const target = distance < 28 ? 1 : 0;
 			lookUp = MathUtils.lerp(lookUp, target, 1 - Math.exp(-4 * dt));
-			const yaw = Math.atan2(player.x, Math.max(1, player.z - 2.25));
-			reader.head.rotation.set(
+			const yaw = Math.atan2(player.x, Math.max(1, player.z - readerZ));
+			person.head.rotation.set(
 				MathUtils.lerp(0.4, -0.15, lookUp),
 				MathUtils.clamp(yaw, -0.9, 0.9) * lookUp,
 				0,
 			);
-			reader.upper.rotation.x = MathUtils.lerp(0.14, 0.02, lookUp);
+			person.chest.rotation.x = MathUtils.lerp(0.14, 0.02, lookUp);
 
 			// Turn a page every few seconds (right page over to the left).
 			const turn = MathUtils.smootherstep(time % 5, 4.3, 4.9);
 			reader.page.rotation.y = -0.3 - turn * (Math.PI - 0.6);
 
 			// Swing the legs.
-			for (const [i, knee] of reader.knees.entries()) {
-				knee.rotation.x = Math.sin(time * 2 + i * Math.PI) * 0.18;
+			for (const [i, shin] of [
+				person.leftShin,
+				person.rightShin,
+			].entries()) {
+				shin.rotation.x =
+					Math.PI / 2 - 0.3 + Math.sin(time * 2 + i * Math.PI) * 0.18;
 			}
 		};
-		const moving = [
-			reader.head,
-			reader.upper,
-			reader.page,
-			...reader.knees,
-		];
+		const moving = [...person.joints, reader.page];
 		return { object: root, update, moving };
 	},
 };

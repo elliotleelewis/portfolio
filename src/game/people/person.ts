@@ -46,7 +46,7 @@ export interface PersonSpec {
 		colour: string;
 		// Underneath and at the roots.
 		under: string;
-		style: 'spiky' | 'wavy' | 'slicked' | 'crop' | 'short';
+		style: 'spiky' | 'wavy' | 'slicked' | 'crop' | 'short' | 'long';
 	};
 	beanie?: { colour: string; cuff: string };
 	// A peaked cap, its band chequered in two colours, with a badge.
@@ -60,7 +60,7 @@ export interface PersonSpec {
 	stubble?: string;
 	beard?: string;
 	moustache?: string;
-	glasses?: string;
+	glasses?: { colour: string; shape: 'rectangle' | 'round' };
 	top: {
 		colour: string;
 		// A short-sleeved tee, or a long-sleeved top (a fleece) with a
@@ -75,6 +75,8 @@ export interface PersonSpec {
 		under?: string;
 		// A hood, down behind the neck.
 		hood?: boolean;
+		// Worn open, over a tee with a print on it.
+		open?: { tee: string; print: string; edge: string };
 	};
 	// A hi-vis vest over the top, with reflective stripes round it.
 	vest?: { colour: string; stripes: string };
@@ -434,6 +436,24 @@ export const personParts = (spec: PersonSpec): PersonPart[] => {
 		);
 		add('spine_03', link, spec.chain, { shade: 0 });
 	}
+	if (spec.top.open) {
+		// Open down the front: the tee, its print, and the edges either side.
+		const { open } = spec.top;
+		add('spine_03', block(at(0, -0.225, 1), [0.15, 0.03, 0.4]), open.tee);
+		add(
+			'spine_03',
+			block(at(0, -0.245, 1.04), [0.1, 0.01, 0.12]),
+			open.print,
+			{ shade: 0.02 },
+		);
+		for (const s of [1, -1]) {
+			add(
+				'spine_03',
+				block(at(s * 0.095, -0.215, 1), [0.04, 0.03, 0.42]),
+				open.edge,
+			);
+		}
+	}
 	if (spec.top.hood) {
 		add(
 			'spine_03',
@@ -633,6 +653,51 @@ export const personParts = (spec: PersonSpec): PersonPart[] => {
 			}
 			break;
 		}
+		case 'long': {
+			// Long and wavy, from a centre parting: a cap, a fall down the
+			// back to the shoulders, and strands either side of the face.
+			const cap = near(head, 0, 0.03, 0.06);
+			add(
+				'Head',
+				ball(cap, 0.272, [0.98, 0.98, 0.84], 1),
+				spec.hair.colour,
+				{ shade: 0.08 },
+			);
+			add(
+				'Head',
+				prism(
+					near(head, 0, 0.1, 0.05),
+					near(head, 0, 0.15, -0.36),
+					0.22,
+					0.2,
+					7,
+					random(),
+				),
+				spec.hair.under,
+				{ shade: 0.1 },
+			);
+			for (const s of [1, -1]) {
+				for (const [x, back, twist] of [
+					[0.2, -0.06, 0.4],
+					[0.225, 0.04, 1.3],
+				]) {
+					add(
+						'Head',
+						prism(
+							near(head, s * x, back, 0.12),
+							near(head, s * (x + 0.04), back + 0.04, -0.33),
+							0.06,
+							0.045,
+							5,
+							twist,
+						),
+						spec.hair.colour,
+						{ shade: 0.1 },
+					);
+				}
+			}
+			break;
+		}
 		case 'wavy': {
 			// Wavy: a cap that shows round the sides and back of the head, below
 			// a beanie if there is one, and locks curling out from it at the
@@ -761,13 +826,15 @@ export const personParts = (spec: PersonSpec): PersonPart[] => {
 		}
 		if (spec.glasses) {
 			const lens = near(face, s * 0.085, 0, 0.04);
-			const rim = [rectangle(0.053, 0.034)];
-			add(
-				'Head',
-				cutOut(rectangle(0.066, 0.047), lens, 0.012, rim),
-				spec.glasses,
-				flat,
-			);
+			const frame =
+				spec.glasses.shape === 'round'
+					? cutOut(oval(0.052, 0.048), lens, 0.012, [
+							oval(0.041, 0.037),
+						])
+					: cutOut(rectangle(0.066, 0.047), lens, 0.012, [
+							rectangle(0.053, 0.034),
+						]);
+			add('Head', frame, spec.glasses.colour, flat);
 		}
 		if (spec.mouths.includes('knockedOut')) {
 			// Knocked out: crosses for eyes.
@@ -791,7 +858,7 @@ export const personParts = (spec: PersonSpec): PersonPart[] => {
 		add(
 			'Head',
 			cutOut(rectangle(0.022, 0.006), bridge, 0.012),
-			spec.glasses,
+			spec.glasses.colour,
 			flat,
 		);
 	}

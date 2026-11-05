@@ -1,7 +1,7 @@
 import { Box3, BoxGeometry, type BufferGeometry, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 
-import { roundedBox } from './shapes';
+import { foldedBox } from './shapes';
 
 /**
  * How big a geometry is, along each axis.
@@ -13,17 +13,17 @@ const sizeOf = (geometry: BufferGeometry): Vector3 => {
 	return (geometry.boundingBox ?? new Box3()).getSize(new Vector3());
 };
 
-describe('roundedBox', () => {
+describe('foldedBox', () => {
 	it('is the size it was asked for', () => {
-		const box = roundedBox(0.8, 0.5, 0.3);
+		const box = foldedBox(0.8, 0.5, 0.3);
 		const size = sizeOf(box);
 		expect(size.x).toBeCloseTo(0.8);
 		expect(size.y).toBeCloseTo(0.5);
 		expect(size.z).toBeCloseTo(0.3);
 	});
 
-	it('rounds its edges, with normals that bend round them', () => {
-		const box = roundedBox(0.8, 0.5, 0.3);
+	it('folds its edges, in facets that face between its sides', () => {
+		const box = foldedBox(0.8, 0.5, 0.3);
 		const normals = box.getAttribute('normal');
 		let isDiagonal = false;
 		for (let i = 0; i < normals.count; i++) {
@@ -35,16 +35,17 @@ describe('roundedBox', () => {
 		expect(isDiagonal).toBe(true);
 	});
 
-	it('leaves boxes too thin to see rounded sharp, saving their triangles', () => {
-		const sheet = roundedBox(0.2, 0.3, 0.002);
+	it('leaves boxes too thin to see folded sharp, saving their triangles', () => {
+		const sheet = foldedBox(0.2, 0.3, 0.002);
 		expect(sheet.getAttribute('position').count).toBe(
 			new BoxGeometry().getAttribute('position').count,
 		);
 	});
 
 	it('costs only a few more triangles than a sharp box', () => {
-		const box = roundedBox(1, 1, 1);
-		const triangles = (box.index?.count ?? 0) / 3;
+		const box = foldedBox(1, 1, 1);
+		const triangles =
+			(box.index?.count ?? box.getAttribute('position').count) / 3;
 		expect(triangles).toBeLessThanOrEqual(108);
 	});
 });

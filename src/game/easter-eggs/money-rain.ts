@@ -3,11 +3,11 @@ import {
 	CylinderGeometry,
 	DoubleSide,
 	Group,
+	IcosahedronGeometry,
 	MathUtils,
 	type Mesh,
 	type Object3D,
 	PlaneGeometry,
-	SphereGeometry,
 	Vector3,
 } from 'three';
 
@@ -97,7 +97,7 @@ const buildCloud = (parent: Object3D): Group => {
 		[0.22, 0.25, 0.12, 0.28],
 		[0, -0.02, 0.28, 0.26],
 	] as const) {
-		part(cloud, new SphereGeometry(r, 14, 10), white, [
+		part(cloud, new IcosahedronGeometry(r, 1), white, [
 			x,
 			y,
 			z,
@@ -106,7 +106,7 @@ const buildCloud = (parent: Object3D): Group => {
 	// A darker, flat underside.
 	const base = part(
 		cloud,
-		new CylinderGeometry(0.7, 0.62, 0.12, 16),
+		new CylinderGeometry(0.7, 0.62, 0.12, 9),
 		grey,
 		[0, -0.12, 0],
 	);
@@ -147,7 +147,7 @@ export const MONEY_RAIN: EasterEgg = {
 				side: DoubleSide,
 			}),
 		);
-		const loonie = new CylinderGeometry(0.045, 0.045, 0.01, 11);
+		const loonie = new CylinderGeometry(0.045, 0.045, 0.01, 7);
 		const loonieMaterial = surface('#d6a83a', 'metal');
 		const respawn = (money: Money, height: number): void => {
 			const angle = Math.random() * Math.PI * 2;

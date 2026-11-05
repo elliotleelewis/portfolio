@@ -28,15 +28,6 @@ export const FINISHES = {
 export type Finish = keyof typeof FINISHES;
 
 /**
- * Whether a name is one of the finishes: what a model's materials are named
- * (see models/README.md).
- * @param name - The name.
- * @returns True if it's a finish.
- */
-export const isFinish = (name: string): name is Finish =>
-	Object.hasOwn(FINISHES, name);
-
-/**
  * Colours the people in the world share, so every face is finished alike.
  */
 export const TONES = {

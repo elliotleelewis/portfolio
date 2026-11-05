@@ -1,14 +1,7 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
-
 import { Box3, type Object3D, SkinnedMesh, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 
-import {
-	type Character,
-	createCharacter,
-	readCharacterModel,
-} from './character';
+import { type Character, createCharacter } from './character';
 
 /**
  * How many skinned meshes there are under an object.
@@ -157,23 +150,5 @@ describe('createCharacter', () => {
 		expect(box.min.y).toBeCloseTo(0, 1);
 		expect(box.max.y).toBeGreaterThan(1.75);
 		expect(box.max.y).toBeLessThan(2.05);
-	});
-});
-
-describe('readCharacterModel', () => {
-	const model = readFileSync(path.join(import.meta.dirname, 'models/me.glb'));
-
-	it("turns down a model that's missing a bone the game turns", async () => {
-		// The bone renamed, in the model's JSON, without touching the rest.
-		const broken = Buffer.from(model);
-		broken.write('"upperarm_x"', broken.indexOf('"upperarm_l"'));
-		await expect(
-			readCharacterModel(
-				broken.buffer.slice(
-					broken.byteOffset,
-					broken.byteOffset + broken.byteLength,
-				),
-			),
-		).rejects.toThrow('no "upperarm_l" bone');
 	});
 });

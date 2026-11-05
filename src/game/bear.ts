@@ -1,19 +1,20 @@
 import {
 	type BufferGeometry,
 	CanvasTexture,
-	CapsuleGeometry,
+	CylinderGeometry,
 	Group,
+	IcosahedronGeometry,
 	type Material,
 	Matrix4,
 	Mesh,
 	Quaternion,
-	SphereGeometry,
 	Sprite,
 	SpriteMaterial,
 	Vector3,
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
+import { fold, steadyRandom } from './look/paper';
 import { surface } from './look/surfaces';
 
 /**
@@ -81,22 +82,28 @@ interface Piece {
 const join = (...pieces: Piece[]): BufferGeometry => {
 	const matrix = new Matrix4();
 	const placed = pieces.map(({ geometry, at, scale = [1, 1, 1] }) =>
-		geometry
-			.clone()
-			.applyMatrix4(
-				matrix.compose(
-					new Vector3(...at),
-					new Quaternion(),
-					new Vector3(...scale),
-				),
+		(geometry.index
+			? geometry.toNonIndexed()
+			: geometry.clone()
+		).applyMatrix4(
+			matrix.compose(
+				new Vector3(...at),
+				new Quaternion(),
+				new Vector3(...scale),
 			),
+		),
 	);
 	const joined = mergeGeometries(placed);
 	for (const geometry of [...placed, ...pieces.map((p) => p.geometry)]) {
 		geometry.dispose();
 	}
-	return joined;
+	// Folded as paper, each fold a little lighter or darker: more than most
+	// paper, so it shows on black fur.
+	return fold(joined, [1, 1, 1], 0.14, folds);
 };
+
+// Where the bears' folds' shades come from: the same for every bear.
+const folds = steadyRandom(9);
 
 const alertTexture = (): CanvasTexture => {
 	const canvas = document.createElement('canvas');
@@ -117,16 +124,22 @@ const alertTexture = (): CanvasTexture => {
 	return new CanvasTexture(canvas);
 };
 
+// Coloured by their folds, as well as their paper.
+const paper = { vertexColors: true };
+
 /**
- * Creates the geometry and materials shared by every bear in a game.
+ * Creates the geometry and materials shared by every bear in a game: folded
+ * paper, its balls faceted (80 faces for the body and head, 20 for the
+ * rest) and its legs six-sided (models/README.md, "The style").
  * @returns The shared parts.
  */
 export const createBearParts = (): BearParts => ({
-	fur: surface('#1f1b19'),
-	muzzle: surface('#8a6a4c'),
+	fur: surface('#1f1b19', 'matte', paper),
+	muzzle: surface('#8a6a4c', 'matte', paper),
 	// Wet.
-	nose: surface('#0b0b0b', 'gloss'),
+	nose: surface('#0b0b0b', 'gloss', paper),
 	glint: surface('#ffffff', 'gloss', {
+		...paper,
 		emissive: '#ffffff',
 		emissiveIntensity: 0.4,
 	}),
@@ -134,46 +147,47 @@ export const createBearParts = (): BearParts => ({
 	geometries: {
 		body: join(
 			{
-				geometry: new SphereGeometry(1, 18, 12),
+				geometry: new IcosahedronGeometry(1, 1),
 				at: [0, 0, 0],
 				scale: [0.42, 0.44, 0.78],
 			},
-			{ geometry: new SphereGeometry(0.36, 14, 10), at: [0, 0.14, 0.42] },
+			{ geometry: new IcosahedronGeometry(0.36, 1), at: [0, 0.14, 0.42] },
 		),
 		head: join(
 			{
-				geometry: new SphereGeometry(0.27, 16, 12),
+				geometry: new IcosahedronGeometry(0.27, 1),
 				at: [0, 0, 0],
 				scale: [0.95, 0.88, 1],
 			},
 			...[-1, 1].map((side): Piece => ({
-				geometry: new SphereGeometry(0.08, 8, 6),
+				geometry: new IcosahedronGeometry(0.08),
 				at: [side * 0.17, 0.22, -0.04],
 			})),
 		),
 		snout: join({
-			geometry: new SphereGeometry(0.13, 12, 8),
+			geometry: new IcosahedronGeometry(0.13),
 			at: [0, -0.07, 0.25],
 			scale: [0.85, 0.75, 1.2],
 		}),
 		nose: join({
-			geometry: new SphereGeometry(0.05, 8, 6),
+			geometry: new IcosahedronGeometry(0.05),
 			at: [0, -0.02, 0.4],
 		}),
 		glints: join(
 			...[-1, 1].map((side): Piece => ({
-				geometry: new SphereGeometry(0.028, 6, 4),
+				geometry: new IcosahedronGeometry(0.028),
 				at: [side * 0.1, 0.08, 0.22],
 			})),
 		),
 		leg: join(
 			{
-				geometry: new CapsuleGeometry(0.12, 0.42, 4, 8),
-				at: [0, -0.3, 0],
+				// Down to the ground, flat-footed.
+				geometry: new CylinderGeometry(0.12, 0.11, 0.6, 6),
+				at: [0, -0.33, 0],
 			},
 			{
-				geometry: new SphereGeometry(0.13, 10, 6),
-				at: [0, -0.52, 0.04],
+				geometry: new IcosahedronGeometry(0.13),
+				at: [0, -0.56, 0.04],
 				scale: [1, 0.6, 1.3],
 			},
 		),

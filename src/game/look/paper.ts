@@ -4,10 +4,16 @@ import {
 	ConeGeometry,
 	Float32BufferAttribute,
 	IcosahedronGeometry,
+	InstancedMesh,
+	Material,
+	Mesh,
+	MeshStandardMaterial,
+	type Object3D,
 	Path,
 	Quaternion,
 	Shape,
 	ShapeGeometry,
+	SkinnedMesh,
 	Vector2,
 	Vector3,
 } from 'three';
@@ -365,4 +371,86 @@ export const fold = (
 	folded.setAttribute('normal', new Float32BufferAttribute(normals, 3));
 	folded.setAttribute('color', new Float32BufferAttribute(colours, 3));
 	return folded;
+};
+
+// How much lighter or darker a fold can be than its paper.
+const folds = 0.07;
+
+/**
+ * Whether something is a mesh of one material.
+ * @param object - The thing.
+ * @returns True if it is.
+ */
+const isPart = (object: Object3D): object is Mesh<BufferGeometry, Material> =>
+	object instanceof Mesh &&
+	object.geometry instanceof BufferGeometry &&
+	object.material instanceof Material;
+
+/**
+ * Whether a part can be folded as paper: a plain, untextured, solid mesh,
+ * not already coloured by its geometry, with nothing changing its shape.
+ * @param mesh - The part.
+ * @returns True if it can.
+ */
+const isFoldable = (mesh: Mesh<BufferGeometry, Material>): boolean => {
+	const { geometry, material } = mesh;
+	return (
+		!(mesh instanceof SkinnedMesh) &&
+		!(mesh instanceof InstancedMesh) &&
+		material instanceof MeshStandardMaterial &&
+		// Textures need the UVs folding leaves out.
+		[
+			material.map,
+			material.emissiveMap,
+			material.alphaMap,
+			material.normalMap,
+			material.roughnessMap,
+			material.metalnessMap,
+		].every((map) => map === null) &&
+		!material.transparent &&
+		!geometry.hasAttribute('color') &&
+		Object.keys(geometry.morphAttributes).length === 0
+	);
+};
+
+/**
+ * Folds everything made of plain parts as paper (models/README.md, "The
+ * style"): each part's faces flat, each fold a little lighter or darker,
+ * painted into its vertex colours. Textured, see-through and instanced
+ * parts are left as they are.
+ * @param object - What to fold.
+ * @param seed - Which shades its folds get.
+ */
+export const foldPaper = (object: Object3D, seed = 1): void => {
+	const random = steadyRandom(seed);
+	const meshes: Mesh<BufferGeometry, Material>[] = [];
+	object.traverse((child) => {
+		if (isPart(child)) {
+			meshes.push(child);
+		}
+	});
+	// A material shared with a part that can't be folded keeps its own
+	// colour, or that part would have none.
+	const unfoldable = new Set<Material>(
+		meshes
+			.filter((mesh) => !isFoldable(mesh))
+			.map(({ material }) => material),
+	);
+	const folded = new Map<BufferGeometry, BufferGeometry>();
+	for (const mesh of meshes) {
+		const { geometry, material } = mesh;
+		if (
+			!isFoldable(mesh) ||
+			!(material instanceof MeshStandardMaterial) ||
+			unfoldable.has(material)
+		) {
+			continue;
+		}
+		const paper =
+			folded.get(geometry) ??
+			fold(geometry.clone(), [1, 1, 1], folds, random);
+		folded.set(geometry, paper);
+		mesh.geometry = paper;
+		material.vertexColors = true;
+	}
 };

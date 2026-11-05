@@ -1,47 +1,20 @@
 import {
 	BufferGeometry,
 	Group,
+	Material,
 	MathUtils,
 	Mesh,
-	MeshStandardMaterial,
 	Object3D,
 	Quaternion,
 	SkinnedMesh,
 } from 'three';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 
-import { isFinish, surface } from './look/surfaces';
+import type { Bone } from './people/person';
 
 // How shut the eyes are when blinking, as a share of open: a model's
 // `blink` shape key shuts them this far (models/README.md).
 const blinkShut = 0.15;
-
-/**
- * The humanoid skeleton every person in the game is rigged to: Unreal's bone
- * names, with a palm and a sole where each hand and foot
- * touches the ground. These are the bones the game turns or reads; a model
- * can have more (fingers, twist bones), which follow as they're weighted.
- * See models/README.md.
- */
-const humanoidBones = [
-	'pelvis',
-	'spine_03',
-	'Head',
-	'upperarm_l',
-	'upperarm_r',
-	'lowerarm_l',
-	'lowerarm_r',
-	'thigh_l',
-	'thigh_r',
-	'calf_l',
-	'calf_r',
-	'palm_l',
-	'palm_r',
-	'sole_l',
-	'sole_r',
-] as const;
 
 /**
  * A person, rigged to the humanoid skeleton, for the game to pose. Pose the
@@ -77,63 +50,6 @@ export interface Humanoid {
 }
 
 /**
- * Reads a model rigged to the humanoid skeleton, checking it has
- * everything the game needs.
- * @param data - The model, as a .glb file.
- * @returns The model, to make people from with {@link createHumanoid}.
- */
-export const readHumanoidModel = async (
-	data: ArrayBuffer,
-): Promise<Object3D> => {
-	const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-	const { scene } = await loader.parseAsync(data, '');
-	for (const name of humanoidBones) {
-		if (!scene.getObjectByName(name)) {
-			throw new Error(`The model has no "${name}" bone`);
-		}
-	}
-	const blinks: boolean[] = [];
-	scene.traverse((part) => {
-		if (!(part instanceof Mesh)) {
-			return;
-		}
-		const material: unknown = part.material;
-		if (
-			!(material instanceof MeshStandardMaterial) ||
-			!isFinish(material.name)
-		) {
-			throw new Error(
-				'Every material in the model is named for its finish',
-			);
-		}
-		blinks.push(part.morphTargetDictionary?.blink !== undefined);
-	});
-	if (!blinks.includes(true)) {
-		throw new Error('The model has no "blink" shape key');
-	}
-	return scene;
-};
-
-/**
- * Remakes a model's material in its finish, so people are finished like
- * the rest of the world.
- * @param material - The material, named for its finish.
- * @param hasVertexColors - Whether its colours are painted on its vertices.
- * @returns The material.
- */
-const finished = (
-	material: MeshStandardMaterial,
-	hasVertexColors: boolean,
-): MeshStandardMaterial => {
-	const finish = isFinish(material.name) ? material.name : 'matte';
-	return surface(`#${material.color.getHexString()}`, finish, {
-		vertexColors: hasVertexColors,
-		transparent: material.opacity < 1,
-		opacity: material.opacity,
-	});
-};
-
-/**
  * How something's turned, relative to something above it.
  * @param above - What it's relative to.
  * @param node - The thing.
@@ -164,13 +80,12 @@ interface Retarget {
 /**
  * Makes a person from a model rigged to the humanoid skeleton: their own
  * copy of it, with joints for the game to pose.
- * @param model - The model, from {@link readHumanoidModel}.
+ * @param model - The model (`personModel`, in people/model.ts).
  * @returns The person.
  */
 export const createHumanoid = (model: Object3D): Humanoid => {
-	type HumanoidBone = (typeof humanoidBones)[number];
 	const copy = clone(model);
-	const bone = (name: HumanoidBone): Object3D =>
+	const bone = (name: Bone): Object3D =>
 		copy.getObjectByName(name) ?? new Object3D();
 	// Their own geometry and materials, so freeing them leaves the model as
 	// it was.
@@ -182,12 +97,9 @@ export const createHumanoid = (model: Object3D): Humanoid => {
 		const material: unknown = part.material;
 		if (geometry instanceof BufferGeometry) {
 			part.geometry = geometry.clone();
-			if (material instanceof MeshStandardMaterial) {
-				part.material = finished(
-					material,
-					geometry.hasAttribute('color'),
-				);
-			}
+		}
+		if (material instanceof Material) {
+			part.material = material.clone();
 		}
 		part.castShadow = true;
 		// The model's bounds are only its rest pose's.
@@ -199,7 +111,7 @@ export const createHumanoid = (model: Object3D): Humanoid => {
 
 	// The joints, where the model's bones are, in the bones' own hierarchy:
 	// head and arms on the chest, forearms on the arms, shins on the legs.
-	const joint = (name: HumanoidBone, parent: Object3D, tilt = 0): Group => {
+	const joint = (name: Bone, parent: Object3D, tilt = 0): Group => {
 		const group = new Group();
 		parent.add(group);
 		bone(name).getWorldPosition(group.position);

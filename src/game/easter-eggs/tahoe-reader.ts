@@ -9,7 +9,7 @@ import {
 } from 'three';
 
 import { m } from '../../paraglide/messages';
-import { roundedBox } from '../look/shapes';
+import { foldedBox } from '../look/shapes';
 import { surface } from '../look/surfaces';
 import { READER } from '../people/cast';
 import { type Person, createPerson, personMaterial } from '../people/person';
@@ -53,8 +53,8 @@ const buildReader = (parent: Object3D): { person: Person; page: Group } => {
 	book.rotation.x = -0.75;
 	// Big enough for his big paper hands.
 	book.scale.setScalar(1.3);
-	const coverGeometry = roundedBox(0.14, 0.2, 0.01);
-	const pageGeometry = roundedBox(0.13, 0.19, 0.012);
+	const coverGeometry = foldedBox(0.14, 0.2, 0.01);
+	const pageGeometry = foldedBox(0.13, 0.19, 0.012);
 	for (const side of [-1, 1]) {
 		const half = joint(book, [0, 0, 0]);
 		half.rotation.y = side * -0.3;
@@ -64,7 +64,7 @@ const buildReader = (parent: Object3D): { person: Person; page: Group } => {
 	const page = joint(book, [0, 0, 0.012]);
 	const leaf = part(
 		page,
-		roundedBox(0.125, 0.18, 0.002),
+		foldedBox(0.125, 0.18, 0.002),
 		paper,
 		[0.063, 0, 0],
 	);
@@ -85,45 +85,41 @@ const buildTahoe = (parent: Object3D): void => {
 	const gold = surface('#d6a93a', 'metal');
 
 	// Body.
-	part(parent, roundedBox(2.02, 0.66, 5.2), paint, [0, 0.68, 0]);
-	part(parent, roundedBox(2, 0.3, 1.6), paint, [0, 1.16, -1.8]);
-	part(parent, roundedBox(1.94, 0.08, 3.6), paint, [0, 2, 0.8]);
+	part(parent, foldedBox(2.02, 0.66, 5.2), paint, [0, 0.68, 0]);
+	part(parent, foldedBox(2, 0.3, 1.6), paint, [0, 1.16, -1.8]);
+	part(parent, foldedBox(1.94, 0.08, 3.6), paint, [0, 2, 0.8]);
 	for (const side of [-1, 1]) {
-		part(parent, roundedBox(0.06, 0.36, 3.6), paint, [
+		part(parent, foldedBox(0.06, 0.36, 3.6), paint, [
 			side * 0.98,
 			1.18,
 			0.8,
 		]);
-		part(parent, roundedBox(0.04, 0.6, 3.3), glass, [
+		part(parent, foldedBox(0.04, 0.6, 3.3), glass, [
 			side * 0.97,
 			1.66,
 			0.75,
 		]);
 		for (const z of [-0.2, 1.1]) {
-			part(parent, roundedBox(0.07, 0.62, 0.12), paint, [
+			part(parent, foldedBox(0.07, 0.62, 0.12), paint, [
 				side * 0.97,
 				1.66,
 				z,
 			]);
 		}
 		// D-pillar with the tall Tahoe tail lights.
-		part(parent, roundedBox(0.12, 1, 0.14), paint, [
-			side * 0.94,
-			1.5,
-			2.54,
-		]);
-		part(parent, roundedBox(0.08, 0.5, 0.05), tail, [
+		part(parent, foldedBox(0.12, 1, 0.14), paint, [side * 0.94, 1.5, 2.54]);
+		part(parent, foldedBox(0.08, 0.5, 0.05), tail, [
 			side * 0.93,
 			1.3,
 			2.62,
 		]);
 		// Headlights & mirrors.
-		part(parent, roundedBox(0.36, 0.12, 0.05), headlight, [
+		part(parent, foldedBox(0.36, 0.12, 0.05), headlight, [
 			side * 0.72,
 			1.06,
 			-2.61,
 		]);
-		part(parent, roundedBox(0.22, 0.14, 0.08), paint, [
+		part(parent, foldedBox(0.22, 0.14, 0.08), paint, [
 			side * 1.08,
 			1.5,
 			-0.95,
@@ -131,26 +127,26 @@ const buildTahoe = (parent: Object3D): void => {
 	}
 	const windshield = part(
 		parent,
-		roundedBox(1.9, 0.82, 0.05),
+		foldedBox(1.9, 0.82, 0.05),
 		glass,
 		[0, 1.64, -1.22],
 	);
 	windshield.rotation.x = 0.5;
-	part(parent, roundedBox(1.6, 0.34, 0.05), trim, [0, 0.95, -2.61]);
-	part(parent, roundedBox(1.6, 0.06, 0.06), chrome, [0, 1, -2.63]);
-	part(parent, roundedBox(2.04, 0.2, 0.28), trim, [0, 0.46, 2.6]);
-	part(parent, roundedBox(2.04, 0.2, 0.28), trim, [0, 0.46, -2.6]);
+	part(parent, foldedBox(1.6, 0.34, 0.05), trim, [0, 0.95, -2.61]);
+	part(parent, foldedBox(1.6, 0.06, 0.06), chrome, [0, 1, -2.63]);
+	part(parent, foldedBox(2.04, 0.2, 0.28), trim, [0, 0.46, 2.6]);
+	part(parent, foldedBox(2.04, 0.2, 0.28), trim, [0, 0.46, -2.6]);
 
 	// Cargo area, visible through the open boot.
-	part(parent, roundedBox(1.86, 0.04, 1.3), interior, [0, 1.02, 1.95]);
-	part(parent, roundedBox(1.8, 0.6, 0.14), interior, [0, 1.32, 1.3]);
-	part(parent, roundedBox(1.86, 0.02, 3.4), interior, [0, 1.95, 0.8]);
+	part(parent, foldedBox(1.86, 0.04, 1.3), interior, [0, 1.02, 1.95]);
+	part(parent, foldedBox(1.8, 0.6, 0.14), interior, [0, 1.32, 1.3]);
+	part(parent, foldedBox(1.86, 0.02, 3.4), interior, [0, 1.95, 0.8]);
 
 	// Liftgate, swung up on its roof hinge.
 	const hinge = joint(parent, [0, 2, 2.6]);
 	hinge.rotation.x = -1.95;
-	part(hinge, roundedBox(1.9, 1, 0.07), paint, [0, -0.5, 0]);
-	part(hinge, roundedBox(1.6, 0.44, 0.02), glass, [0, -0.3, 0.045]);
+	part(hinge, foldedBox(1.9, 1, 0.07), paint, [0, -0.5, 0]);
+	part(hinge, foldedBox(1.6, 0.44, 0.02), glass, [0, -0.3, 0.045]);
 	const bowtie = new Shape();
 	for (const [i, [x, y]] of (
 		[
@@ -178,16 +174,12 @@ const buildTahoe = (parent: Object3D): void => {
 
 	// Roof rails.
 	for (const side of [-1, 1]) {
-		part(parent, roundedBox(0.05, 0.05, 3.2), trim, [
-			side * 0.8,
-			2.07,
-			0.8,
-		]);
+		part(parent, foldedBox(0.05, 0.05, 3.2), trim, [side * 0.8, 2.07, 0.8]);
 	}
 
 	// Wheels.
-	const tyre = new CylinderGeometry(0.42, 0.42, 0.3, 20).rotateZ(Math.PI / 2);
-	const hub = new CylinderGeometry(0.24, 0.24, 0.32, 16).rotateZ(Math.PI / 2);
+	const tyre = new CylinderGeometry(0.42, 0.42, 0.3, 10).rotateZ(Math.PI / 2);
+	const hub = new CylinderGeometry(0.24, 0.24, 0.32, 8).rotateZ(Math.PI / 2);
 	for (const x of [-0.95, 0.95]) {
 		for (const z of [-1.7, 1.7]) {
 			part(parent, tyre, rubber, [x, 0.42, z]);

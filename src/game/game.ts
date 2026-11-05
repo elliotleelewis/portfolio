@@ -78,7 +78,6 @@ const hurry = 4;
  * cartwheel down the mountain flattening trees.
  */
 // Loads what each run needs before it starts: my model.
-export { loadCharacterModel as loadModels } from './character';
 
 export class Game implements StageScene {
 	private readonly _callbacks: GameCallbacks;

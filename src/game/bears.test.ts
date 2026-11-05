@@ -138,8 +138,8 @@ describe('Bears', () => {
 		// ears.
 		bear.rig.root.updateMatrixWorld(true);
 		const box = new Box3().setFromObject(bear.rig.pose);
-		expect(box.min.z).toBeCloseTo(-0.768, 3);
-		expect(box.max.z).toBeCloseTo(1.31, 3);
+		expect(box.min.z).toBeCloseTo(-0.78, 3);
+		expect(box.max.z).toBeCloseTo(1.303, 3);
 		expect(box.min.y).toBeCloseTo(-0.75, 3);
 		expect(box.max.y).toBeCloseTo(0.5, 3);
 		expect(box.max.x).toBeCloseTo(0.42, 3);

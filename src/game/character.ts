@@ -1,8 +1,10 @@
 import { Group, type Object3D } from 'three';
 
 import { withBudget } from './draw-budget';
-import { createHumanoid, readHumanoidModel } from './humanoid';
-import modelUrl from './models/me.glb?url';
+import { createHumanoid } from './humanoid';
+import { ME } from './people/cast';
+import { personModel } from './people/model';
+import { personMaterial } from './people/person';
 
 /**
  * Height (from the feet) of the point the character spins around while
@@ -44,38 +46,17 @@ export interface Character {
 	keepUp: () => void;
 }
 
-// My model, once it's loaded, for each run to take a copy of.
-const loaded: { model?: Object3D } = {};
+// My model, built the first time a run asks for it, for each run to take a
+// copy of.
+const built: { model?: Object3D } = {};
 
 /**
- * Reads my model (models/README.md), checking it has everything the game
- * needs, and keeps it for {@link createCharacter}.
- * @param data - The model, as a .glb file.
- */
-export const readCharacterModel = async (data: ArrayBuffer): Promise<void> => {
-	loaded.model = await readHumanoidModel(data);
-};
-
-/**
- * Loads my model, once, before the first run.
- */
-export const loadCharacterModel = async (): Promise<void> => {
-	if (loaded.model) {
-		return;
-	}
-	const response = await fetch(modelUrl);
-	await readCharacterModel(await response.arrayBuffer());
-};
-
-/**
- * Builds me, from my model: each run's own copy.
+ * Builds me (`ME`, in people/cast.ts): each run's own copy.
  * @returns The character rig.
  */
 export const createCharacter = (): Character => {
-	if (!loaded.model) {
-		throw new Error('Load my model first (loadCharacterModel)');
-	}
-	const me = createHumanoid(loaded.model);
+	built.model ??= personModel(ME, personMaterial());
+	const me = createHumanoid(built.model);
 	// Lowered about my middle, to spin about it.
 	me.body.position.y = -pivotHeight;
 	const facing = new Group();

@@ -16,7 +16,7 @@ import {
 } from 'three';
 
 import { m } from '../../paraglide/messages';
-import { roundedBox } from '../look/shapes';
+import { foldedBox } from '../look/shapes';
 import { surface } from '../look/surfaces';
 import { STOKER } from '../people/cast';
 import { type Person, createPerson, personMaterial } from '../people/person';
@@ -141,12 +141,12 @@ const buildStove = (
 	const woodLight = surface('#8b6843');
 
 	// Slate hearth pad.
-	part(parent, roundedBox(1.1, 0.04, 1.1), slate, [0, 0.02, 0.1]);
+	part(parent, foldedBox(1.1, 0.04, 1.1), slate, [0, 0.02, 0.1]);
 
 	// Legs, then the firebox: panels round an opening at the front.
 	for (const x of [-0.24, 0.24]) {
 		for (const z of [-0.19, 0.19]) {
-			part(parent, roundedBox(0.06, 0.18, 0.06), iron, [x, 0.13, z]);
+			part(parent, foldedBox(0.06, 0.18, 0.06), iron, [x, 0.13, z]);
 		}
 	}
 	const width = 0.62;
@@ -158,7 +158,7 @@ const buildStove = (
 		size: [number, number, number],
 		position: [number, number, number],
 	): void => {
-		part(parent, roundedBox(...size), iron, position);
+		part(parent, foldedBox(...size), iron, position);
 	};
 	panel([width, 0.04, depth], [0, bottom, 0]);
 	panel([width, 0.04, depth], [0, bottom + height, 0]);
@@ -187,19 +187,19 @@ const buildStove = (
 	// Sooty lining inside.
 	part(
 		parent,
-		roundedBox(width - 0.06, height - 0.06, depth - 0.06),
+		foldedBox(width - 0.06, height - 0.06, depth - 0.06),
 		firebox,
 		[0, middle, -0.005],
 	).scale.z = 0.98;
 	// Cast-iron details: a lipped top plate, ribs down the sides.
-	part(parent, roundedBox(width + 0.06, 0.035, depth + 0.06), ironDark, [
+	part(parent, foldedBox(width + 0.06, 0.035, depth + 0.06), ironDark, [
 		0,
 		bottom + height + 0.035,
 		0,
 	]);
 	for (const x of [-1, 1]) {
 		for (let i = 0; i < 3; i++) {
-			part(parent, roundedBox(0.02, height - 0.1, 0.03), ironDark, [
+			part(parent, foldedBox(0.02, height - 0.1, 0.03), ironDark, [
 				x * (width / 2 + 0.01),
 				middle,
 				-0.15 + i * 0.15,
@@ -275,14 +275,14 @@ const buildStove = (
 	const doorHeight = openingHeight + 0.04;
 	const bar = 0.06;
 	for (const y of [-1, 1]) {
-		part(door, roundedBox(doorWidth, bar, 0.025), iron, [
+		part(door, foldedBox(doorWidth, bar, 0.025), iron, [
 			-doorWidth / 2,
 			y * (doorHeight / 2 - bar / 2),
 			0,
 		]);
 	}
 	for (const x of [0, 1]) {
-		part(door, roundedBox(bar, doorHeight - bar * 2, 0.025), iron, [
+		part(door, foldedBox(bar, doorHeight - bar * 2, 0.025), iron, [
 			-bar / 2 - x * (doorWidth - bar),
 			0,
 			0,
@@ -299,7 +299,7 @@ const buildStove = (
 	});
 	part(
 		door,
-		roundedBox(openingWidth - 0.06, openingHeight - 0.06, 0.006),
+		foldedBox(openingWidth - 0.06, openingHeight - 0.06, 0.006),
 		glass,
 		[-(openingWidth + 0.04) / 2, 0, 0.013],
 	).castShadow = false;
@@ -314,29 +314,29 @@ const buildStove = (
 	const pipeBottom = bottom + height + 0.05;
 	part(
 		parent,
-		new CylinderGeometry(0.075, 0.075, pipeTop - pipeBottom, 16),
+		new CylinderGeometry(0.075, 0.075, pipeTop - pipeBottom, 8),
 		iron,
 		[0, (pipeTop + pipeBottom) / 2, -0.1],
 	);
 	for (const y of [pipeBottom + 0.02, pipeBottom + 0.7, pipeBottom + 1.4]) {
-		part(parent, new CylinderGeometry(0.082, 0.082, 0.03, 16), ironDark, [
+		part(parent, new CylinderGeometry(0.082, 0.082, 0.03, 8), ironDark, [
 			0,
 			y,
 			-0.1,
 		]);
 	}
-	part(parent, roundedBox(0.2, 0.015, 0.015), steel, [
+	part(parent, foldedBox(0.2, 0.015, 0.015), steel, [
 		0.08,
 		pipeBottom + 0.35,
 		-0.1,
 	]);
-	part(parent, new ConeGeometry(0.16, 0.1, 16), ironDark, [
+	part(parent, new ConeGeometry(0.16, 0.1, 8), ironDark, [
 		0,
 		pipeTop + 0.1,
 		-0.1,
 	]);
 	for (const angle of [0, (Math.PI * 2) / 3, (Math.PI * 4) / 3]) {
-		part(parent, roundedBox(0.012, 0.08, 0.012), ironDark, [
+		part(parent, foldedBox(0.012, 0.08, 0.012), ironDark, [
 			Math.cos(angle) * 0.07,
 			pipeTop + 0.03,
 			-0.1 + Math.sin(angle) * 0.07,
@@ -353,7 +353,7 @@ const buildStove = (
 	});
 	const glow = part(
 		parent,
-		new CircleGeometry(0.35, 20),
+		new CircleGeometry(0.35, 10),
 		glowMaterial,
 		[0, 0.045, 0.45],
 	);
@@ -375,7 +375,7 @@ const buildStove = (
 	spark.visible = false;
 
 	// Sparks and smoke out of the top of the chimney.
-	const emberGeometry = roundedBox(0.02, 0.02, 0.02);
+	const emberGeometry = foldedBox(0.02, 0.02, 0.02);
 	const emberMaterial = surface('#ffb347', 'matte', {
 		emissive: '#ff7a00',
 		emissiveIntensity: 2,

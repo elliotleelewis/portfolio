@@ -1,3 +1,4 @@
+import { foldPaper } from '../look/paper';
 import { shuffle } from '../shuffle';
 
 import { BATTLESTATION } from './battlestation';
@@ -13,6 +14,21 @@ export { type MergedEasterEgg, type Shattered, mergeParts } from './merge';
 export { disposeObject } from './parts';
 export type { EasterEgg, EasterEggInstance, EasterEggShowcase } from './types';
 
+/**
+ * An easter egg, folded as paper each time it's made, like the rest of the
+ * world (`foldPaper`).
+ * @param egg - The easter egg.
+ * @returns It, folded.
+ */
+const folded = (egg: EasterEgg): EasterEgg => ({
+	...egg,
+	create: () => {
+		const instance = egg.create();
+		foldPaper(instance.object);
+		return instance;
+	},
+});
+
 // Landmarks from the stag do, in gallery order. Add new ones here.
 export const ALL_EASTER_EGGS: readonly EasterEgg[] = [
 	OUTHOUSE,
@@ -22,7 +38,7 @@ export const ALL_EASTER_EGGS: readonly EasterEgg[] = [
 	KEEPY_UPPIES,
 	BATTLESTATION,
 	WOOD_STOVE,
-];
+].map((egg) => folded(egg));
 
 // Shuffled once per page load, then placed down the mountain in that order
 // and round again, so every run in a visit shares the order.

@@ -124,3 +124,28 @@ export const READER: PersonSpec = {
 	soles: '#111113',
 	mouths: ['grin'],
 };
+
+// The dancer under the money cloud: short dark hair, faded at the sides, a
+// trimmed moustache and goatee over stubble, the widest grin, a gold chain,
+// a Portugal-flag tee (green on his right, red on his left, the crest on
+// the join), dark joggers and white trainers.
+export const DANCER: PersonSpec = {
+	seed: 43,
+	skin: '#e8bf9f',
+	hair: { colour: '#2a1d16', under: '#5a4436', style: 'fade' },
+	brows: '#2a1d16',
+	stubble: '#c99d80',
+	moustache: '#2a1d16',
+	goatee: '#2a1d16',
+	top: {
+		colour: '#d8262e',
+		sleeves: 'short',
+		right: '#0a6a37',
+		crest: { ring: '#f5d000', shield: '#ffffff' },
+	},
+	chain: '#d8b04a',
+	trousers: '#2f3238',
+	shoes: '#f0f0ee',
+	soles: '#c4c4bf',
+	mouths: ['grin'],
+};

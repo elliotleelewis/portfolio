@@ -46,7 +46,14 @@ export interface PersonSpec {
 		colour: string;
 		// Underneath and at the roots.
 		under: string;
-		style: 'spiky' | 'wavy' | 'slicked' | 'crop' | 'short' | 'long';
+		style:
+			| 'spiky'
+			| 'wavy'
+			| 'slicked'
+			| 'crop'
+			| 'short'
+			| 'long'
+			| 'fade';
 	};
 	beanie?: { colour: string; cuff: string };
 	// A peaked cap, its band chequered in two colours, with a badge.
@@ -60,6 +67,7 @@ export interface PersonSpec {
 	stubble?: string;
 	beard?: string;
 	moustache?: string;
+	goatee?: string;
 	glasses?: { colour: string; shape: 'rectangle' | 'round' };
 	top: {
 		colour: string;
@@ -75,6 +83,11 @@ export interface PersonSpec {
 		under?: string;
 		// A hood, down behind the neck.
 		hood?: boolean;
+		// Their right side (-x), all the way round, if it's not the top's
+		// colour: a flag, wrapped round, splits on a fold.
+		right?: string;
+		// A crest on the front, where the right side meets the left.
+		crest?: { ring: string; shield: string };
 		// Worn open, over a tee with a print on it.
 		open?: { tee: string; print: string; edge: string };
 	};
@@ -183,6 +196,10 @@ export interface PersonPart {
 
 // How much lighter or darker each fold is than its paper's colour.
 const folds = 0.07;
+
+// Where a top split down the middle splits: just to their right of it, on
+// a fold.
+const split = -0.03;
 
 // Their head: a big faceted ball, their face a flat sheet just in front.
 const head = at(0, 0, 1.52);
@@ -314,14 +331,18 @@ export const personParts = (spec: PersonSpec): PersonPart[] => {
 		const upperSleeve = flip(
 			shoulder.clone().lerp(elbow, isLongSleeves ? 1 : 0.55),
 		);
+		const sleeve =
+			side === 'r'
+				? (spec.top.right ?? spec.top.colour)
+				: spec.top.colour;
 		add(
 			`upperarm_${side}`,
 			prism(sleeveTop, upperSleeve, 0.088, 0.082, 6),
-			spec.top.colour,
+			sleeve,
 		);
-		const forearm = isLongSleeves ? spec.top.colour : spec.skin;
+		const forearm = isLongSleeves ? sleeve : spec.skin;
 		if (isLongSleeves) {
-			add(`lowerarm_${side}`, ball(flip(elbow), 0.075), spec.top.colour);
+			add(`lowerarm_${side}`, ball(flip(elbow), 0.075), sleeve);
 			add(
 				`lowerarm_${side}`,
 				prism(flip(elbow), flip(wrist), 0.075, 0.062, 6),
@@ -390,16 +411,44 @@ export const personParts = (spec: PersonSpec): PersonPart[] => {
 		prism(at(0, 0, 0.62), at(0, 0, 0.84), 0.2, 0.2, 7, 0.3),
 		spec.trousers,
 	);
-	add(
-		'spine_03',
+	for (const piece of [
 		prism(at(0, 0, 0.78), at(0, 0, 1.2), 0.205, 0.25, 7, 0.3),
-		spec.top.colour,
-	);
-	add(
-		'spine_03',
 		prism(at(0, 0, 1.18), at(0, 0, 1.25), 0.25, 0.14, 7, 0.3),
-		spec.top.colour,
-	);
+	]) {
+		const { right } = spec.top;
+		if (right === undefined) {
+			add('spine_03', piece, spec.top.colour);
+			continue;
+		}
+		// Split along its folds, just to their right of the middle.
+		add(
+			'spine_03',
+			keep(piece.clone(), (c) => c.x < split),
+			right,
+		);
+		add(
+			'spine_03',
+			keep(piece, (c) => c.x >= split),
+			spec.top.colour,
+		);
+	}
+	if (spec.top.crest) {
+		// A ring round a shield, on the join.
+		const { crest } = spec.top;
+		const where = at(split, -0.245, 1.04);
+		add(
+			'spine_03',
+			cutOut(oval(0.05, 0.055), where, 0, [oval(0.038, 0.043)]),
+			crest.ring,
+			flat,
+		);
+		add(
+			'spine_03',
+			cutOut(rectangle(0.022, 0.026), where, 0.002),
+			crest.shield,
+			flat,
+		);
+	}
 	add(
 		'spine_03',
 		prism(at(0, 0, 1.2), at(0, 0, 1.32), 0.075, 0.072, 6),
@@ -562,6 +611,42 @@ export const personParts = (spec: PersonSpec): PersonPart[] => {
 				add(
 					'Head',
 					spike(base, lean, width, length),
+					spec.hair.colour,
+					{
+						shade: 0.1,
+					},
+				);
+			}
+			break;
+		}
+		case 'fade': {
+			// Faded at the sides: a cap in the fade's colour, the top longer
+			// and darker, in tufts.
+			// Low, so the top shows above it.
+			const cap = near(head, 0, 0.03, 0.04);
+			add(
+				'Head',
+				ball(cap, 0.27, [0.97, 0.97, 0.78], 1),
+				spec.hair.under,
+				{ shade: 0.05 },
+			);
+			add(
+				'Head',
+				ball(near(head, 0, 0.01, 0.19), 0.23, [0.95, 0.98, 0.45], 1),
+				spec.hair.colour,
+				{ shade: 0.08 },
+			);
+			for (const [x, back] of [
+				[-0.08, -0.1],
+				[0, -0.13],
+				[0.08, -0.1],
+				[-0.04, 0.02],
+				[0.05, 0.03],
+			]) {
+				const base = near(head, x, back, 0.27);
+				add(
+					'Head',
+					spike(base, at(x, -0.3, 1), 0.04, 0.06),
 					spec.hair.colour,
 					{
 						shade: 0.1,
@@ -887,6 +972,14 @@ export const personParts = (spec: PersonSpec): PersonPart[] => {
 	}
 	// Out in front of a beard, if there is one.
 	const lift = spec.beard ? 0.016 : 0;
+	if (spec.goatee) {
+		add(
+			'Head',
+			ball(near(head, 0, -0.17, -0.18), 0.055, [1.1, 0.9, 0.75]),
+			spec.goatee,
+			{ shade: 0.08 },
+		);
+	}
 	if (spec.moustache) {
 		const moustache = band(
 			0.075,

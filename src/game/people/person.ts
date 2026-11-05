@@ -22,7 +22,7 @@ import {
 	spike,
 	steadyRandom,
 } from '../look/paper';
-import { surface } from '../look/surfaces';
+import { TONES, surface } from '../look/surfaces';
 
 /**
  * People in the world's folded-paper style (models/README.md, "The
@@ -56,6 +56,9 @@ export interface PersonSpec {
 			| 'fade';
 	};
 	beanie?: { colour: string; cuff: string };
+	// A trucker cap, with a flag's patch on the front: its ground, its
+	// stripes and its corner.
+	trucker?: { colour: string; patch: readonly [string, string, string] };
 	// A peaked cap, its band chequered in two colours, with a badge.
 	cap?: {
 		colour: string;
@@ -68,7 +71,14 @@ export interface PersonSpec {
 	beard?: string;
 	moustache?: string;
 	goatee?: string;
-	glasses?: { colour: string; shape: 'rectangle' | 'round' };
+	// Glasses' frames; clubmasters' colour is their brow bar, over dark
+	// lenses in a thin rim.
+	glasses?: {
+		colour: string;
+		shape: 'rectangle' | 'round' | 'clubmaster';
+		lens?: string;
+		rim?: string;
+	};
 	top: {
 		colour: string;
 		// A short-sleeved tee, or a long-sleeved top (a fleece) with a
@@ -79,6 +89,8 @@ export interface PersonSpec {
 		collar?: string;
 		// A stripe down the outside of each sleeve.
 		piping?: string;
+		// Round the collar and the ends of short sleeves.
+		trim?: string;
 		// What shows at the neck, under the zip.
 		under?: string;
 		// A hood, down behind the neck.
@@ -97,7 +109,9 @@ export interface PersonSpec {
 	// Gloves over their hands, and the colour of their fingertips.
 	gloves?: { colour: string; tips: string };
 	chain?: string;
+	// Trousers, or shorts over socks.
 	trousers: string;
+	shorts?: { socks: string; turnover: string };
 	shoes: string;
 	soles: string;
 	pack?: { colour: string; dark: string };
@@ -190,8 +204,6 @@ export interface PersonPart {
 	// shown only with it.
 	isEye?: boolean;
 	mouth?: Mouth;
-	// What's stuck flat on the face casts no shadow of its own.
-	isFlat?: boolean;
 }
 
 // How much lighter or darker each fold is than its paper's colour.
@@ -257,22 +269,22 @@ const mouthShapes = (kind: Mouth, lift: number): [BufferGeometry, string][] => {
 		]);
 		const behind = near(mouth, 0, 0, -0.002);
 		return [
-			[cutOut(grin, mouth, 0.002), '#7a3a34'],
-			[cutOut(teeth, behind, 0.004), '#f6f1e6'],
+			[cutOut(grin, mouth, 0.002), TONES.mouth],
+			[cutOut(teeth, behind, 0.004), TONES.teeth],
 		];
 	}
 	if (kind === 'smile') {
 		// A calm, closed smile.
 		const smile = band(0.045, 0.006, (u) => -0.012 * (1 - u * u));
-		return [[cutOut(smile, mouth, 0.002), '#7a3a34']];
+		return [[cutOut(smile, mouth, 0.002), TONES.mouth]];
 	}
 	if (kind === 'shout') {
 		const open = oval(0.032, 0.04);
-		return [[cutOut(open, near(mouth, 0, 0, -0.01), 0.002), '#5e2a28']];
+		return [[cutOut(open, near(mouth, 0, 0, -0.01), 0.002), TONES.throat]];
 	}
 	// Knocked out: a small, wobbly line.
 	const wobble = band(0.04, 0.0055, (u) => Math.sin((u + 1) * 6.6) * 0.005);
-	return [[cutOut(wobble, near(mouth, 0, 0, -0.015), 0.002), '#7a3a34']];
+	return [[cutOut(wobble, near(mouth, 0, 0, -0.015), 0.002), TONES.mouth]];
 };
 
 /**
@@ -299,7 +311,8 @@ export const personParts = (spec: PersonSpec): PersonPart[] => {
 			...rest,
 		});
 	};
-	const flat = { shade: 0, isFlat: true };
+	// What's cut out and stuck on is one flat colour.
+	const flat = { shade: 0 };
 
 	const isLongSleeves = spec.top.sleeves === 'long';
 	for (const side of ['l', 'r'] as const) {
@@ -309,16 +322,43 @@ export const personParts = (spec: PersonSpec): PersonPart[] => {
 		const thighTop = flip(near(hip, 0, 0, 0.06));
 		const shinTop = flip(near(knee, 0, 0, 0.03));
 		const shinBottom = flip(near(ankle, 0, 0, 0.02));
-		add(
-			`thigh_${side}`,
-			prism(thighTop, flip(knee), 0.1, 0.088, 6),
-			spec.trousers,
-		);
-		add(
-			`calf_${side}`,
-			prism(shinTop, shinBottom, 0.088, 0.08, 6),
-			spec.trousers,
-		);
+		if (spec.shorts) {
+			// Shorts, bare knees and socks, their tops turned over.
+			const hem = flip(hip.clone().lerp(knee, 0.55));
+			add(
+				`thigh_${side}`,
+				prism(thighTop, hem, 0.11, 0.105, 6),
+				spec.trousers,
+			);
+			add(
+				`thigh_${side}`,
+				prism(hem, flip(knee), 0.075, 0.07, 5),
+				spec.skin,
+			);
+			add(`calf_${side}`, ball(flip(knee), 0.07), spec.skin);
+			const turnover = flip(near(knee, 0, 0, -0.06));
+			add(
+				`calf_${side}`,
+				prism(turnover, shinBottom, 0.08, 0.076, 6),
+				spec.shorts.socks,
+			);
+			add(
+				`calf_${side}`,
+				prism(shinTop, turnover, 0.088, 0.086, 6),
+				spec.shorts.turnover,
+			);
+		} else {
+			add(
+				`thigh_${side}`,
+				prism(thighTop, flip(knee), 0.1, 0.088, 6),
+				spec.trousers,
+			);
+			add(
+				`calf_${side}`,
+				prism(shinTop, shinBottom, 0.088, 0.08, 6),
+				spec.trousers,
+			);
+		}
 		// Shoes, on darker soles.
 		const [shoe, sole] = [
 			flip(at(0.11, -0.05, 0.075)),
@@ -349,6 +389,17 @@ export const personParts = (spec: PersonSpec): PersonPart[] => {
 				forearm,
 			);
 		} else {
+			if (spec.top.trim) {
+				const [from, to] = [
+					shoulder.clone().lerp(elbow, 0.47),
+					shoulder.clone().lerp(elbow, 0.56),
+				];
+				add(
+					`upperarm_${side}`,
+					prism(flip(from), flip(to), 0.092, 0.092, 6),
+					spec.top.trim,
+				);
+			}
 			const armTop = flip(shoulder.clone().lerp(elbow, 0.4));
 			add(
 				`upperarm_${side}`,
@@ -484,6 +535,13 @@ export const personParts = (spec: PersonSpec): PersonPart[] => {
 			10,
 		);
 		add('spine_03', link, spec.chain, { shade: 0 });
+	}
+	if (spec.top.trim) {
+		add(
+			'spine_03',
+			prism(at(0, 0, 1.22), at(0, 0, 1.27), 0.105, 0.1, 7),
+			spec.top.trim,
+		);
 	}
 	if (spec.top.open) {
 		// Open down the front: the tee, its print, and the edges either side.
@@ -844,6 +902,48 @@ export const personParts = (spec: PersonSpec): PersonPart[] => {
 		);
 	}
 
+	if (spec.trucker) {
+		// A trucker cap: a crown over the top of the head, a brim, and a
+		// patch tipped back with the crown's front.
+		const { trucker } = spec;
+		const crown = ball(
+			near(head, 0, 0.01, 0.06),
+			0.275,
+			[0.97, 0.97, 0.9],
+			1,
+		);
+		add(
+			'Head',
+			keep(crown, (c) => c.y > head.y + 0.1),
+			trucker.colour,
+		);
+		add(
+			'Head',
+			ball(near(head, 0, -0.22, 0.1), 0.17, [0.95, 0.75, 0.1]),
+			trucker.colour,
+			{
+				shade: 0.04,
+			},
+		);
+		const [ground, stripes, corner] = trucker.patch;
+		const patch = (shape: BufferGeometry): BufferGeometry =>
+			shape
+				.rotateX(-0.5)
+				.translate(head.x, head.y + 0.18, head.z + 0.235);
+		const [middle, cornerAt] = [at(0, 0, 0), at(-0.025, 0, 0.015)];
+		const backing = cutOut(rectangle(0.04, 0.026), middle);
+		add('Head', patch(backing), ground, flat);
+		for (const k of [-1, 0, 1]) {
+			const stripe = cutOut(
+				rectangle(0.04, 0.004),
+				at(0, 0, k * 0.016),
+				0.002,
+			);
+			add('Head', patch(stripe), stripes, flat);
+		}
+		const canton = patch(cutOut(rectangle(0.015, 0.011), cornerAt, 0.003));
+		add('Head', canton, corner, flat);
+	}
 	if (spec.cap) {
 		// A peaked cap: a crown over a chequered band, a badge and a peak.
 		const { cap } = spec;
@@ -892,7 +992,7 @@ export const personParts = (spec: PersonSpec): PersonPart[] => {
 	// The face, cut from paper.
 	for (const s of [1, -1]) {
 		const eye = near(face, s * 0.08, 0, 0.035);
-		add('Head', cutOut(oval(0.022, 0.026), eye), '#2a2420', {
+		add('Head', cutOut(oval(0.022, 0.026), eye), TONES.pupil, {
 			...flat,
 			isEye: true,
 		});
@@ -909,7 +1009,17 @@ export const personParts = (spec: PersonSpec): PersonPart[] => {
 			const cheek = near(face, s * 0.14, 0.03, -0.045);
 			add('Head', cutOut(oval(0.034, 0.025), cheek), spec.blush, flat);
 		}
-		if (spec.glasses) {
+		const { glasses } = spec;
+		if (glasses?.shape === 'clubmaster') {
+			const lens = near(face, s * 0.085, 0, 0.035);
+			const bar = near(face, s * 0.085, 0, 0.068);
+			const rim = cutOut(oval(0.058, 0.047), lens, 0.012);
+			add('Head', rim, glasses.rim ?? glasses.colour, flat);
+			const dark = cutOut(oval(0.052, 0.041), lens, 0.013);
+			add('Head', dark, glasses.lens ?? glasses.colour, flat);
+			const brow = cutOut(rectangle(0.064, 0.014), bar, 0.014);
+			add('Head', brow, glasses.colour, flat);
+		} else if (spec.glasses) {
 			const lens = near(face, s * 0.085, 0, 0.04);
 			const frame =
 				spec.glasses.shape === 'round'
@@ -931,7 +1041,7 @@ export const personParts = (spec: PersonSpec): PersonPart[] => {
 					[],
 					turn,
 				);
-				add('Head', stroke, '#2a2420', {
+				add('Head', stroke, TONES.pupil, {
 					...flat,
 					mouth: 'knockedOut',
 				});
@@ -942,8 +1052,13 @@ export const personParts = (spec: PersonSpec): PersonPart[] => {
 		const bridge = near(face, 0, 0, 0.05);
 		add(
 			'Head',
-			cutOut(rectangle(0.022, 0.006), bridge, 0.012),
-			spec.glasses.colour,
+			cutOut(
+				rectangle(0.022, 0.006),
+				bridge,
+				// Clubmasters' in front of their lenses.
+				spec.glasses.shape === 'clubmaster' ? 0.014 : 0.012,
+			),
+			spec.glasses.rim ?? spec.glasses.colour,
 			flat,
 		);
 	}
@@ -1073,7 +1188,8 @@ export const createPerson = (spec: PersonSpec, material: Material): Person => {
 		// Into its joint's space (nothing's turned at rest).
 		const origin = joint.getWorldPosition(at(0, 0, 0));
 		piece.geometry.translate(-origin.x, -origin.y, -origin.z);
-		piece.castShadow = !part.isFlat;
+		// Even what's stuck flat on the face, so it merges with the rest.
+		piece.castShadow = true;
 		piece.receiveShadow = true;
 		joint.add(piece);
 		if (part.isEye) {

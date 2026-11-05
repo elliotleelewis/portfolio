@@ -149,3 +149,47 @@ export const DANCER: PersonSpec = {
 	soles: '#c4c4bf',
 	mouths: ['grin'],
 };
+
+// The keepy-uppies juggler: a navy trucker cap with a stars-and-stripes
+// patch over short dark hair, a moustache and goatee over stubble, in the
+// royal blue Everton home kit (white trim, white shorts, white socks
+// turned over in blue) and black boots. A cigarette in his mouth.
+export const JUGGLER: PersonSpec = {
+	seed: 47,
+	skin: '#d8a684',
+	hair: { colour: '#2a1c14', under: '#2a1c14', style: 'short' },
+	trucker: { colour: '#1f2b4d', patch: ['#f3f3f1', '#c8262f', '#23305e'] },
+	brows: '#2a1c14',
+	stubble: '#b98b6c',
+	moustache: '#2a1c14',
+	goatee: '#2a1c14',
+	top: { colour: '#1c3f96', sleeves: 'short', trim: '#f3f3f1' },
+	trousers: '#f3f3f1',
+	shorts: { socks: '#f3f3f1', turnover: '#1c3f96' },
+	shoes: '#151515',
+	soles: '#0c0c0c',
+	mouths: ['smile'],
+};
+
+// The worker at the battlestation: short dark hair pushed up at the front,
+// a neat full beard and a wide grin, clubmaster sunglasses (dark lenses,
+// a heavy brow bar, gold rims), an olive zip-up fleece hoodie, jeans and
+// brown boots.
+export const WORKER: PersonSpec = {
+	seed: 53,
+	skin: '#efc6aa',
+	hair: { colour: '#3a2619', under: '#3a2619', style: 'crop' },
+	beard: '#4f3423',
+	moustache: '#4f3423',
+	glasses: {
+		colour: '#1c1512',
+		shape: 'clubmaster',
+		lens: '#0f1110',
+		rim: '#c9a656',
+	},
+	top: { colour: '#4a4c38', sleeves: 'long', zip: '#3b3d2c', hood: true },
+	trousers: '#3a4250',
+	shoes: '#5a4030',
+	soles: '#2e2018',
+	mouths: ['grin'],
+};

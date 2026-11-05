@@ -238,7 +238,14 @@ export const TAHOE_READER: EasterEgg = {
 					Math.PI / 2 - 0.3 + Math.sin(time * 2 + i * Math.PI) * 0.18;
 			}
 		};
-		const moving = [...person.joints, reader.page];
+		// He sits still, but for his head, his lean and his dangling legs.
+		const moving = [
+			person.chest,
+			person.head,
+			person.leftShin,
+			person.rightShin,
+			reader.page,
+		];
 		return { object: root, update, moving };
 	},
 };

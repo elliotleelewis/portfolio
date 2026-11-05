@@ -112,7 +112,8 @@ interface Anchor {
 /**
  * Whether a material's colour can go into the geometry instead, so parts
  * that differ only in colour can share one material: a plain, solid, untextured
- * standard material that doesn't glow. Easter eggs animate glowing and
+ * standard material that doesn't glow. One already coloured by its geometry
+ * (people's paper) can: its colour multiplies the geometry's. Easter eggs animate glowing and
  * see-through materials (a flickering ember, the RGB, smoke), so those keep
  * their own.
  * @param material - The material.
@@ -122,7 +123,6 @@ const isTintable = (material: Material): material is MeshStandardMaterial =>
 	material instanceof MeshStandardMaterial &&
 	material.type === 'MeshStandardMaterial' &&
 	!material.transparent &&
-	!material.vertexColors &&
 	material.emissive.getHex() === 0 &&
 	[
 		material.map,
@@ -138,8 +138,9 @@ const isTintable = (material: Material): material is MeshStandardMaterial =>
 		material.roughnessMap,
 	].every((map) => map === null);
 
-// What a material's look leaves out: which material it is, and its colour.
-const unlike = new Set(['uuid', 'name', 'color']);
+// What a material's look leaves out: which material it is, and its colour,
+// in it or in the geometry.
+const unlike = new Set(['uuid', 'name', 'color', 'vertexColors']);
 
 /**
  * Everything about a tintable material but its colour, so materials that
@@ -257,8 +258,21 @@ const mergeKey = (mesh: Mesh<BufferGeometry, Material>): string =>
 			: mesh.material.uuid,
 		mesh.castShadow,
 		mesh.receiveShadow,
-		mesh.geometry.index ? 'indexed' : 'flat',
+		// Plain parts, indexed or not, merge unindexed; they need no UVs,
+		// and get colours in their geometry if they're tinted.
+		isTintable(mesh.material)
+			? 'plain'
+			: mesh.geometry.index
+				? 'indexed'
+				: 'flat',
 		...Object.entries(mesh.geometry.attributes)
+			.filter(
+				([name]) =>
+					!(
+						(name === 'color' || name === 'uv') &&
+						isTintable(mesh.material)
+					),
+			)
 			.map(
 				([name, attribute]) =>
 					`${name}:${String(attribute.itemSize)}:${String(attribute.normalized)}`,
@@ -306,16 +320,24 @@ const placedGeometry = (
 	isTinted: boolean,
 ): BufferGeometry => {
 	const geometry = mesh.geometry.clone().applyMatrix4(matrix);
+	if (isTintable(mesh.material)) {
+		geometry.deleteAttribute('uv');
+	}
 	if (isTinted && isTintable(mesh.material)) {
 		const { r, g, b } = mesh.material.color;
 		const { count } = geometry.getAttribute('position');
-		geometry.setAttribute(
-			'color',
-			new Float32BufferAttribute(
-				Array.from({ length: count }, () => [r, g, b]).flat(),
-				3,
-			),
-		);
+		const own: unknown = mesh.material.vertexColors
+			? geometry.getAttribute('color')
+			: undefined;
+		const colours =
+			own instanceof BufferAttribute
+				? Array.from({ length: count }, (_value, i) => [
+						own.getX(i) * r,
+						own.getY(i) * g,
+						own.getZ(i) * b,
+					]).flat()
+				: Array.from({ length: count }, () => [r, g, b]).flat();
+		geometry.setAttribute('color', new Float32BufferAttribute(colours, 3));
 	}
 	return geometry;
 };
@@ -540,6 +562,20 @@ export const mergeParts = (
 				? onBone(geometry, bones.indexOf(anchor.bone))
 				: geometry;
 		});
+		// Indexed and unindexed parts only merge unindexed.
+		const isMixed =
+			geometries.some(({ index }) => index) &&
+			geometries.some(({ index }) => !index);
+		if (isMixed) {
+			for (const [i, part] of geometries.entries()) {
+				if (!part.index) {
+					continue;
+				}
+
+				geometries[i] = part.toNonIndexed();
+				part.dispose();
+			}
+		}
 		const geometry = mergeGeometries(geometries);
 		const counts = geometries.map(
 			(clone) => clone.getAttribute('position').count,

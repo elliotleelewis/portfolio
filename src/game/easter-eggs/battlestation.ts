@@ -14,7 +14,7 @@ import {
 } from 'three';
 
 import { m } from '../../paraglide/messages';
-import { roundedBox } from '../look/shapes';
+import { foldedBox } from '../look/shapes';
 import { surface } from '../look/surfaces';
 import { WORKER } from '../people/cast';
 import { type Person, createPerson, personMaterial } from '../people/person';
@@ -220,10 +220,10 @@ const buildWorkstation = (parent: Object3D): Workstation => {
 
 	const table = joint(parent, [0, 0, tableZ]);
 	// A low wooden table: top and four legs.
-	part(table, roundedBox(1.6, 0.05, 0.66), wood, [0, tableHeight, 0]);
+	part(table, foldedBox(1.6, 0.05, 0.66), wood, [0, tableHeight, 0]);
 	for (const x of [-0.74, 0.74]) {
 		for (const z of [-0.28, 0.28]) {
-			part(table, roundedBox(0.05, tableHeight, 0.05), wood, [
+			part(table, foldedBox(0.05, tableHeight, 0.05), wood, [
 				x,
 				tableHeight / 2,
 				z,
@@ -233,12 +233,12 @@ const buildWorkstation = (parent: Object3D): Workstation => {
 	const top = tableHeight + 0.025;
 
 	// Quad-monitor arm: three across, one on top.
-	part(table, new CylinderGeometry(0.1, 0.12, 0.02, 16), black, [
+	part(table, new CylinderGeometry(0.1, 0.12, 0.02, 8), black, [
 		0,
 		top + 0.01,
 		-0.22,
 	]);
-	part(table, new CylinderGeometry(0.02, 0.02, 0.9, 10), metal, [
+	part(table, new CylinderGeometry(0.02, 0.02, 0.9, 6), metal, [
 		0,
 		top + 0.45,
 		-0.22,
@@ -257,7 +257,7 @@ const buildWorkstation = (parent: Object3D): Workstation => {
 		mount.rotation.y = yaw;
 		part(
 			mount,
-			roundedBox(width + 0.03, height + 0.03, 0.03),
+			foldedBox(width + 0.03, height + 0.03, 0.03),
 			black,
 			[0, 0, 0],
 		);
@@ -267,7 +267,7 @@ const buildWorkstation = (parent: Object3D): Workstation => {
 			screenMaterial(texture),
 			[0, 0, 0.016],
 		).castShadow = false;
-		part(mount, roundedBox(0.02, 0.02, 0.14), metal, [0, 0, -0.08]);
+		part(mount, foldedBox(0.02, 0.02, 0.14), metal, [0, 0, -0.08]);
 	};
 	monitor(code, [0, top + 0.46, -0.14], 0);
 	monitor(dashboard, [-0.63, top + 0.46, -0.05], 0.45);
@@ -277,10 +277,10 @@ const buildWorkstation = (parent: Object3D): Workstation => {
 	// Laptop, open, off to the left.
 	const laptop = joint(table, [-0.45, top, 0.06]);
 	laptop.rotation.y = 0.3;
-	part(laptop, roundedBox(0.32, 0.015, 0.22), aluminium, [0, 0.008, 0]);
+	part(laptop, foldedBox(0.32, 0.015, 0.22), aluminium, [0, 0.008, 0]);
 	const lid = joint(laptop, [0, 0.015, -0.11]);
 	lid.rotation.x = -0.25;
-	part(lid, roundedBox(0.32, 0.21, 0.01), aluminium, [0, 0.105, 0]);
+	part(lid, foldedBox(0.32, 0.21, 0.01), aluminium, [0, 0.105, 0]);
 	part(
 		lid,
 		new PlaneGeometry(0.29, 0.18),
@@ -289,13 +289,13 @@ const buildWorkstation = (parent: Object3D): Workstation => {
 	).castShadow = false;
 
 	// Mechanical keyboard with RGB underglow, mouse on a glowing pad.
-	part(table, roundedBox(0.44, 0.03, 0.15), black, [0, top + 0.02, 0.2]);
-	part(table, roundedBox(0.45, 0.006, 0.16), rgb[0] ?? black, [
+	part(table, foldedBox(0.44, 0.03, 0.15), black, [0, top + 0.02, 0.2]);
+	part(table, foldedBox(0.45, 0.006, 0.16), rgb[0] ?? black, [
 		0,
 		top + 0.004,
 		0.2,
 	]);
-	const keycap = roundedBox(0.022, 0.012, 0.022);
+	const keycap = foldedBox(0.022, 0.012, 0.022);
 	const keycapMaterial = surface('#2d2f33');
 	for (let row = 0; row < 4; row++) {
 		for (let key = 0; key < 15; key++) {
@@ -306,7 +306,7 @@ const buildWorkstation = (parent: Object3D): Workstation => {
 			]).castShadow = false;
 		}
 	}
-	part(table, roundedBox(0.28, 0.004, 0.22), rgb[1] ?? black, [
+	part(table, foldedBox(0.28, 0.004, 0.22), rgb[1] ?? black, [
 		0.38,
 		top + 0.002,
 		0.18,
@@ -318,17 +318,17 @@ const buildWorkstation = (parent: Object3D): Workstation => {
 	]).rotation.x = Math.PI / 2;
 
 	// Coffee and a small pile of energy drinks.
-	part(table, new CylinderGeometry(0.04, 0.035, 0.1, 14), mug, [
+	part(table, new CylinderGeometry(0.04, 0.035, 0.1, 7), mug, [
 		0.62,
 		top + 0.05,
 		0.08,
 	]);
-	part(table, new TorusGeometry(0.025, 0.008, 6, 12), mug, [
+	part(table, new TorusGeometry(0.025, 0.008, 4, 7), mug, [
 		0.665,
 		top + 0.05,
 		0.08,
 	]);
-	const drinkGeometry = new CylinderGeometry(0.028, 0.028, 0.11, 12);
+	const drinkGeometry = new CylinderGeometry(0.028, 0.028, 0.11, 7);
 	part(table, drinkGeometry, can, [0.7, top + 0.055, -0.08]);
 	// The empties, crushed and knocked over.
 	for (const [x, z] of [
@@ -342,7 +342,7 @@ const buildWorkstation = (parent: Object3D): Workstation => {
 
 	// A gaming PC beside the table, fans glowing.
 	const tower = joint(parent, [1.08, 0, -0.3]);
-	part(tower, roundedBox(0.22, 0.48, 0.46), black, [0, 0.24, 0]);
+	part(tower, foldedBox(0.22, 0.48, 0.46), black, [0, 0.24, 0]);
 	part(
 		tower,
 		new PlaneGeometry(0.44, 0.44),
@@ -352,7 +352,7 @@ const buildWorkstation = (parent: Object3D): Workstation => {
 	for (const [i, y] of [0.12, 0.25, 0.38].entries()) {
 		const fan = part(
 			tower,
-			new TorusGeometry(0.055, 0.012, 8, 20),
+			new TorusGeometry(0.055, 0.012, 4, 10),
 			rgb[2 + (i % 2)] ?? black,
 			[0, y, 0.232],
 		);
@@ -361,21 +361,21 @@ const buildWorkstation = (parent: Object3D): Workstation => {
 
 	// A generator to power it all, humming away.
 	const generator = joint(parent, [-1.25, 0, -0.1]);
-	part(generator, roundedBox(0.5, 0.36, 0.34), yellow, [0, 0.22, 0]);
-	part(generator, roundedBox(0.52, 0.04, 0.36), black, [0, 0.04, 0]);
+	part(generator, foldedBox(0.5, 0.36, 0.34), yellow, [0, 0.22, 0]);
+	part(generator, foldedBox(0.52, 0.04, 0.36), black, [0, 0.04, 0]);
 	part(
 		generator,
-		new CylinderGeometry(0.1, 0.1, 0.22, 14).rotateZ(Math.PI / 2),
+		new CylinderGeometry(0.1, 0.1, 0.22, 8).rotateZ(Math.PI / 2),
 		red,
 		[0, 0.44, 0],
 	);
-	part(generator, roundedBox(0.46, 0.03, 0.03), black, [0, 0.43, 0.17]);
+	part(generator, foldedBox(0.46, 0.03, 0.03), black, [0, 0.43, 0.17]);
 
 	// And a Starlink dish, for the Wi-Fi.
 	const dishBase = joint(parent, [-1.1, 0, -0.95]);
 	part(
 		dishBase,
-		new CylinderGeometry(0.02, 0.02, 1.2, 8),
+		new CylinderGeometry(0.02, 0.02, 1.2, 6),
 		metal,
 		[0, 0.6, 0],
 	);
@@ -389,7 +389,7 @@ const buildWorkstation = (parent: Object3D): Workstation => {
 		leg.rotation.set(Math.cos(angle) * 0.35, 0, -Math.sin(angle) * 0.35);
 	}
 	const dish = joint(dishBase, [0, 1.22, 0]);
-	part(dish, roundedBox(0.5, 0.03, 0.3), white, [0, 0, 0]).castShadow = true;
+	part(dish, foldedBox(0.5, 0.03, 0.3), white, [0, 0, 0]).castShadow = true;
 
 	// Cables snaking between everything.
 	const cable = surface('#101010');
@@ -441,7 +441,7 @@ const reachIn = 0.85;
 const buildWorker = (parent: Object3D): Worker => {
 	part(
 		parent,
-		new CylinderGeometry(0.34, 0.36, 0.1, 18),
+		new CylinderGeometry(0.34, 0.36, 0.1, 9),
 		surface('#2f4858'),
 		[0, 0.05, 0],
 	);

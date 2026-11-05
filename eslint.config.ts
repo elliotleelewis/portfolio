@@ -217,7 +217,7 @@ export default defineConfig(
 				{
 					selector: 'NewExpression[callee.name="BoxGeometry"]',
 					message:
-						'Make boxes with roundedBox() from src/game/look/shapes.ts, so their edges catch the light.',
+						'Make boxes with foldedBox() from src/game/look/shapes.ts, so their edges catch the light.',
 				},
 			],
 		},

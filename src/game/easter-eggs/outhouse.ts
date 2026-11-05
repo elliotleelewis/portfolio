@@ -9,7 +9,7 @@ import {
 } from 'three';
 
 import { m } from '../../paraglide/messages';
-import { roundedBox } from '../look/shapes';
+import { foldedBox } from '../look/shapes';
 import { surface } from '../look/surfaces';
 import { OCCUPANT } from '../people/cast';
 import { type Person, createPerson, personMaterial } from '../people/person';
@@ -47,7 +47,7 @@ const buildOuthouse = (parent: Object3D): Group => {
 
 	const logs = Math.round(wallHeight / (logRadius * 2));
 	const logGeometry = (length: number): CylinderGeometry =>
-		new CylinderGeometry(logRadius, logRadius, length, 9);
+		new CylinderGeometry(logRadius, logRadius, length, 7);
 	const addLog = (
 		length: number,
 		position: [number, number, number],
@@ -97,7 +97,7 @@ const buildOuthouse = (parent: Object3D): Group => {
 		}
 	}
 	// Sawn log ends on the front corners.
-	const endGeometry = new CircleGeometry(logRadius * 0.9, 9);
+	const endGeometry = new CircleGeometry(logRadius * 0.9, 7);
 	for (let i = 0; i < logs; i++) {
 		for (const side of [-1, 1]) {
 			part(parent, endGeometry, endGrain, [
@@ -111,7 +111,7 @@ const buildOuthouse = (parent: Object3D): Group => {
 	// Plank roof, sloping down to the back.
 	const lid = part(
 		parent,
-		roundedBox(halfSize * 2 + 0.5, 0.08, halfSize * 2 + 0.6),
+		foldedBox(halfSize * 2 + 0.5, 0.08, halfSize * 2 + 0.6),
 		roof,
 		[0, wallHeight + 0.22, 0],
 	);
@@ -120,20 +120,20 @@ const buildOuthouse = (parent: Object3D): Group => {
 	// Inside: dark floor, the seat, a loo roll.
 	part(
 		parent,
-		roundedBox(halfSize * 2 - 0.1, 0.04, halfSize * 2 - 0.1),
+		foldedBox(halfSize * 2 - 0.1, 0.04, halfSize * 2 - 0.1),
 		dark,
 		[0, 0.02, 0],
 	);
-	part(parent, roundedBox(1.1, 0.45, 0.5), plank, [0, 0.23, -0.4]);
+	part(parent, foldedBox(1.1, 0.45, 0.5), plank, [0, 0.23, -0.4]);
 	part(
 		parent,
-		new CylinderGeometry(0.14, 0.14, 0.01, 16),
+		new CylinderGeometry(0.14, 0.14, 0.01, 9),
 		dark,
 		[0, 0.46, -0.4],
 	);
 	part(
 		parent,
-		new CylinderGeometry(0.05, 0.05, 0.1, 12).rotateZ(Math.PI / 2),
+		new CylinderGeometry(0.05, 0.05, 0.1, 7).rotateZ(Math.PI / 2),
 		paper,
 		[0.5, 0.8, -0.55],
 	);
@@ -145,7 +145,7 @@ const buildOuthouse = (parent: Object3D): Group => {
 	for (let i = 0; i < 4; i++) {
 		part(
 			door,
-			roundedBox(doorWidth / 4 - 0.008, doorHeight - 0.04, 0.04),
+			foldedBox(doorWidth / 4 - 0.008, doorHeight - 0.04, 0.04),
 			plank,
 			[
 				-doorWidth / 2 + doorWidth / 8 + (i * doorWidth) / 4,
@@ -155,7 +155,7 @@ const buildOuthouse = (parent: Object3D): Group => {
 		);
 	}
 	for (const y of [0.35, doorHeight - 0.35]) {
-		part(door, roundedBox(doorWidth - 0.04, 0.1, 0.03), barkDark, [
+		part(door, foldedBox(doorWidth - 0.04, 0.1, 0.03), barkDark, [
 			0,
 			y,
 			0.035,
@@ -163,7 +163,7 @@ const buildOuthouse = (parent: Object3D): Group => {
 	}
 	const brace = part(
 		door,
-		roundedBox(0.08, doorHeight - 0.8, 0.03),
+		foldedBox(0.08, doorHeight - 0.8, 0.03),
 		barkDark,
 		[0, doorHeight / 2, 0.035],
 	);
@@ -173,7 +173,7 @@ const buildOuthouse = (parent: Object3D): Group => {
 	moon.absarc(0.045, 0, 0.065, Math.PI * 1.55, Math.PI * 0.45, true);
 	part(door, new ShapeGeometry(moon, 12), dark, [0, doorHeight - 0.2, 0.051]);
 	// Handle.
-	part(door, roundedBox(0.03, 0.12, 0.04), barkDark, [
+	part(door, foldedBox(0.03, 0.12, 0.04), barkDark, [
 		-doorWidth / 2 + 0.08,
 		1,
 		0.05,

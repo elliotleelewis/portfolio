@@ -128,13 +128,13 @@ export const JAILBREAK: EasterEgg = {
 		for (const { hand } of prisoner.arms) {
 			const cuff = part(
 				hand,
-				new TorusGeometry(0.05, 0.011, 8, 16),
+				new TorusGeometry(0.05, 0.011, 4, 8),
 				steel,
 				[0, -0.02, 0],
 			);
 			cuff.rotation.x = Math.PI / 2;
 		}
-		const linkGeometry = new TorusGeometry(0.018, 0.005, 6, 10);
+		const linkGeometry = new TorusGeometry(0.018, 0.005, 4, 6);
 		const links: Link[] = Array.from({ length: 3 }, () => {
 			const mesh = part(root, linkGeometry, steel, [0, 0, 0]);
 			mesh.castShadow = false;

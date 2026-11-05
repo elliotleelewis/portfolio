@@ -40,10 +40,12 @@ export const isFinish = (name: string): name is Finish =>
  * Colours the people in the world share, so every face is finished alike.
  */
 export const TONES = {
-	mouth: '#6e3432',
-	teeth: '#f7f3e8',
+	mouth: '#7a3a34',
+	// Deep inside a mouth wide open.
+	throat: '#5e2a28',
+	teeth: '#f6f1e6',
 	// Eyes, and anything else near black on a face.
-	pupil: '#1b1411',
+	pupil: '#2a2420',
 } as const;
 
 // What a surface may add to its finish: never its own roughness or

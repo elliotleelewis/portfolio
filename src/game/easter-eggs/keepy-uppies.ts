@@ -1,6 +1,5 @@
 import {
 	BufferAttribute,
-	CapsuleGeometry,
 	Color,
 	CylinderGeometry,
 	Group,
@@ -14,8 +13,9 @@ import {
 } from 'three';
 
 import { m } from '../../paraglide/messages';
-import { roundedBox } from '../look/shapes';
-import { TONES, surface } from '../look/surfaces';
+import { surface } from '../look/surfaces';
+import { JUGGLER } from '../people/cast';
+import { type Person, createPerson, personMaterial } from '../people/person';
 
 import { joint, part } from './parts';
 import type { EasterEgg, EasterEggFrame } from './types';
@@ -29,12 +29,14 @@ const touchHeight = 0.34;
 const ballRadius = 0.11;
 const puffCount = 8;
 
+// The juggler, his arms and legs (his right, -x, first), and his
+// cigarette's glow.
 interface Juggler {
-	body: Group;
-	head: Group;
+	person: Person;
 	legs: { hip: Group; knee: Group }[];
 	arms: Group[];
 	ember: MeshStandardMaterial;
+	// Where the smoke comes from.
 	emberTip: Vector3;
 }
 
@@ -74,233 +76,50 @@ const buildBall = (): Mesh => {
 	return ball;
 };
 
-// The juggler: navy trucker cap with a stars-and-stripes patch, moustache and
-// goatee, in the royal blue Everton home kit, fag in mouth.
+/**
+ * Builds the juggler, with a cigarette in the corner of his mouth.
+ * @param parent - What he stands in.
+ * @returns Him.
+ */
 const buildJuggler = (parent: Object3D): Juggler => {
-	const skin = surface('#d8a684');
-	const hair = surface('#2a1c14');
-	const stubble = surface('#2a1c14', 'matte', {
-		transparent: true,
-		opacity: 0.45,
-	});
-	const shirt = surface('#1c3f96', 'satin');
-	const white = surface('#f3f3f1', 'satin');
-	const cap = surface('#1f2b4d');
-	const flagRed = surface('#c8262f');
-	const flagBlue = surface('#23305e');
-	const boots = surface('#151515', 'satin');
-	const dark = surface(TONES.pupil);
-	const paper = surface('#f5f2ea');
-	const filter = surface('#d49a52');
+	const person = createPerson(JUGGLER, personMaterial());
+	parent.add(person.root);
 	const ember = surface('#ff7a1a', 'matte', {
 		emissive: '#ff4d00',
 		emissiveIntensity: 1,
 	});
-
-	const body = joint(parent, [0, 0, 0]);
-
-	// Legs: white shorts, white socks with a blue turnover, black boots.
-	const thighGeometry = new CapsuleGeometry(0.075, 0.34, 4, 10);
-	const shinGeometry = new CapsuleGeometry(0.062, 0.36, 4, 10);
-	const legs = [-1, 1].map((side) => {
-		const hip = joint(body, [side * 0.1, 0.92, 0]);
-		part(hip, thighGeometry, skin, [0, -0.2, 0]);
-		part(
-			hip,
-			new CylinderGeometry(0.1, 0.095, 0.2, 12),
-			white,
-			[0, -0.08, 0],
-		);
-		const knee = joint(hip, [0, -0.42, 0]);
-		part(knee, shinGeometry, white, [0, -0.2, 0]);
-		part(
-			knee,
-			new CylinderGeometry(0.068, 0.068, 0.05, 12),
-			shirt,
-			[0, -0.04, 0],
-		);
-		part(knee, roundedBox(0.11, 0.08, 0.25), boots, [0, -0.44, 0.05]);
-		return { hip, knee };
-	});
-
-	// Shirt, with white trim.
-	part(body, new CylinderGeometry(0.2, 0.17, 0.2, 16), white, [0, 0.95, 0]);
-	const torso = part(
-		body,
-		new CylinderGeometry(0.21, 0.18, 0.56, 16),
-		shirt,
-		[0, 1.2, 0],
-	);
-	torso.scale.z = 0.62;
-	part(body, new SphereGeometry(0.21, 16, 8), shirt, [0, 1.46, 0]).scale.set(
-		1,
-		0.35,
-		0.62,
-	);
-	part(body, roundedBox(0.12, 0.03, 0.03), white, [0, 1.5, 0.12]);
-	// A small club badge over the heart.
-	part(
-		body,
-		new CylinderGeometry(0.03, 0.03, 0.01, 12).rotateX(Math.PI / 2),
-		white,
-		[0.1, 1.36, 0.13],
-	);
-
-	// Arms out a little for balance.
-	const arms = [-1, 1].map((side) => {
-		const shoulder = joint(body, [side * 0.235, 1.45, 0]);
-		part(
-			shoulder,
-			new CylinderGeometry(0.068, 0.062, 0.22, 12),
-			shirt,
-			[0, -0.09, 0],
-		);
-		part(
-			shoulder,
-			new CylinderGeometry(0.066, 0.066, 0.03, 12),
-			white,
-			[0, -0.2, 0],
-		);
-		part(
-			shoulder,
-			new CapsuleGeometry(0.048, 0.42, 4, 10),
-			skin,
-			[0, -0.38, 0],
-		);
-		part(shoulder, new SphereGeometry(0.055, 10, 8), skin, [0, -0.64, 0]);
-		return shoulder;
-	});
-
-	// Neck & head.
-	part(body, new CylinderGeometry(0.05, 0.058, 0.12, 12), skin, [0, 1.54, 0]);
-	const head = joint(body, [0, 1.57, 0]);
-	part(head, new SphereGeometry(0.12, 22, 16), skin, [0, 0.13, 0]).scale.set(
-		0.92,
-		1.15,
-		1,
-	);
-	for (const side of [-1, 1]) {
-		part(head, new SphereGeometry(0.028, 10, 8), skin, [
-			side * 0.11,
-			0.13,
-			0,
-		]).scale.set(0.5, 1, 0.8);
-		// Smiley, squinting eyes and dark brows.
-		part(head, new SphereGeometry(0.012, 8, 6), dark, [
-			side * 0.042,
-			0.145,
-			0.106,
-		]).scale.y = 0.45;
-		part(head, roundedBox(0.05, 0.011, 0.01), hair, [
-			side * 0.043,
-			0.18,
-			0.11,
-		]).rotation.z = side * -0.08;
-		// Short dark sideburns under the cap.
-		part(head, roundedBox(0.02, 0.07, 0.05), hair, [
-			side * 0.105,
-			0.16,
-			0.02,
-		]);
-	}
-	part(head, new SphereGeometry(0.017, 8, 6), skin, [0, 0.12, 0.122]);
-	// Moustache, goatee and stubble.
-	part(head, roundedBox(0.075, 0.016, 0.014), hair, [0, 0.092, 0.11]);
-	part(
-		head,
-		new SphereGeometry(0.026, 12, 8),
-		hair,
-		[0, 0.035, 0.09],
-	).scale.set(1, 0.9, 0.6);
-	const jaw = part(
-		head,
-		new SphereGeometry(
-			0.113,
-			18,
-			10,
-			-Math.PI * 0.1,
-			Math.PI * 1.2,
-			Math.PI * 0.55,
-			Math.PI * 0.4,
-		),
-		stubble,
-		[0, 0.13, 0.004],
-	);
-	jaw.scale.set(0.95, 1.15, 1);
-	jaw.castShadow = false;
-	part(head, roundedBox(0.04, 0.008, 0.01), dark, [0, 0.075, 0.113]);
-
-	// Navy trucker cap, flag patch on the front.
-	const crown = part(
-		head,
-		new SphereGeometry(0.128, 20, 10, 0, Math.PI * 2, 0, Math.PI * 0.5),
-		cap,
-		[0, 0.17, 0],
-	);
-	crown.scale.set(0.98, 0.95, 1.02);
-	const brim = part(
-		head,
-		new CylinderGeometry(
-			0.1,
-			0.1,
-			0.012,
-			20,
-			1,
-			false,
-			-Math.PI / 2,
-			Math.PI,
-		),
-		cap,
-		[0, 0.175, 0.1],
-	);
-	brim.scale.set(1, 1, 0.9);
-	brim.rotation.x = 0.12;
-	const patch = joint(head, [0, 0.23, 0.107]);
-	patch.rotation.x = -0.5;
-	part(patch, roundedBox(0.075, 0.045, 0.006), white, [0, 0, 0]);
-	for (let i = 0; i < 3; i++) {
-		part(patch, roundedBox(0.075, 0.007, 0.004), flagRed, [
-			0,
-			-0.018 + i * 0.015,
-			0.004,
-		]);
-	}
-	part(
-		patch,
-		roundedBox(0.03, 0.022, 0.005),
-		flagBlue,
-		[-0.022, 0.011, 0.005],
-	);
-
-	// Cigarette, hanging from the corner of his mouth.
-	const cigarette = joint(head, [0.03, 0.075, 0.115]);
+	// From the corner of his mouth, pointing down and out.
+	const cigarette = joint(person.head, [0.05, 0.17, 0.24]);
 	cigarette.rotation.set(0.35, 0.35, 0);
 	part(
 		cigarette,
-		new CylinderGeometry(0.006, 0.006, 0.02, 8).rotateX(Math.PI / 2),
-		filter,
-		[0, 0, 0.01],
+		new CylinderGeometry(0.009, 0.009, 0.03, 6).rotateX(Math.PI / 2),
+		surface('#d49a52'),
+		[0, 0, 0.015],
 	);
 	part(
 		cigarette,
-		new CylinderGeometry(0.006, 0.006, 0.055, 8).rotateX(Math.PI / 2),
-		paper,
-		[0, 0, 0.047],
+		new CylinderGeometry(0.009, 0.009, 0.08, 6).rotateX(Math.PI / 2),
+		surface('#f5f2ea'),
+		[0, 0, 0.07],
 	);
-	part(
+	const tip = part(
 		cigarette,
-		new SphereGeometry(0.0065, 8, 6),
+		new SphereGeometry(0.01, 6, 4),
 		ember,
-		[0, 0, 0.076],
-	).castShadow = false;
-
+		[0, 0, 0.112],
+	);
+	tip.castShadow = false;
+	parent.updateMatrixWorld(true);
 	return {
-		body,
-		head,
-		legs,
-		arms,
+		person,
+		legs: [
+			{ hip: person.rightLeg, knee: person.rightShin },
+			{ hip: person.leftLeg, knee: person.leftShin },
+		],
+		arms: [person.rightArm, person.leftArm],
 		ember,
-		emberTip: new Vector3(0.055, 1.62, 0.2),
+		emberTip: parent.worldToLocal(tip.getWorldPosition(new Vector3())),
 	};
 };
 
@@ -363,7 +182,7 @@ export const KEEPY_UPPIES: EasterEgg = {
 			ball.rotation.z += dt * fromSide * 1.5;
 
 			// Balance: a bit of bob, arms out, eyes on the ball.
-			juggler.body.position.y =
+			juggler.person.body.position.y =
 				-Math.abs(Math.sin(beats * Math.PI)) * 0.03;
 			for (const [i, arm] of juggler.arms.entries()) {
 				const side = i === 0 ? -1 : 1;
@@ -380,7 +199,7 @@ export const KEEPY_UPPIES: EasterEgg = {
 			);
 			const ballPitch = 0.35 - (ball.position.y - touchHeight) * 0.3;
 			const yaw = MathUtils.clamp(Math.atan2(player.x, player.z), -1, 1);
-			juggler.head.rotation.set(
+			juggler.person.head.rotation.set(
 				MathUtils.lerp(ballPitch, -0.05, look),
 				yaw * look,
 				0,
@@ -408,10 +227,7 @@ export const KEEPY_UPPIES: EasterEgg = {
 		};
 		const moving = [
 			ball,
-			juggler.body,
-			juggler.head,
-			...juggler.arms,
-			...juggler.legs.flatMap(({ hip, knee }) => [hip, knee]),
+			...juggler.person.joints,
 			...puffs.map(({ mesh }) => mesh),
 		];
 		return { object: root, update, moving };

@@ -1,7 +1,5 @@
 import {
 	type CanvasTexture,
-	CapsuleGeometry,
-	CircleGeometry,
 	CylinderGeometry,
 	DoubleSide,
 	Group,
@@ -9,15 +7,14 @@ import {
 	type Mesh,
 	type Object3D,
 	PlaneGeometry,
-	RepeatWrapping,
 	SphereGeometry,
-	TorusGeometry,
 	Vector3,
 } from 'three';
 
 import { m } from '../../paraglide/messages';
-import { roundedBox } from '../look/shapes';
-import { TONES, surface } from '../look/surfaces';
+import { surface } from '../look/surfaces';
+import { DANCER } from '../people/cast';
+import { type Person, createPerson, personMaterial } from '../people/person';
 
 import { canvasTexture, joint, part } from './parts';
 import type { EasterEgg, EasterEggFrame } from './types';
@@ -27,65 +24,6 @@ const beat = 0.42;
 const cloudHeight = 3.3;
 const billCount = 36;
 const coinCount = 10;
-
-// Where the flag's green meets the red, as a fraction round the torso
-// (0 is the front, increasing towards his left): just right of centre
-// from the front, as on the flag.
-const flagSplit = 0.968;
-
-// The Portugal flag wrapped all the way round a shirt: green on his right,
-// red on his left, with the coat of arms on the join across his chest.
-const flagTexture = (hasArms: boolean): CanvasTexture => {
-	const texture = canvasTexture(512, 256, (context) => {
-		const split = flagSplit * 512;
-		context.fillStyle = '#d8262e';
-		context.fillRect(0, 0, 512, 256);
-		context.fillStyle = '#0a6a37';
-		context.fillRect(256, 0, split - 256, 256);
-		if (!hasArms) {
-			return;
-		}
-		const outerShield = new Path2D(
-			'M -20 86 L 20 86 L 20 120 Q 0 146 -20 120 Z',
-		);
-		const innerShield = new Path2D(
-			'M -13 92 L 13 92 L 13 117 Q 0 135 -13 117 Z',
-		);
-		// Drawn either side of the wrap, so it isn't cut in half.
-		for (const x of [split, split - 512]) {
-			// Armillary sphere.
-			context.strokeStyle = '#f5d000';
-			context.lineWidth = 6;
-			context.beginPath();
-			context.ellipse(x, 110, 34, 38, 0, 0, Math.PI * 2);
-			context.stroke();
-			context.lineWidth = 4;
-			context.beginPath();
-			context.ellipse(x, 110, 34, 12, 0.35, 0, Math.PI * 2);
-			context.stroke();
-			// Shield: white, bordered in red, with the blue quinas.
-			context.save();
-			context.translate(x, 0);
-			context.fillStyle = '#d8262e';
-			context.fill(outerShield);
-			context.fillStyle = '#ffffff';
-			context.fill(innerShield);
-			context.restore();
-			context.fillStyle = '#1b3f93';
-			for (const [dx, dy] of [
-				[0, 97],
-				[-7, 107],
-				[0, 107],
-				[7, 107],
-				[0, 117],
-			] as const) {
-				context.fillRect(x + dx - 3, dy - 3, 6, 7);
-			}
-		}
-	});
-	texture.wrapS = RepeatWrapping;
-	return texture;
-};
 
 // Canadian banknotes, in their denominations' colours.
 const notes = [
@@ -119,233 +57,32 @@ const noteTexture = (value: string, color: string): CanvasTexture =>
 		context.fillText('CANADA', 10, 44);
 	});
 
+// The dancer, and his arms and legs, his right (-x) first.
 interface Dancer {
-	root: Group;
-	body: Group;
-	head: Group;
+	person: Person;
 	arms: { shoulder: Group; elbow: Group }[];
 	legs: { hip: Group; knee: Group }[];
 }
 
-// The dancer: short dark hair, faded at the sides; trimmed moustache and goatee;
-// the widest grin; a gold chain; and a Portugal-flag tee.
+/**
+ * Builds the dancer.
+ * @param parent - What he dances in.
+ * @returns Him.
+ */
 const buildDancer = (parent: Object3D): Dancer => {
-	const skin = surface('#e8bf9f');
-	const hair = surface('#2a1d16');
-	const fade = surface('#2a1d16', 'matte', {
-		transparent: true,
-		opacity: 0.55,
-	});
-	const stubble = surface('#2a1d16', 'matte', {
-		transparent: true,
-		opacity: 0.4,
-	});
-	const shirt = surface('#ffffff', 'matte', { map: flagTexture(true) });
-	const shoulderShirt = surface('#ffffff', 'matte', {
-		map: flagTexture(false),
-	});
-	const green = surface('#0a6a37');
-	const red = surface('#d8262e');
-	const gold = surface('#d8b04a', 'metal');
-	const joggers = surface('#2f3238');
-	const trainers = surface('#f0f0ee');
-	const dark = surface(TONES.pupil);
-	const teeth = surface(TONES.teeth);
-	const mouth = surface(TONES.mouth);
-	// Line the sphere's texture up with the cylinder's (the sphere's front is
-	// a quarter of the way round its texture).
-	if (shoulderShirt.map) {
-		shoulderShirt.map.offset.x = -0.25;
-	}
-
-	const root = joint(parent, [0, 0, 0]);
-	const body = joint(root, [0, 0, 0]);
-
-	const legs = [-1, 1].map((side) => {
-		const hip = joint(body, [side * 0.1, 0.92, 0]);
-		part(
-			hip,
-			new CapsuleGeometry(0.078, 0.34, 4, 10),
-			joggers,
-			[0, -0.2, 0],
-		);
-		const knee = joint(hip, [0, -0.42, 0]);
-		part(
-			knee,
-			new CapsuleGeometry(0.07, 0.34, 4, 10),
-			joggers,
-			[0, -0.2, 0],
-		);
-		part(knee, roundedBox(0.12, 0.09, 0.27), trainers, [0, -0.44, 0.04]);
-		return { hip, knee };
-	});
-
-	// Portugal-flag tee.
-	part(
-		body,
-		new CylinderGeometry(0.19, 0.19, 0.16, 16),
-		joggers,
-		[0, 0.94, 0],
-	);
-	const torso = part(
-		body,
-		new CylinderGeometry(0.22, 0.19, 0.58, 24),
-		shirt,
-		[0, 1.2, 0],
-	);
-	torso.scale.z = 0.64;
-	part(
-		body,
-		new SphereGeometry(0.22, 24, 12),
-		shoulderShirt,
-		[0, 1.46, 0],
-	).scale.set(1, 0.35, 0.64);
-	const necklace = part(
-		body,
-		new TorusGeometry(0.07, 0.005, 6, 18),
-		gold,
-		[0, 1.49, 0.05],
-	);
-	necklace.rotation.x = Math.PI / 2 - 0.9;
-
-	// Arms: red sleeve on his left, green on his right.
-	const arms = [-1, 1].map((side) => {
-		const shoulder = joint(body, [side * 0.245, 1.45, 0]);
-		part(
-			shoulder,
-			new CylinderGeometry(0.072, 0.066, 0.22, 12),
-			side === 1 ? red : green,
-			[0, -0.09, 0],
-		);
-		part(
-			shoulder,
-			new CapsuleGeometry(0.052, 0.14, 4, 10),
-			skin,
-			[0, -0.22, 0],
-		);
-		const elbow = joint(shoulder, [0, -0.3, 0]);
-		part(
-			elbow,
-			new CapsuleGeometry(0.048, 0.2, 4, 10),
-			skin,
-			[0, -0.12, 0],
-		);
-		part(elbow, new SphereGeometry(0.056, 10, 8), skin, [0, -0.29, 0]);
-		return { shoulder, elbow };
-	});
-
-	// Neck & head.
-	part(body, new CylinderGeometry(0.055, 0.06, 0.1, 12), skin, [0, 1.55, 0]);
-	const head = joint(body, [0, 1.58, 0]);
-	part(head, new SphereGeometry(0.12, 22, 16), skin, [0, 0.13, 0]).scale.set(
-		0.93,
-		1.13,
-		1,
-	);
-	for (const side of [-1, 1]) {
-		part(head, new SphereGeometry(0.028, 10, 8), skin, [
-			side * 0.112,
-			0.13,
-			0,
-		]).scale.set(0.5, 1, 0.8);
-		part(head, new SphereGeometry(0.012, 8, 6), dark, [
-			side * 0.043,
-			0.148,
-			0.106,
-		]).scale.y = 0.5;
-		part(head, roundedBox(0.05, 0.013, 0.012), hair, [
-			side * 0.043,
-			0.182,
-			0.108,
-		]).rotation.z = side * -0.12;
-	}
-	part(head, new SphereGeometry(0.019, 8, 6), skin, [0, 0.12, 0.124]);
-	// The biggest grin.
-	const grin = part(
-		head,
-		new CircleGeometry(0.044, 16, Math.PI, Math.PI),
-		mouth,
-		[0, 0.085, 0.109],
-	);
-	grin.scale.y = 0.72;
-	grin.rotation.x = -0.25;
-	const smile = part(
-		head,
-		new CircleGeometry(0.041, 16, Math.PI, Math.PI),
-		teeth,
-		[0, 0.085, 0.1105],
-	);
-	smile.scale.y = 0.4;
-	smile.rotation.x = -0.25;
-	// Moustache & goatee, over stubble.
-	part(head, roundedBox(0.08, 0.014, 0.012), hair, [0, 0.098, 0.112]);
-	for (const side of [-1, 1]) {
-		part(head, roundedBox(0.012, 0.05, 0.012), hair, [
-			side * 0.043,
-			0.07,
-			0.106,
-		]);
-	}
-	part(
-		head,
-		new SphereGeometry(0.03, 12, 8),
-		hair,
-		[0, 0.03, 0.09],
-	).scale.set(1.1, 0.8, 0.6);
-	const jaw = part(
-		head,
-		new SphereGeometry(
-			0.114,
-			18,
-			10,
-			-Math.PI * 0.1,
-			Math.PI * 1.2,
-			Math.PI * 0.55,
-			Math.PI * 0.4,
-		),
-		stubble,
-		[0, 0.13, 0.004],
-	);
-	jaw.scale.set(0.95, 1.13, 1);
-	jaw.castShadow = false;
-
-	// Faded sides (the sphere leaves a gap for his face), textured top.
-	const sides = part(
-		head,
-		new SphereGeometry(
-			0.123,
-			20,
-			12,
-			Math.PI * 0.85,
-			Math.PI * 1.3,
-			0,
-			Math.PI * 0.55,
-		),
-		fade,
-		[0, 0.13, -0.005],
-	);
-	sides.scale.set(0.95, 1.14, 1.02);
-	sides.castShadow = false;
-	const top = part(
-		head,
-		new SphereGeometry(0.115, 18, 10, 0, Math.PI * 2, 0, Math.PI * 0.32),
-		hair,
-		[0, 0.19, 0.005],
-	);
-	top.scale.set(0.95, 1.2, 1.02);
-	const tuft = roundedBox(0.04, 0.022, 0.05);
-	for (const [x, z, tilt] of [
-		[-0.04, 0.07, 0.2],
-		[0, 0.08, 0],
-		[0.04, 0.07, -0.2],
-		[-0.02, 0.02, 0.1],
-		[0.03, 0.03, -0.1],
-	] as const) {
-		const piece = part(head, tuft, hair, [x, 0.268, z]);
-		piece.rotation.set(-0.25, 0, tilt);
-	}
-
-	return { root, body, head, arms, legs };
+	const person = createPerson(DANCER, personMaterial());
+	parent.add(person.root);
+	return {
+		person,
+		arms: [
+			{ shoulder: person.rightArm, elbow: person.rightForearm },
+			{ shoulder: person.leftArm, elbow: person.leftForearm },
+		],
+		legs: [
+			{ hip: person.rightLeg, knee: person.rightShin },
+			{ hip: person.leftLeg, knee: person.leftShin },
+		],
+	};
 };
 
 const buildCloud = (parent: Object3D): Group => {
@@ -472,18 +209,18 @@ export const MONEY_RAIN: EasterEgg = {
 			);
 
 			// Hop on every beat, hips swinging.
-			dancer.body.position.y = bounce * 0.12;
+			dancer.person.body.position.y = bounce * 0.12;
 			// Every other bar ends with a full spin.
 			const spin =
 				bar % 2 === 1
 					? MathUtils.smootherstep(inBar, 6, 8) * Math.PI * 2
 					: 0;
-			dancer.root.rotation.y = MathUtils.lerp(
+			dancer.person.root.rotation.y = MathUtils.lerp(
 				Math.sin(beats * Math.PI) * 0.35 + spin,
 				Math.atan2(player.x, player.z),
 				pointing,
 			);
-			dancer.body.rotation.z = Math.sin(beats * Math.PI) * 0.12;
+			dancer.person.body.rotation.z = Math.sin(beats * Math.PI) * 0.12;
 
 			// Knees up, alternating.
 			for (const [i, { hip, knee }] of dancer.legs.entries()) {
@@ -514,7 +251,7 @@ export const MONEY_RAIN: EasterEgg = {
 						),
 				);
 			}
-			dancer.head.rotation.set(
+			dancer.person.head.rotation.set(
 				-0.15 + bounce * 0.12,
 				0,
 				Math.sin(beats * Math.PI * 0.5) * 0.25,
@@ -555,13 +292,8 @@ export const MONEY_RAIN: EasterEgg = {
 				mesh.position.copy(position);
 			}
 		};
-		const { arms, legs } = dancer;
 		const moving = [
-			dancer.root,
-			dancer.body,
-			dancer.head,
-			...arms.flatMap(({ shoulder, elbow }) => [shoulder, elbow]),
-			...legs.flatMap(({ hip, knee }) => [hip, knee]),
+			...dancer.person.joints,
 			cloud,
 			...money.map(({ mesh }) => mesh),
 		];

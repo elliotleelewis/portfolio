@@ -1,7 +1,6 @@
 import {
 	type CanvasTexture,
 	CapsuleGeometry,
-	CircleGeometry,
 	Color,
 	CylinderGeometry,
 	Group,
@@ -9,16 +8,16 @@ import {
 	type MeshStandardMaterial,
 	type Object3D,
 	PlaneGeometry,
-	Quaternion,
 	RepeatWrapping,
-	SphereGeometry,
 	TorusGeometry,
 	Vector3,
 } from 'three';
 
 import { m } from '../../paraglide/messages';
 import { roundedBox } from '../look/shapes';
-import { TONES, surface } from '../look/surfaces';
+import { surface } from '../look/surfaces';
+import { WORKER } from '../people/cast';
+import { type Person, createPerson, personMaterial } from '../people/person';
 
 import { canvasTexture, joint, part } from './parts';
 import type { EasterEgg, EasterEggFrame } from './types';
@@ -28,6 +27,8 @@ import type { EasterEgg, EasterEggFrame } from './types';
 const tableHeight = 0.4;
 const tableZ = -0.3;
 const sitZ = 0.42;
+// How far up a person's hips are as they stand (`BONES` in people/person.ts).
+const hipHeight = 0.72;
 
 // ---------------------------------------------------------------------------
 // Screens
@@ -421,258 +422,56 @@ const buildWorkstation = (parent: Object3D): Workstation => {
 // ---------------------------------------------------------------------------
 // The worker
 
+// The worker, and his arms (his right, -x, first).
 interface Worker {
-	upper: Group;
-	head: Group;
-	wrists: Group[];
-	elbows: Group[];
+	person: Person;
 	shoulders: Group[];
+	elbows: Group[];
 }
 
-// A capsule running between two points.
-const limb = (
-	parent: Object3D,
-	from: Vector3,
-	to: Vector3,
-	radius: number,
-	material: MeshStandardMaterial,
-): void => {
-	const length = from.distanceTo(to);
-	const mesh = part(
-		parent,
-		new CapsuleGeometry(radius, Math.max(0.01, length - radius * 2), 4, 10),
-		material,
-		[(from.x + to.x) / 2, (from.y + to.y) / 2, (from.z + to.z) / 2],
-	);
-	mesh.quaternion.copy(
-		new Quaternion().setFromUnitVectors(
-			new Vector3(0, 1, 0),
-			to.clone().sub(from).normalize(),
-		),
-	);
-};
+// How far his arms reach in to the keyboard, and his right arm's reach for
+// the mouse.
+const reachIn = 0.85;
 
-// The worker: short dark hair, a neat full beard, clubmaster sunglasses, and an
-// olive zip-up fleece hoodie. Built facing +z, sitting cross-legged.
+/**
+ * Builds the worker, sitting cross-legged on a cushion, typing, facing +z.
+ * @param parent - What he sits on.
+ * @returns Him.
+ */
 const buildWorker = (parent: Object3D): Worker => {
-	const skin = surface('#efc6aa');
-	const hair = surface('#3a2619');
-	const beard = surface('#4f3423');
-	const fleece = surface('#4a4c38');
-	const fleeceDark = surface('#3b3d2c');
-	const jeans = surface('#3a4250');
-	const boots = surface('#5a4030');
-	const lens = surface('#0f1110', 'gloss');
-	const browline = surface('#1c1512', 'satin');
-	const gold = surface('#c9a656', 'metal');
-	const teeth = surface(TONES.teeth);
-	const mouth = surface(TONES.mouth);
-	const white = surface('#f4f4f4');
-	const cushion = surface('#2f4858');
-
 	part(
 		parent,
 		new CylinderGeometry(0.34, 0.36, 0.1, 18),
-		cushion,
+		surface('#2f4858'),
 		[0, 0.05, 0],
 	);
-	const hips = joint(parent, [0, 0.13, 0]);
-
+	const person = createPerson(WORKER, personMaterial());
+	// His hips on the cushion.
+	person.root.position.y = 0.13 - hipHeight;
+	parent.add(person.root);
 	// Cross-legged: thighs out and forward, shins crossed in front.
-	for (const side of [-1, 1]) {
-		const hip = new Vector3(side * 0.1, 0.02, 0);
-		const knee = new Vector3(side * 0.36, 0.06, 0.26);
-		const ankle = new Vector3(
-			-side * 0.1,
-			0.02 + (side === 1 ? 0.05 : 0),
-			0.34,
-		);
-		limb(hips, hip, knee, 0.08, jeans);
-		limb(hips, knee, ankle, 0.068, jeans);
-		const boot = part(hips, roundedBox(0.1, 0.1, 0.22), boots, [
-			ankle.x - side * 0.08,
-			ankle.y,
-			ankle.z - 0.02,
-		]);
-		boot.rotation.y = side * -1.2;
+	for (const [leg, shin, side] of [
+		[person.rightLeg, person.rightShin, -1],
+		[person.leftLeg, person.leftShin, 1],
+	] as const) {
+		leg.rotation.set(-2.9, side * -0.9, side * -1.5);
+		shin.rotation.x = 2;
 	}
-	part(hips, roundedBox(0.34, 0.14, 0.24), jeans, [0, 0.03, 0]);
-
-	// Upper body leans in to the keyboard.
-	const upper = joint(hips, [0, 0.06, 0]);
-	upper.rotation.x = 0.18;
-	const torso = part(
-		upper,
-		new CylinderGeometry(0.22, 0.2, 0.52, 16),
-		fleece,
-		[0, 0.26, 0],
-	);
-	torso.scale.z = 0.66;
-	part(upper, new SphereGeometry(0.22, 16, 8), fleece, [0, 0.5, 0]).scale.set(
-		1,
-		0.35,
-		0.66,
-	);
-	part(upper, roundedBox(0.012, 0.44, 0.012), fleeceDark, [0, 0.27, 0.146]);
-	part(upper, roundedBox(0.1, 0.005, 0.01), fleeceDark, [0.1, 0.26, 0.142]);
-	part(upper, roundedBox(0.035, 0.018, 0.006), white, [0.1, 0.4, 0.143]);
-	// The hood, bunched up behind his neck.
-	const hood = part(
-		upper,
-		new TorusGeometry(0.09, 0.05, 8, 16),
-		fleece,
-		[0, 0.56, -0.03],
-	);
-	hood.rotation.x = Math.PI / 2 + 0.25;
-	hood.scale.set(1.2, 1, 1);
-
-	// Arms reaching forward to type.
-	const shoulders: Group[] = [];
-	const elbows: Group[] = [];
-	const wrists = [-1, 1].map((side) => {
-		const shoulder = joint(upper, [side * 0.24, 0.48, 0]);
-		shoulder.rotation.set(-0.7, 0, side * 0.12);
-		part(
-			shoulder,
-			new CapsuleGeometry(0.068, 0.2, 4, 10),
-			fleece,
-			[0, -0.14, 0],
-		);
-		const elbow = joint(shoulder, [0, -0.29, 0]);
-		elbow.rotation.set(-1.1, 0, side * -0.15);
-		part(
-			elbow,
-			new CapsuleGeometry(0.058, 0.18, 4, 10),
-			fleece,
-			[0, -0.12, 0],
-		);
-		const wrist = joint(elbow, [0, -0.27, 0]);
-		wrist.rotation.x = 0.6;
-		part(
-			wrist,
-			new SphereGeometry(0.05, 10, 8),
-			skin,
-			[0, -0.04, 0],
-		).scale.set(1, 1.1, 0.6);
-		shoulders.push(shoulder);
-		elbows.push(elbow);
-		return wrist;
-	});
-
-	// Neck & head.
-	part(
-		upper,
-		new CylinderGeometry(0.052, 0.058, 0.1, 12),
-		skin,
-		[0, 0.58, 0],
-	);
-	const head = joint(upper, [0, 0.61, 0]);
-	part(head, new SphereGeometry(0.12, 22, 16), skin, [0, 0.13, 0]).scale.set(
-		0.93,
-		1.12,
-		1,
-	);
-	for (const side of [-1, 1]) {
-		part(head, new SphereGeometry(0.028, 10, 8), skin, [
-			side * 0.112,
-			0.13,
-			0,
-		]).scale.set(0.5, 1, 0.8);
+	// Leaning in to the keyboard, arms bent to reach it.
+	person.chest.rotation.x = 0.32;
+	const arms = [
+		[person.rightArm, person.rightForearm, -1],
+		[person.leftArm, person.leftForearm, 1],
+	] as const;
+	for (const [arm, forearm, side] of arms) {
+		arm.rotation.set(-1.1, 0, side * -reachIn);
+		forearm.rotation.x = -1.05;
 	}
-	part(head, new SphereGeometry(0.019, 8, 6), skin, [0, 0.12, 0.124]);
-
-	// Neat, full beard and moustache.
-	const beardShell = part(
-		head,
-		new SphereGeometry(
-			0.118,
-			20,
-			12,
-			-Math.PI * 0.08,
-			Math.PI * 1.16,
-			Math.PI * 0.5,
-			Math.PI * 0.42,
-		),
-		beard,
-		[0, 0.13, 0.006],
-	);
-	beardShell.scale.set(0.97, 1.16, 1.02);
-	part(head, roundedBox(0.08, 0.018, 0.016), beard, [0, 0.098, 0.116]);
-	// A wide smile.
-	const grin = part(
-		head,
-		new CircleGeometry(0.036, 16, Math.PI, Math.PI),
-		mouth,
-		[0, 0.085, 0.121],
-	);
-	grin.scale.y = 0.6;
-	grin.rotation.x = -0.2;
-	const smile = part(
-		head,
-		new CircleGeometry(0.034, 16, Math.PI, Math.PI),
-		teeth,
-		[0, 0.085, 0.1225],
-	);
-	smile.scale.y = 0.35;
-	smile.rotation.x = -0.2;
-
-	// Clubmaster sunglasses: dark lenses, a heavy brow bar, gold rims.
-	for (const side of [-1, 1]) {
-		const lensMesh = part(head, new CircleGeometry(0.032, 16), lens, [
-			side * 0.044,
-			0.142,
-			0.117,
-		]);
-		lensMesh.scale.set(1.1, 0.85, 1);
-		lensMesh.rotation.y = side * 0.15;
-		part(head, roundedBox(0.072, 0.014, 0.012), browline, [
-			side * 0.044,
-			0.166,
-			0.116,
-		]);
-		const rim = part(
-			head,
-			new TorusGeometry(0.032, 0.0025, 4, 18, Math.PI),
-			gold,
-			[side * 0.044, 0.142, 0.118],
-		);
-		rim.rotation.z = Math.PI;
-		rim.scale.set(1.1, 0.85, 1);
-		part(head, roundedBox(0.005, 0.008, 0.11), browline, [
-			side * 0.088,
-			0.162,
-			0.065,
-		]);
-	}
-	part(head, roundedBox(0.02, 0.005, 0.006), gold, [0, 0.155, 0.12]);
-
-	// Short dark hair, pushed up a little at the front.
-	const crown = part(
-		head,
-		new SphereGeometry(0.126, 20, 10, 0, Math.PI * 2, 0, Math.PI * 0.46),
-		hair,
-		[0, 0.155, -0.005],
-	);
-	crown.scale.set(0.98, 1.08, 1.04);
-	crown.rotation.x = -0.12;
-	// Short at the back and sides, down to the nape.
-	const back = part(
-		head,
-		new SphereGeometry(
-			0.124,
-			20,
-			12,
-			Math.PI * 0.95,
-			Math.PI * 1.1,
-			0,
-			Math.PI * 0.64,
-		),
-		hair,
-		[0, 0.13, -0.004],
-	);
-	back.scale.set(0.97, 1.14, 1.02);
-
-	return { upper, head, wrists, elbows, shoulders };
+	return {
+		person,
+		shoulders: arms.map(([arm]) => arm),
+		elbows: arms.map(([, forearm]) => forearm),
+	};
 };
 
 export const BATTLESTATION: EasterEgg = {
@@ -688,7 +487,7 @@ export const BATTLESTATION: EasterEgg = {
 		const root = new Group();
 		const station = buildWorkstation(root);
 		// The worker faces his screens (-z), on the near side of the table.
-		const seat = joint(root, [0.08, 0, sitZ]);
+		const seat = joint(root, [0, 0, sitZ]);
 		seat.rotation.y = Math.PI;
 		const worker = buildWorker(seat);
 
@@ -696,10 +495,10 @@ export const BATTLESTATION: EasterEgg = {
 		let glance = 0;
 		const update = ({ time, dt, player }: EasterEggFrame): void => {
 			// Hammering away at the keyboard.
-			for (const [i, wrist] of worker.wrists.entries()) {
+			for (const [i, elbow] of worker.elbows.entries()) {
 				const tap = Math.max(0, Math.sin(time * 22 + i * 1.9)) ** 3;
-				wrist.rotation.x = 0.6 + tap * 0.35;
-				wrist.rotation.z = Math.sin(time * 3.1 + i) * 0.15;
+				elbow.rotation.x = -1.05 - tap * 0.12;
+				elbow.rotation.y = Math.sin(time * 3.1 + i) * 0.15;
 			}
 			// Now and then his right hand goes for the mouse.
 			const mouse = MathUtils.smootherstep(
@@ -707,8 +506,8 @@ export const BATTLESTATION: EasterEgg = {
 				0.55,
 				0.8,
 			);
-			const [, rightShoulder] = worker.shoulders;
-			rightShoulder.rotation.z = 0.12 - mouse * 0.35;
+			const [rightShoulder] = worker.shoulders;
+			rightShoulder.rotation.z = reachIn - mouse * 0.35;
 
 			// Eyes flick between the screens.
 			const look = Math.floor(time / 1.3) % 4;
@@ -724,15 +523,15 @@ export const BATTLESTATION: EasterEgg = {
 			);
 			// Seen from behind him, I'm off to one side.
 			const side = player.x >= 0 ? -1 : 1;
-			worker.upper.rotation.y = side * 0.45 * glance;
-			worker.head.rotation.set(
+			worker.person.chest.rotation.y = side * 0.45 * glance;
+			worker.person.head.rotation.set(
 				MathUtils.lerp(
-					worker.head.rotation.x,
+					worker.person.head.rotation.x,
 					MathUtils.lerp(targetPitch, -0.05, glance),
 					1 - Math.exp(-8 * dt),
 				),
 				MathUtils.lerp(
-					worker.head.rotation.y,
+					worker.person.head.rotation.y,
 					MathUtils.lerp(targetYaw, side * 1.25, glance),
 					1 - Math.exp(-8 * dt),
 				),
@@ -755,10 +554,11 @@ export const BATTLESTATION: EasterEgg = {
 			station.dish.rotation.x = 0.25 + Math.sin(time * 0.3) * 0.02;
 		};
 		const moving = [
-			...worker.wrists,
+			// Only his top half moves: he sits still.
+			worker.person.chest,
+			worker.person.head,
 			...worker.shoulders,
-			worker.upper,
-			worker.head,
+			...worker.elbows,
 			station.generator,
 			station.dish,
 		];

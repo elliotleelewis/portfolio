@@ -22,7 +22,7 @@ describe('foldedBox', () => {
 		expect(size.z).toBeCloseTo(0.3);
 	});
 
-	it('rounds its edges, with normals that bend round them', () => {
+	it('folds its edges, in facets that face between its sides', () => {
 		const box = foldedBox(0.8, 0.5, 0.3);
 		const normals = box.getAttribute('normal');
 		let isDiagonal = false;
@@ -35,7 +35,7 @@ describe('foldedBox', () => {
 		expect(isDiagonal).toBe(true);
 	});
 
-	it('leaves boxes too thin to see rounded sharp, saving their triangles', () => {
+	it('leaves boxes too thin to see folded sharp, saving their triangles', () => {
 		const sheet = foldedBox(0.2, 0.3, 0.002);
 		expect(sheet.getAttribute('position').count).toBe(
 			new BoxGeometry().getAttribute('position').count,
@@ -44,7 +44,8 @@ describe('foldedBox', () => {
 
 	it('costs only a few more triangles than a sharp box', () => {
 		const box = foldedBox(1, 1, 1);
-		const triangles = (box.index?.count ?? 0) / 3;
+		const triangles =
+			(box.index?.count ?? box.getAttribute('position').count) / 3;
 		expect(triangles).toBeLessThanOrEqual(108);
 	});
 });

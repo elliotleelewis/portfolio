@@ -223,7 +223,8 @@ export class Game implements StageScene {
 		if (
 			isInLane &&
 			tree.body.position.z < -70 &&
-			Math.random() < bearChance(this._player.distance)
+			Math.random() <
+				bearChance(this._player.distance, tree.body.position.x)
 		) {
 			this._bears.climb(tree);
 		}

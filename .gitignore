@@ -30,6 +30,8 @@ test-results/
 playwright-report/
 # Screenshots from `pnpm shots`
 shots/out/
+# What `pnpm sim` finds
+sim/out/
 
 # Wrangler's local state, like local D1 databases
 .wrangler/

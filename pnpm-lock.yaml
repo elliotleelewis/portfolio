@@ -279,8 +279,8 @@ importers:
         specifier: ^0.187.0
         version: 0.187.0
       agnix:
-        specifier: ^0.60.0
-        version: 0.60.2
+        specifier: ^0.61.0
+        version: 0.61.0
       drizzle-kit:
         specifier: ^0.31.0
         version: 0.31.11
@@ -3460,8 +3460,8 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
-  agnix@0.60.2:
-    resolution: {integrity: sha512-QUSptJ1ffqr35fieJXriYEeW2eVT/NLnfP1wCHzTkcfbStP55ueWit6NbhL6VcQ34IrvhHh81J9sqjR3JGZEgg==}
+  agnix@0.61.0:
+    resolution: {integrity: sha512-G6JRMmpscfuSOxdX92ThnzHRwmxVXoWriF+sTBY3+5599epo+T/OYBvpQFtkx8tYy7Or5pEN5muUdNfSxuNQrQ==}
     engines: {node: '>=16.0.0'}
     cpu: [x64, arm64]
     os: [darwin, linux, win32]
@@ -8700,7 +8700,7 @@ snapshots:
 
   acorn@8.18.0: {}
 
-  agnix@0.60.2: {}
+  agnix@0.61.0: {}
 
   ajv-draft-04@1.0.0(ajv@8.20.0):
     optionalDependencies:

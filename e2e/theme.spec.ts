@@ -44,6 +44,18 @@ test('picks a theme for the whole site, and keeps it', async ({ page }) => {
 	await expect.poll(() => background(page)).toBe(light);
 });
 
+test('applies the picked theme before Rocket Loader can put it off', async ({
+	request,
+}) => {
+	// Cloudflare's Rocket Loader rewrites every other script to run once
+	// the page has drawn, which would flash the device's theme first.
+	const response = await request.get('/');
+	const html = await response.text();
+	expect(html).toMatch(
+		/<script data-cfasync="false">[^<]*localStorage\.getItem\('theme'\)/,
+	);
+});
+
 test("shows the device's theme as the device I'm on", async ({
 	page,
 	isMobile,

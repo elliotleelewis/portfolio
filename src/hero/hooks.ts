@@ -85,11 +85,12 @@ export const useKeyboardControls = (): void => {
 };
 
 /**
- * Stops taps and pinches on a scene zooming the page. Buttons, links and
- * the leaderboard's initials still get their taps.
+ * Stops pinches on a scene zooming the page. Double taps are the hero's
+ * `touch-action: manipulation`, which, unlike cancelling `touchend`, leaves
+ * every tap its click (the theme picker's labels need theirs).
  * @param element - The element to guard.
  */
-export const usePreventTouchZoom = (
+export const usePreventPinchZoom = (
 	element: RefObject<HTMLElement | null>,
 ): void => {
 	const controller = useController();
@@ -104,19 +105,9 @@ export const usePreventTouchZoom = (
 				event.preventDefault();
 			}
 		};
-		const onTouchEnd = (event: TouchEvent): void => {
-			const isOnButton =
-				event.target instanceof Element &&
-				event.target.closest('button, a, input') !== null;
-			if (!isOnButton && controller.hasScene) {
-				event.preventDefault();
-			}
-		};
 		target.addEventListener('touchstart', onTouchStart, { passive: false });
-		target.addEventListener('touchend', onTouchEnd, { passive: false });
 		return () => {
 			target.removeEventListener('touchstart', onTouchStart);
-			target.removeEventListener('touchend', onTouchEnd);
 		};
 	}, [controller, element]);
 };

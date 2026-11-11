@@ -307,17 +307,12 @@ test.describe('on a phone', () => {
 
 	test('does not zoom the page when tapping the game', async ({ page }) => {
 		await startRun(page);
-		await page.evaluate(() => {
-			const prevented: boolean[] = [];
-			Object.assign(globalThis, { touchendsPrevented: prevented });
-			document.addEventListener(
-				'touchend',
-				(event) => {
-					prevented.push(event.defaultPrevented);
-				},
-				{ passive: true },
-			);
-		});
+		// Double taps don't zoom anywhere in the hero, without cancelling
+		// any tap's click.
+		await expect(page.locator('#hero')).toHaveCSS(
+			'touch-action',
+			'manipulation',
+		);
 		const box = await page.locator('#hero-stage').boundingBox();
 		if (!box) {
 			throw new Error('The stage has no size');
@@ -325,12 +320,6 @@ test.describe('on a phone', () => {
 		for (let i = 0; i < 2; i++) {
 			await page.touchscreen.tap(box.x + 40, box.y + box.height / 2);
 		}
-		const prevented = await page.evaluate(
-			() =>
-				(globalThis as unknown as { touchendsPrevented: boolean[] })
-					.touchendsPrevented,
-		);
-		expect(prevented).toEqual([true, true]);
 		const scale = await page.evaluate(
 			() => globalThis.visualViewport?.scale,
 		);

@@ -68,3 +68,13 @@ test("is there on the game page's start screen", async ({ page }) => {
 	await expect(page.locator('#hero-start')).toBeEnabled();
 	await expect(page.locator('#hero-theme')).toBeVisible();
 });
+
+test('picks a theme with a tap, over the game', async ({ page, isMobile }) => {
+	test.skip(!isMobile, 'Touch screens');
+	// The start screen has the game waiting behind it.
+	await page.goto('/game');
+	await expect(page.locator('#hero-start')).toBeEnabled();
+
+	await page.getByRole('group', { name: 'Theme' }).getByTitle('Dark').tap();
+	await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+});

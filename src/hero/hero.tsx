@@ -8,7 +8,7 @@ import { ControllerContext, useController } from './context';
 import { HeroController } from './controller';
 import { GalleryPanel } from './gallery-panel';
 import { GameOver } from './game-over';
-import { useKeyboardControls, usePreventTouchZoom } from './hooks';
+import { useKeyboardControls, usePreventPinchZoom } from './hooks';
 import { Hud } from './hud';
 import { PlayOverlay } from './play-overlay';
 import { Stage } from './stage';
@@ -29,7 +29,7 @@ const HeroSection: FC<Props> = ({ children, isGamePage = false }) => {
 	const mode = useAtomValue(MODE_ATOM);
 	const section = useRef<HTMLElement>(null);
 	useKeyboardControls();
-	usePreventTouchZoom(section);
+	usePreventPinchZoom(section);
 
 	// On the game's own page, the game loads straight away, to wait on its
 	// start screen.
@@ -47,8 +47,8 @@ const HeroSection: FC<Props> = ({ children, isGamePage = false }) => {
 			data-mode={mode}
 			className={
 				isGamePage
-					? 'group fixed inset-0 overflow-hidden bg-fog select-none'
-					: 'group relative h-[85svh] min-h-120 overflow-hidden rounded-3xl bg-fog shadow-2xl ring-1 shadow-pine/20 ring-line select-none'
+					? 'group fixed inset-0 touch-manipulation overflow-hidden bg-fog select-none'
+					: 'group relative h-[85svh] min-h-120 touch-manipulation overflow-hidden rounded-3xl bg-fog shadow-2xl ring-1 shadow-pine/20 ring-line select-none'
 			}
 			aria-label={m.hero_label()}
 		>

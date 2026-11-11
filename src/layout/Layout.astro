@@ -91,7 +91,11 @@ const previewUrl = new URL(preview.src, url).href;
 		<Font cssVariable="--font-fraunces" />
 		<Font cssVariable="--font-jetbrains-mono" />
 		<title>{title}</title>
-		<script is:inline>
+		{
+			// data-cfasync="false" keeps Cloudflare's Rocket Loader, if it's
+			// on, from putting this off until after the page draws.
+		}
+		<script is:inline data-cfasync="false">
 			document.documentElement.classList.add('js');
 			// The theme picked with the theme picker, before the page draws,
 			// so it never flashes the other one. As applyTheme does, in

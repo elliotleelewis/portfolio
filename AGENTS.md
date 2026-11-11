@@ -70,6 +70,7 @@ The site and the game share one look: a trail map on a misty mountain. Keep new 
 
 ## Code
 
+- **The web platform:** `.claude/settings.json` turns on the Chrome team's [Modern Web Guidance](https://developer.chrome.com/docs/modern-web-guidance) plugin. Look things up in it for HTML, CSS and browser APIs, but this file wins where they disagree: its advice knows nothing of the tokens, logical classes or `inert` panels above. Skip its "Modern Web Guidance" section at the end of replies.
 - **Text** is all in `messages/en.json`, through [Paraglide](https://paraglidejs.com): `m.hero_play()` from `../paraglide/messages` (compiled into the uncommitted `src/paraglide/`). Only names (mine, companies', products', skills'), the patent number and signs in the game's world stay in code.
   - Keys are `snake_case`, named by where they're shown: `hero_…`, `trail_…`, `gallery_…`, `privacy_…`, `cookies_…`.
   - Counts use plural variants (`hero_best`), numbers `: number` (`gallery_smashed`), dates `: datetime` (`role_dates`), not code.

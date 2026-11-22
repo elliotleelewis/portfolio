@@ -46,13 +46,15 @@ export const GalleryPanel: FC = () => {
 					id="hero-gallery-prev"
 					aria-label={m.gallery_previous()}
 					variant="glass"
-					className="size-11 shrink-0 rounded-full text-xl font-bold shadow-lg"
+					className="group size-11 shrink-0 rounded-full text-xl font-bold shadow-lg"
 					onClick={() => {
 						controller.previousEgg();
 					}}
 				>
 					{/* Pointing back along the row, whichever way the page reads. */}
-					<span className="inline-block rtl:-scale-x-100">←</span>
+					<span className="inline-block group-hover:-translate-x-0.5 motion-safe:transition-transform rtl:-scale-x-100 rtl:group-hover:translate-x-0.5">
+						←
+					</span>
 				</Button>
 				<Card
 					className="flex-1 px-4 py-3 text-center"
@@ -72,12 +74,14 @@ export const GalleryPanel: FC = () => {
 					ref={next}
 					aria-label={m.gallery_next()}
 					variant="glass"
-					className="size-11 shrink-0 rounded-full text-xl font-bold shadow-lg"
+					className="group size-11 shrink-0 rounded-full text-xl font-bold shadow-lg"
 					onClick={() => {
 						controller.nextEgg();
 					}}
 				>
-					<span className="inline-block rtl:-scale-x-100">→</span>
+					<span className="inline-block group-hover:translate-x-0.5 motion-safe:transition-transform rtl:-scale-x-100 rtl:group-hover:-translate-x-0.5">
+						→
+					</span>
 				</Button>
 			</div>
 			<div id="hero-gallery-dots" className="flex">

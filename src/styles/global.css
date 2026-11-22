@@ -118,6 +118,72 @@
 	}
 }
 
+/*
+ * Text that darkens line by line, top to bottom, as it scrolls into view:
+ * from muted to body text's colour (ink, at 85%). Without scroll-driven
+ * animations, or with less motion, it's simply that colour.
+ */
+@utility sweep-in {
+	@supports (animation-timeline: view()) {
+		@media (prefers-reduced-motion: no-preference) {
+			color: transparent;
+			background-image: linear-gradient(
+				to bottom,
+				color-mix(in oklab, var(--color-ink) 85%, transparent) 45%,
+				var(--color-muted) 55%
+			);
+			background-size: 100% 200%;
+			background-clip: text;
+			animation: sweep-in linear both;
+			animation-timeline: view();
+			animation-range: entry 25% cover 50%;
+		}
+	}
+}
+
+@keyframes sweep-in {
+	from {
+		background-position: 0 100%;
+	}
+
+	to {
+		background-position: 0 0;
+	}
+}
+
+/*
+ * Between pages, the one I'm leaving blurs away into the mist and the next
+ * clears out of it, rather than cutting straight over. Browsers without
+ * view transitions between pages just load the next one.
+ */
+@media (prefers-reduced-motion: no-preference) {
+	@view-transition {
+		navigation: auto;
+	}
+
+	::view-transition-old(root) {
+		animation: into-mist 400ms ease-in both;
+	}
+
+	::view-transition-new(root) {
+		animation: out-of-mist 500ms ease-out 150ms both;
+	}
+}
+
+@keyframes into-mist {
+	to {
+		opacity: 0;
+		filter: blur(12px);
+	}
+}
+
+@keyframes out-of-mist {
+	from {
+		opacity: 0;
+		filter: blur(12px);
+	}
+}
+
 /* Sections fade up as they come into view (only with JS and motion). */
 @media (prefers-reduced-motion: no-preference) {
 	.js [data-reveal] {

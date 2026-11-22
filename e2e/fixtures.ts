@@ -22,7 +22,13 @@ export const test = base.extend<{
 		if (animations === 'instant') {
 			await page.addInitScript(() => {
 				const sheet = new CSSStyleSheet();
+				// No mist between pages either: while its view transition
+				// runs, its overlay takes every click, and on a slow runner
+				// that can outlast a test.
 				sheet.replaceSync(`
+					@view-transition {
+						navigation: none;
+					}
 					*, *::before, *::after {
 						animation-delay: 0s !important;
 						animation-duration: 0s !important;

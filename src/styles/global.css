@@ -126,7 +126,13 @@
 @utility sweep-in {
 	@supports (animation-timeline: view()) {
 		@media (prefers-reduced-motion: no-preference) {
-			color: transparent;
+			/* The fill rather than the colour, so a text colour class doesn't
+			   win over it. Selected, it takes selection's colour again. */
+			-webkit-text-fill-color: transparent;
+
+			&::selection {
+				-webkit-text-fill-color: var(--color-on-accent);
+			}
 			background-image: linear-gradient(
 				to bottom,
 				color-mix(in oklab, var(--color-ink) 85%, transparent) 45%,
@@ -134,7 +140,11 @@
 			);
 			background-size: 100% 200%;
 			background-clip: text;
-			animation: sweep-in linear both;
+			/* Longhands: the minifier folds a shorthand and its timeline into
+			   one, which browsers don't accept. */
+			animation-name: sweep-in;
+			animation-timing-function: linear;
+			animation-fill-mode: both;
 			animation-timeline: view();
 			animation-range: entry 25% cover 50%;
 		}

@@ -101,6 +101,23 @@
 	}
 }
 
+/*
+ * A row of links where the one I'm pointing at, or tabbed to, stays bright
+ * and the rest step back. Hover only counts with a mouse: a tap's hover
+ * sticks, and would leave the row dimmed.
+ */
+@utility dim-others {
+	@media (hover: hover) {
+		&:has(a:hover) a:not(:hover) {
+			opacity: 55%;
+		}
+	}
+
+	&:has(a:focus-visible) a:not(:focus-visible) {
+		opacity: 55%;
+	}
+}
+
 /* Sections fade up as they come into view (only with JS and motion). */
 @media (prefers-reduced-motion: no-preference) {
 	.js [data-reveal] {

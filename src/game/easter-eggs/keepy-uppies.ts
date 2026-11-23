@@ -94,13 +94,13 @@ const buildJuggler = (parent: Object3D): Juggler => {
 	part(
 		cigarette,
 		new CylinderGeometry(0.009, 0.009, 0.03, 6).rotateX(Math.PI / 2),
-		surface('#d49a52'),
+		surface('#d49a52', 'matte'),
 		[0, 0, 0.015],
 	);
 	part(
 		cigarette,
 		new CylinderGeometry(0.009, 0.009, 0.08, 6).rotateX(Math.PI / 2),
-		surface('#f5f2ea'),
+		surface('#f5f2ea', 'matte'),
 		[0, 0, 0.07],
 	);
 	const tip = part(

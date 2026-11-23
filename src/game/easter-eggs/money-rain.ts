@@ -87,8 +87,8 @@ const buildDancer = (parent: Object3D): Dancer => {
 
 const buildCloud = (parent: Object3D): Group => {
 	const cloud = joint(parent, [0, cloudHeight, 0]);
-	const white = surface('#f4f6f7');
-	const grey = surface('#c9ced3');
+	const white = surface('#f4f6f7', 'matte');
+	const grey = surface('#c9ced3', 'matte');
 	for (const [x, y, z, r] of [
 		[0, 0.1, 0, 0.42],
 		[-0.42, 0, 0.05, 0.32],

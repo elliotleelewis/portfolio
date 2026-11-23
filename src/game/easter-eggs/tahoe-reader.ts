@@ -47,7 +47,7 @@ const buildReader = (parent: Object3D): { person: Person; page: Group } => {
 	}
 
 	// The book: two covers open in a V, with a page that turns.
-	const cover = surface('#2f5d8a');
+	const cover = surface('#2f5d8a', 'matte');
 	const paper = surface('#faf6ea', 'matte', { side: DoubleSide });
 	const book = joint(person.chest, [0, 0.22, 0.4]);
 	book.rotation.x = -0.75;
@@ -75,11 +75,11 @@ const buildReader = (parent: Object3D): { person: Person; page: Group } => {
 // A black Chevy Tahoe with the liftgate up, parked with its boot facing +z.
 const buildTahoe = (parent: Object3D): void => {
 	const paint = surface('#0c0e11', 'gloss');
-	const trim = surface('#161616');
+	const trim = surface('#161616', 'matte');
 	const glass = surface('#1a2530', 'gloss');
 	const chrome = surface('#c7ccd1', 'metal');
-	const interior = surface('#2c2c2f');
-	const rubber = surface('#141414');
+	const interior = surface('#2c2c2f', 'matte');
+	const rubber = surface('#141414', 'matte');
 	const tail = surface('#b0131c', 'satin', { emissive: '#6a0a10' });
 	const headlight = surface('#f5f2e6', 'gloss', { emissive: '#bfb9a4' });
 	const gold = surface('#d6a93a', 'metal');

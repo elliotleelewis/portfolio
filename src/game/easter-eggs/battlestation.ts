@@ -202,14 +202,14 @@ interface Workstation {
 }
 
 const buildWorkstation = (parent: Object3D): Workstation => {
-	const wood = surface('#9a7148');
+	const wood = surface('#9a7148', 'matte');
 	const black = surface('#161719', 'satin');
 	const metal = surface('#8f969d', 'metal');
 	const aluminium = surface('#c9ccd1', 'metal');
-	const white = surface('#eef0f2');
-	const yellow = surface('#f2b705');
-	const red = surface('#c8262f');
-	const mug = surface('#e9e4da');
+	const white = surface('#eef0f2', 'matte');
+	const yellow = surface('#f2b705', 'matte');
+	const red = surface('#c8262f', 'matte');
+	const mug = surface('#e9e4da', 'matte');
 	const can = surface('#1f7fd1', 'metal');
 	const rgb = Array.from({ length: 4 }, () =>
 		surface('#111111', 'matte', {
@@ -296,7 +296,7 @@ const buildWorkstation = (parent: Object3D): Workstation => {
 		0.2,
 	]);
 	const keycap = foldedBox(0.022, 0.012, 0.022);
-	const keycapMaterial = surface('#2d2f33');
+	const keycapMaterial = surface('#2d2f33', 'matte');
 	for (let row = 0; row < 4; row++) {
 		for (let key = 0; key < 15; key++) {
 			part(table, keycap, keycapMaterial, [
@@ -392,7 +392,7 @@ const buildWorkstation = (parent: Object3D): Workstation => {
 	part(dish, foldedBox(0.5, 0.03, 0.3), white, [0, 0, 0]).castShadow = true;
 
 	// Cables snaking between everything.
-	const cable = surface('#101010');
+	const cable = surface('#101010', 'matte');
 	for (const [from, to] of [
 		[new Vector3(-1.05, 0.02, -0.1), new Vector3(-0.3, 0.02, -0.55)],
 		[new Vector3(-0.3, 0.02, -0.55), new Vector3(0.95, 0.02, -0.4)],
@@ -442,7 +442,7 @@ const buildWorker = (parent: Object3D): Worker => {
 	part(
 		parent,
 		new CylinderGeometry(0.34, 0.36, 0.1, 9),
-		surface('#2f4858'),
+		surface('#2f4858', 'matte'),
 		[0, 0.05, 0],
 	);
 	const person = createPerson(WORKER, personMaterial());

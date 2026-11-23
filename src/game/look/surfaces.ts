@@ -56,7 +56,7 @@ type Extras = Omit<
  */
 export const surface = (
 	color: string,
-	finish: Finish = 'matte',
+	finish: Finish,
 	extras: Extras = {},
 ): MeshStandardMaterial =>
 	new MeshStandardMaterial({ color, ...FINISHES[finish], ...extras });

@@ -66,7 +66,7 @@ const buildStoker = (parent: Object3D): Stoker => {
 	const stick = part(
 		person.leftHand,
 		new CylinderGeometry(0.022, 0.026, stickLength, 6),
-		surface('#6a4b2f'),
+		surface('#6a4b2f', 'matte'),
 		[0, 0.01, 0],
 	);
 	stick.rotation.x = Math.PI / 2;
@@ -136,9 +136,9 @@ const buildStove = (
 	// Only its inside faces, so it doesn't hide the fire from the front.
 	const firebox = surface('#0b0908', 'matte', { side: BackSide });
 	const steel = surface('#b9bec4', 'metal');
-	const slate = surface('#4a4f55');
-	const wood = surface('#6a4b2f');
-	const woodLight = surface('#8b6843');
+	const slate = surface('#4a4f55', 'matte');
+	const wood = surface('#6a4b2f', 'matte');
+	const woodLight = surface('#8b6843', 'matte');
 
 	// Slate hearth pad.
 	part(parent, foldedBox(1.1, 0.04, 1.1), slate, [0, 0.02, 0.1]);

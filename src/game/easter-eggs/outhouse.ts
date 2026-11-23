@@ -37,13 +37,13 @@ interface Occupant {
 }
 
 const buildOuthouse = (parent: Object3D): Group => {
-	const bark = surface('#6b4a2f');
-	const barkDark = surface('#57391f');
-	const endGrain = surface('#b98f5f');
-	const plank = surface('#8a6440');
-	const roof = surface('#4d3a2a');
-	const dark = surface('#1e1611');
-	const paper = surface('#f4f2ec');
+	const bark = surface('#6b4a2f', 'matte');
+	const barkDark = surface('#57391f', 'matte');
+	const endGrain = surface('#b98f5f', 'matte');
+	const plank = surface('#8a6440', 'matte');
+	const roof = surface('#4d3a2a', 'matte');
+	const dark = surface('#1e1611', 'matte');
+	const paper = surface('#f4f2ec', 'matte');
 
 	const logs = Math.round(wallHeight / (logRadius * 2));
 	const logGeometry = (length: number): CylinderGeometry =>

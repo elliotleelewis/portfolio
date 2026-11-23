@@ -55,12 +55,6 @@ const hasAFinish = (material: Material): boolean =>
 	);
 
 describe('surface', () => {
-	it('is matte unless asked otherwise', () => {
-		const material = surface('#808080');
-		expect(material.roughness).toBe(FINISHES.matte.roughness);
-		expect(material.metalness).toBe(FINISHES.matte.metalness);
-	});
-
 	it('takes its roughness and metalness from its finish', () => {
 		const material = surface('#808080', 'metal', { opacity: 0.5 });
 		expect(material.roughness).toBe(FINISHES.metal.roughness);
@@ -71,7 +65,9 @@ describe('surface', () => {
 	it('lets parts in different colours but the same finish merge into one draw call', () => {
 		const root = new Group();
 		for (const color of ['#ff0000', '#00ff00', '#0000ff']) {
-			root.add(new Mesh(new SphereGeometry(0.1), surface(color)));
+			root.add(
+				new Mesh(new SphereGeometry(0.1), surface(color, 'matte')),
+			);
 		}
 		const merged = mergeParts({ object: root }, 1);
 		let meshes = 0;

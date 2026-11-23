@@ -85,14 +85,20 @@ const Picker: FC = () => {
 			id="hero-theme"
 			data-device={device}
 			data-hide={isRunning ? '' : undefined}
-			className="absolute inset-s-4 top-4 flex gap-0.5 rounded-full bg-surface/70 p-1 text-ink shadow-sm backdrop-blur-sm transition-[opacity,visibility] duration-500 data-hide:invisible data-hide:opacity-0 starting:opacity-0"
+			className="group absolute inset-s-4 top-4 flex gap-0.5 rounded-full bg-surface/70 p-1 text-ink shadow-sm backdrop-blur-sm transition-[opacity,visibility] duration-500 data-hide:invisible data-hide:opacity-0 starting:opacity-0"
 		>
 			<legend className="sr-only">{m.hero_theme_label()}</legend>
+			{/* One highlight, which slides to what's picked rather than jumping:
+			    each option is 2rem wide, with 0.125rem between. */}
+			<span
+				aria-hidden="true"
+				className="absolute inset-s-1 top-1 size-8 rounded-full bg-ink group-has-[[value=dark]:checked]:inset-s-9.5 group-has-[[value=system]:checked]:inset-s-18 motion-safe:transition-[inset-inline-start] motion-safe:duration-500 motion-safe:ease-out"
+			/>
 			{THEMES.map((option) => (
 				<label
 					key={option}
 					title={options[option].label}
-					className="flex size-8 cursor-pointer items-center justify-center rounded-full transition-colors not-has-checked:hover:bg-surface has-checked:bg-ink has-checked:text-paper has-focus-visible:ring-4 has-focus-visible:ring-accent/70"
+					className="relative flex size-8 cursor-pointer items-center justify-center rounded-full transition-colors duration-500 not-has-checked:hover:bg-surface has-checked:text-paper has-focus-visible:ring-4 has-focus-visible:ring-accent/70"
 				>
 					<input
 						type="radio"

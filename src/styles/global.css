@@ -101,6 +101,99 @@
 	}
 }
 
+/*
+ * A row of links where the one I'm pointing at, or tabbed to, stays bright
+ * and the rest step back. Hover only counts with a mouse: a tap's hover
+ * sticks, and would leave the row dimmed.
+ */
+@utility dim-others {
+	@media (hover: hover) {
+		&:has(a:hover) a:not(:hover) {
+			opacity: 55%;
+		}
+	}
+
+	&:has(a:focus-visible) a:not(:focus-visible) {
+		opacity: 55%;
+	}
+}
+
+/*
+ * Text that darkens line by line, top to bottom, as it scrolls into view:
+ * from muted to body text's colour (ink, at 85%). Without scroll-driven
+ * animations, or with less motion, it's simply that colour.
+ */
+@utility sweep-in {
+	@supports (animation-timeline: view()) {
+		@media (prefers-reduced-motion: no-preference) {
+			/* The fill rather than the colour, so a text colour class doesn't
+			   win over it. Selected, it takes selection's colour again. */
+			-webkit-text-fill-color: transparent;
+
+			&::selection {
+				-webkit-text-fill-color: var(--color-on-accent);
+			}
+			background-image: linear-gradient(
+				to bottom,
+				color-mix(in oklab, var(--color-ink) 85%, transparent) 45%,
+				var(--color-muted) 55%
+			);
+			background-size: 100% 200%;
+			background-clip: text;
+			/* Longhands: the minifier folds a shorthand and its timeline into
+			   one, which browsers don't accept. */
+			animation-name: sweep-in;
+			animation-timing-function: linear;
+			animation-fill-mode: both;
+			animation-timeline: view();
+			animation-range: entry 25% cover 50%;
+		}
+	}
+}
+
+@keyframes sweep-in {
+	from {
+		background-position: 0 100%;
+	}
+
+	to {
+		background-position: 0 0;
+	}
+}
+
+/*
+ * Between pages, the one I'm leaving blurs away into the mist and the next
+ * clears out of it, rather than cutting straight over. Browsers without
+ * view transitions between pages just load the next one.
+ */
+@media (prefers-reduced-motion: no-preference) {
+	@view-transition {
+		navigation: auto;
+	}
+
+	::view-transition-old(root) {
+		animation: into-mist 400ms ease-in both;
+	}
+
+	::view-transition-new(root) {
+		animation: out-of-mist 500ms ease-out 150ms both;
+	}
+}
+
+@keyframes into-mist {
+	to {
+		opacity: 0;
+		filter: blur(12px);
+	}
+}
+
+@keyframes out-of-mist {
+	from {
+		opacity: 0;
+		filter: blur(12px);
+	}
+}
+
 /* Sections fade up as they come into view (only with JS and motion). */
 @media (prefers-reduced-motion: no-preference) {
 	.js [data-reveal] {

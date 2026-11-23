@@ -18,8 +18,13 @@ import { SOCIALS } from './socials';
 	<p class="mt-4 font-display text-2xl text-muted sm:text-3xl">
 		{m.intro_role()}
 	</p>
-	<p class="mt-8 max-w-2xl text-lg/relaxed text-ink/85">{m.intro_bio()}</p>
-	<ul class="mt-8 flex flex-wrap gap-3" aria-label={m.socials_label()}>
+	<p class="mt-8 max-w-2xl sweep-in text-lg/relaxed text-ink/85">
+		{m.intro_bio()}
+	</p>
+	<ul
+		class="mt-8 flex flex-wrap gap-3 dim-others"
+		aria-label={m.socials_label()}
+	>
 		{SOCIALS.map(({ label, href, viewBox, path }) => (
 			<li>
 				<TrailSign href={href} label={label}>
